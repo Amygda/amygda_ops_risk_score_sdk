@@ -171,7 +171,7 @@ def _load_dataframe(source: Union[str, "pd.DataFrame"]) -> "pd.DataFrame":
     return source.copy()
 
 
-def plot_risk_scores(
+def plot_asset_risk_ranking(
     source: Union[str, "pd.DataFrame"],
     asset_id_col: str = "asset_id",
     score_col: str = "operational_risk",
@@ -277,7 +277,7 @@ def plot_risk_scores(
     plt.show()
 
 
-def plot_risk_distribution(
+def plot_risk_score_distribution(
     source: Union[str, "pd.DataFrame"],
     score_col: str = "operational_risk",
     bins: int = 30,
@@ -693,7 +693,7 @@ def _risk_color(score: float) -> str:
     return "#e74c3c"
 
 
-def plot_risk_heatmap_multi_asset(
+def plot_risk_heatmap(
     source: Union[str, "pd.DataFrame"],
     metric: str = "operational_risk",
     asset_ids: Optional[List[str]] = None,
@@ -786,7 +786,7 @@ def plot_risk_heatmap_multi_asset(
     fig.show(renderer="notebook")
 
 
-def plot_risk_scores_by_date(
+def plot_daily_risk_snapshot(
     source: Union[str, "pd.DataFrame"],
     date: str,
     asset_ids: Optional[List[str]] = None,
@@ -922,7 +922,7 @@ def plot_risk_scores_by_date(
     fig.show(renderer="notebook")
 
 
-def plot_risk_heatmap_single_asset(
+def plot_asset_risk_over_time(
     source: Union[str, "pd.DataFrame"],
     asset_id: str,
     model_config: Union[str, Dict[str, Any], None] = None,
@@ -1028,7 +1028,7 @@ def plot_risk_heatmap_single_asset(
     fig.show(renderer="notebook")
 
 
-def plot_system_heatmap_single_asset(
+def plot_asset_system_over_time(
     source: Union[str, "pd.DataFrame"],
     asset_id: str,
     system: str,
@@ -1146,7 +1146,7 @@ def plot_system_heatmap_single_asset(
     fig.show(renderer="notebook")
 
 
-def plot_log_occurrences(
+def plot_subsystem_log_activity(
     source: Union[str, "pd.DataFrame"],
     asset_id: str,
     system: str,
@@ -2270,7 +2270,7 @@ def plot_classification_by_subsystem(
 
 def list_risk_metrics(source: Union[str, "pd.DataFrame"]) -> List[str]:
     """
-    Return all valid ``metric`` values for :func:`plot_risk_heatmap_multi_asset`.
+    Return all valid ``metric`` values for :func:`plot_risk_heatmap`.
 
     The list always starts with ``"operational_risk"`` followed by every
     ``{system}_system_risk`` column found in the parquet, sorted alphabetically.
@@ -2403,7 +2403,7 @@ def get_risk_breakdown(
 # ---------------------------------------------------------------------------
 
 
-def plot_threshold_summary(
+def plot_calibration_thresholds(
     thresholds_source: Union[str, Dict[str, Any]],
     training_fe_source: Union[str, "pd.DataFrame"],
     systems: Optional[List[str]] = None,
@@ -2519,7 +2519,7 @@ def plot_threshold_summary(
     fig.show(renderer="notebook")
 
 
-def plot_feature_distributions(
+def plot_training_feature_distributions(
     training_fe_source: Union[str, "pd.DataFrame"],
     thresholds_source: Union[str, Dict[str, Any]],
     systems: Optional[List[str]] = None,
@@ -2618,7 +2618,7 @@ def plot_feature_distributions(
     fig.show(renderer="notebook")
 
 
-def plot_feature_timeseries(
+def plot_training_feature_over_time(
     training_fe_source: Union[str, "pd.DataFrame"],
     thresholds_source: Union[str, Dict[str, Any]],
     asset_id: Union[str, List[str]],
@@ -2756,7 +2756,7 @@ def plot_feature_timeseries(
     fig.show(renderer="notebook")
 
 
-def plot_feature_breakdown(
+def plot_subsystem_feature_pipeline(
     training_fe_source: Union[str, "pd.DataFrame"],
     thresholds_source: Union[str, Dict[str, Any]],
     asset_id: str,
@@ -3047,7 +3047,7 @@ def plot_feature_breakdown(
     fig.show(renderer="notebook")
 
 
-def plot_operational_risk_breakdown(
+def plot_system_contributions(
     source: Union[str, "pd.DataFrame"],
     asset_id: str,
     model_config: Union[str, Dict[str, Any]],

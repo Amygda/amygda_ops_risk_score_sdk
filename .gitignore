@@ -22,3 +22,6 @@ outputs/
 
 # OS
 .DS_Store
+
+my_artifacts/
+my_outputs/
