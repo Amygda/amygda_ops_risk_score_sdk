@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "amygda-ops-risk-score"
+version = "1.0.0"
+description = "Python SDK for the Amygda Operational Risk Score API"
+requires-python = ">=3.10"
+dependencies = [
+    "httpx>=0.27.0",
+    "pandas>=2.0.0",
+    "openpyxl>=3.1.0",
+    "matplotlib>=3.7.0",
+    "plotly>=5.0.0",
+    "seaborn>=0.13.0",
+]
+
+[project.scripts]
+ops-risk-setup = "amygda_ops_risk_score._setup_nlp:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["amygda_ops_risk_score*"]

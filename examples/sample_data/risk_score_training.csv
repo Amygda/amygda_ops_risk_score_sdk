@@ -1,0 +1,201 @@
+asset_id,cleaned_event_details,timestamp
+ASSET-001,System fault detected,01/01/2025
+ASSET-001,Auto recovery initiated,02/01/2025
+ASSET-001,Manual reset required,03/01/2025
+ASSET-001,Sensor threshold exceeded,04/01/2025
+ASSET-001,Routine maintenance check,05/01/2025
+ASSET-001,Communication timeout,06/01/2025
+ASSET-001,Power cycle complete,07/01/2025
+ASSET-001,Emergency stop activated,08/01/2025
+ASSET-001,System fault detected,09/01/2025
+ASSET-001,Auto recovery initiated,10/01/2025
+ASSET-001,Manual reset required,11/01/2025
+ASSET-001,Sensor threshold exceeded,12/01/2025
+ASSET-001,Routine maintenance check,13/01/2025
+ASSET-001,Communication timeout,14/01/2025
+ASSET-001,Power cycle complete,15/01/2025
+ASSET-001,Emergency stop activated,16/01/2025
+ASSET-001,System fault detected,17/01/2025
+ASSET-001,Auto recovery initiated,18/01/2025
+ASSET-001,Manual reset required,19/01/2025
+ASSET-001,Sensor threshold exceeded,20/01/2025
+ASSET-002,Routine maintenance check,01/01/2025
+ASSET-002,Communication timeout,02/01/2025
+ASSET-002,Power cycle complete,03/01/2025
+ASSET-002,Emergency stop activated,04/01/2025
+ASSET-002,System fault detected,05/01/2025
+ASSET-002,Auto recovery initiated,06/01/2025
+ASSET-002,Manual reset required,07/01/2025
+ASSET-002,Sensor threshold exceeded,08/01/2025
+ASSET-002,Routine maintenance check,09/01/2025
+ASSET-002,Communication timeout,10/01/2025
+ASSET-002,Power cycle complete,11/01/2025
+ASSET-002,Emergency stop activated,12/01/2025
+ASSET-002,System fault detected,13/01/2025
+ASSET-002,Auto recovery initiated,14/01/2025
+ASSET-002,Manual reset required,15/01/2025
+ASSET-002,Sensor threshold exceeded,16/01/2025
+ASSET-002,Routine maintenance check,17/01/2025
+ASSET-002,Communication timeout,18/01/2025
+ASSET-002,Power cycle complete,19/01/2025
+ASSET-002,Emergency stop activated,20/01/2025
+ASSET-003,System fault detected,01/01/2025
+ASSET-003,Auto recovery initiated,02/01/2025
+ASSET-003,Manual reset required,03/01/2025
+ASSET-003,Sensor threshold exceeded,04/01/2025
+ASSET-003,Routine maintenance check,05/01/2025
+ASSET-003,Communication timeout,06/01/2025
+ASSET-003,Power cycle complete,07/01/2025
+ASSET-003,Emergency stop activated,08/01/2025
+ASSET-003,System fault detected,09/01/2025
+ASSET-003,Auto recovery initiated,10/01/2025
+ASSET-003,Manual reset required,11/01/2025
+ASSET-003,Sensor threshold exceeded,12/01/2025
+ASSET-003,Routine maintenance check,13/01/2025
+ASSET-003,Communication timeout,14/01/2025
+ASSET-003,Power cycle complete,15/01/2025
+ASSET-003,Emergency stop activated,16/01/2025
+ASSET-003,System fault detected,17/01/2025
+ASSET-003,Auto recovery initiated,18/01/2025
+ASSET-003,Manual reset required,19/01/2025
+ASSET-003,Sensor threshold exceeded,20/01/2025
+ASSET-004,Routine maintenance check,01/01/2025
+ASSET-004,Communication timeout,02/01/2025
+ASSET-004,Power cycle complete,03/01/2025
+ASSET-004,Emergency stop activated,04/01/2025
+ASSET-004,System fault detected,05/01/2025
+ASSET-004,Auto recovery initiated,06/01/2025
+ASSET-004,Manual reset required,07/01/2025
+ASSET-004,Sensor threshold exceeded,08/01/2025
+ASSET-004,Routine maintenance check,09/01/2025
+ASSET-004,Communication timeout,10/01/2025
+ASSET-004,Power cycle complete,11/01/2025
+ASSET-004,Emergency stop activated,12/01/2025
+ASSET-004,System fault detected,13/01/2025
+ASSET-004,Auto recovery initiated,14/01/2025
+ASSET-004,Manual reset required,15/01/2025
+ASSET-004,Sensor threshold exceeded,16/01/2025
+ASSET-004,Routine maintenance check,17/01/2025
+ASSET-004,Communication timeout,18/01/2025
+ASSET-004,Power cycle complete,19/01/2025
+ASSET-004,Emergency stop activated,20/01/2025
+ASSET-005,System fault detected,01/01/2025
+ASSET-005,Auto recovery initiated,02/01/2025
+ASSET-005,Manual reset required,03/01/2025
+ASSET-005,Sensor threshold exceeded,04/01/2025
+ASSET-005,Routine maintenance check,05/01/2025
+ASSET-005,Communication timeout,06/01/2025
+ASSET-005,Power cycle complete,07/01/2025
+ASSET-005,Emergency stop activated,08/01/2025
+ASSET-005,System fault detected,09/01/2025
+ASSET-005,Auto recovery initiated,10/01/2025
+ASSET-005,Manual reset required,11/01/2025
+ASSET-005,Sensor threshold exceeded,12/01/2025
+ASSET-005,Routine maintenance check,13/01/2025
+ASSET-005,Communication timeout,14/01/2025
+ASSET-005,Power cycle complete,15/01/2025
+ASSET-005,Emergency stop activated,16/01/2025
+ASSET-005,System fault detected,17/01/2025
+ASSET-005,Auto recovery initiated,18/01/2025
+ASSET-005,Manual reset required,19/01/2025
+ASSET-005,Sensor threshold exceeded,20/01/2025
+ASSET-006,Routine maintenance check,01/01/2025
+ASSET-006,Communication timeout,02/01/2025
+ASSET-006,Power cycle complete,03/01/2025
+ASSET-006,Emergency stop activated,04/01/2025
+ASSET-006,System fault detected,05/01/2025
+ASSET-006,Auto recovery initiated,06/01/2025
+ASSET-006,Manual reset required,07/01/2025
+ASSET-006,Sensor threshold exceeded,08/01/2025
+ASSET-006,Routine maintenance check,09/01/2025
+ASSET-006,Communication timeout,10/01/2025
+ASSET-006,Power cycle complete,11/01/2025
+ASSET-006,Emergency stop activated,12/01/2025
+ASSET-006,System fault detected,13/01/2025
+ASSET-006,Auto recovery initiated,14/01/2025
+ASSET-006,Manual reset required,15/01/2025
+ASSET-006,Sensor threshold exceeded,16/01/2025
+ASSET-006,Routine maintenance check,17/01/2025
+ASSET-006,Communication timeout,18/01/2025
+ASSET-006,Power cycle complete,19/01/2025
+ASSET-006,Emergency stop activated,20/01/2025
+ASSET-007,System fault detected,01/01/2025
+ASSET-007,Auto recovery initiated,02/01/2025
+ASSET-007,Manual reset required,03/01/2025
+ASSET-007,Sensor threshold exceeded,04/01/2025
+ASSET-007,Routine maintenance check,05/01/2025
+ASSET-007,Communication timeout,06/01/2025
+ASSET-007,Power cycle complete,07/01/2025
+ASSET-007,Emergency stop activated,08/01/2025
+ASSET-007,System fault detected,09/01/2025
+ASSET-007,Auto recovery initiated,10/01/2025
+ASSET-007,Manual reset required,11/01/2025
+ASSET-007,Sensor threshold exceeded,12/01/2025
+ASSET-007,Routine maintenance check,13/01/2025
+ASSET-007,Communication timeout,14/01/2025
+ASSET-007,Power cycle complete,15/01/2025
+ASSET-007,Emergency stop activated,16/01/2025
+ASSET-007,System fault detected,17/01/2025
+ASSET-007,Auto recovery initiated,18/01/2025
+ASSET-007,Manual reset required,19/01/2025
+ASSET-007,Sensor threshold exceeded,20/01/2025
+ASSET-008,Routine maintenance check,01/01/2025
+ASSET-008,Communication timeout,02/01/2025
+ASSET-008,Power cycle complete,03/01/2025
+ASSET-008,Emergency stop activated,04/01/2025
+ASSET-008,System fault detected,05/01/2025
+ASSET-008,Auto recovery initiated,06/01/2025
+ASSET-008,Manual reset required,07/01/2025
+ASSET-008,Sensor threshold exceeded,08/01/2025
+ASSET-008,Routine maintenance check,09/01/2025
+ASSET-008,Communication timeout,10/01/2025
+ASSET-008,Power cycle complete,11/01/2025
+ASSET-008,Emergency stop activated,12/01/2025
+ASSET-008,System fault detected,13/01/2025
+ASSET-008,Auto recovery initiated,14/01/2025
+ASSET-008,Manual reset required,15/01/2025
+ASSET-008,Sensor threshold exceeded,16/01/2025
+ASSET-008,Routine maintenance check,17/01/2025
+ASSET-008,Communication timeout,18/01/2025
+ASSET-008,Power cycle complete,19/01/2025
+ASSET-008,Emergency stop activated,20/01/2025
+ASSET-009,System fault detected,01/01/2025
+ASSET-009,Auto recovery initiated,02/01/2025
+ASSET-009,Manual reset required,03/01/2025
+ASSET-009,Sensor threshold exceeded,04/01/2025
+ASSET-009,Routine maintenance check,05/01/2025
+ASSET-009,Communication timeout,06/01/2025
+ASSET-009,Power cycle complete,07/01/2025
+ASSET-009,Emergency stop activated,08/01/2025
+ASSET-009,System fault detected,09/01/2025
+ASSET-009,Auto recovery initiated,10/01/2025
+ASSET-009,Manual reset required,11/01/2025
+ASSET-009,Sensor threshold exceeded,12/01/2025
+ASSET-009,Routine maintenance check,13/01/2025
+ASSET-009,Communication timeout,14/01/2025
+ASSET-009,Power cycle complete,15/01/2025
+ASSET-009,Emergency stop activated,16/01/2025
+ASSET-009,System fault detected,17/01/2025
+ASSET-009,Auto recovery initiated,18/01/2025
+ASSET-009,Manual reset required,19/01/2025
+ASSET-009,Sensor threshold exceeded,20/01/2025
+ASSET-010,Routine maintenance check,01/01/2025
+ASSET-010,Communication timeout,02/01/2025
+ASSET-010,Power cycle complete,03/01/2025
+ASSET-010,Emergency stop activated,04/01/2025
+ASSET-010,System fault detected,05/01/2025
+ASSET-010,Auto recovery initiated,06/01/2025
+ASSET-010,Manual reset required,07/01/2025
+ASSET-010,Sensor threshold exceeded,08/01/2025
+ASSET-010,Routine maintenance check,09/01/2025
+ASSET-010,Communication timeout,10/01/2025
+ASSET-010,Power cycle complete,11/01/2025
+ASSET-010,Emergency stop activated,12/01/2025
+ASSET-010,System fault detected,13/01/2025
+ASSET-010,Auto recovery initiated,14/01/2025
+ASSET-010,Manual reset required,15/01/2025
+ASSET-010,Sensor threshold exceeded,16/01/2025
+ASSET-010,Routine maintenance check,17/01/2025
+ASSET-010,Communication timeout,18/01/2025
+ASSET-010,Power cycle complete,19/01/2025
+ASSET-010,Emergency stop activated,20/01/2025
