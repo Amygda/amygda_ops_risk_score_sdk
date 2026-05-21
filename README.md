@@ -21,7 +21,7 @@ pip install --upgrade git+https://github.com/amygda/amygda_ops_risk_score_sdk.gi
 | Key | Balance | Use for |
 |-----|---------|---------|
 | `yk-amygda-dev-normal` | $20 | Normal testing — credit checks pass, balance drops with each LLM step |
-| `yk-amygda-dev-low` | $4 | Credit error testing — `InsufficientCreditsError` fires immediately |
+| `yk-amygda-dev-low` | $0 | Balance is $0 — `InsufficientCreditsError` fires immediately |
 
 **Production:** Contact the Amygda team or log in at https://portal.amygda.io (portal coming soon) to get your own key.
 
