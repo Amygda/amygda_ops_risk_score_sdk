@@ -469,6 +469,7 @@ class Session:
     def generate_hierarchy(
         self,
         *,
+        keywords: Optional[List[str]] = None,
         timeout: float = 1200.0,
     ) -> Dict[str, Any]:
         """
@@ -481,6 +482,15 @@ class Session:
 
         Parameters
         ----------
+        keywords:
+            Optional list of keyword strings to use instead of the keywords extracted
+            by :meth:`extract_keywords`.  When provided, the server applies the same
+            token-budget and linguistic filtering that ``extract_keywords`` applies —
+            any keywords that exceed the token budget or fail linguistic validation are
+            dropped before the LLM call.  ``extract_keywords`` must still have been run
+            first (the per-row keyword data it produces is required for classification).
+            If ``None`` (default), the filtered keyword pool from ``extract_keywords``
+            is used as normal.
         timeout:
             Maximum seconds to wait (default 1200 s).  Increase for large keyword
             pools (5 k+ keywords) where LLM processing takes longer.
@@ -490,11 +500,14 @@ class Session:
         Dict with ``hierarchy`` (list of system/subsystem rows with confidence scores),
         ``systems_count``, and ``subsystems_count``.
         """
+        if keywords is not None:
+            _v.validate_generate_hierarchy(keywords)
         self._run_blocking(
             "generate_hierarchy",
             lambda: self._http.post(
                 "/v1/labelling/generate-hierarchy",
                 params={"auth_id": self._auth_id},
+                json={"keywords": keywords} if keywords is not None else None,
                 timeout=timeout,
             ),
         )
