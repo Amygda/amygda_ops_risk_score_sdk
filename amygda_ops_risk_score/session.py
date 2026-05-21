@@ -483,14 +483,12 @@ class Session:
         Parameters
         ----------
         keywords:
-            Optional list of keyword strings to use instead of the keywords extracted
-            by :meth:`extract_keywords`.  When provided, the server applies the same
-            token-budget and linguistic filtering that ``extract_keywords`` applies —
-            any keywords that exceed the token budget or fail linguistic validation are
-            dropped before the LLM call.  ``extract_keywords`` must still have been run
-            first (the per-row keyword data it produces is required for classification).
-            If ``None`` (default), the filtered keyword pool from ``extract_keywords``
-            is used as normal.
+            Optional list of keywords to use instead of the ones extracted by
+            :meth:`extract_keywords`.  If provided, the server applies the same
+            token-budget and linguistic filtering that ``extract_keywords`` applies
+            before building the hierarchy.  ``extract_keywords`` must still be
+            completed first.  If ``None`` (default), the server uses the keyword
+            pool produced by ``extract_keywords``.
         timeout:
             Maximum seconds to wait (default 1200 s).  Increase for large keyword
             pools (5 k+ keywords) where LLM processing takes longer.
@@ -498,7 +496,8 @@ class Session:
         Returns
         -------
         Dict with ``hierarchy`` (list of system/subsystem rows with confidence scores),
-        ``systems_count``, and ``subsystems_count``.
+        ``systems_count``, and ``subsystems_count``.  Return shape is the same
+        whether or not ``keywords`` is provided.
         """
         if keywords is not None:
             _v.validate_generate_hierarchy(keywords)
