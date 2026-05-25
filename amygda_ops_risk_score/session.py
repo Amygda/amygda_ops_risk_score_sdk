@@ -767,6 +767,19 @@ class Session:
         rolling_feature_type: str = "sum",
         quantile_for_thresholds: float = 0.99,
         sheet_name: Optional[str] = None,
+        supervised: bool = False,
+        failures_path: Optional[str] = None,
+        failure_date_column: str = "machine_initialisation_date",
+        failure_date_format: str = "infer",
+        prediction_horizon_days: int = 14,
+        exclusion_days_after: int = 7,
+        target_imbalance_ratio: Optional[float] = 10.0,
+        sampling_strategy: str = "block",
+        block_size_days: int = 14,
+        n_candidates: int = 200,
+        fallback_quantile: float = 0.95,
+        min_positives: int = 5,
+        lr_c: float = 0.5,
         *,
         timeout: float = 600.0,
     ) -> Dict[str, Any]:
@@ -805,12 +818,46 @@ class Session:
             of activity triggers an elevated risk signal.
         sheet_name:
             XLSX only.  ``None`` auto-detects the first sheet.
+        supervised:
+            When ``True``, uses AUC-ROC optimisation to learn per-subsystem thresholds
+            and logistic regression to learn system/subsystem weights from failure events.
+            Requires ``failures_path``.
+        failures_path:
+            Path to a CSV containing failure event dates.  Required when ``supervised=True``.
+            Must contain ``asset_id`` and ``failure_date_column`` columns.
+        failure_date_column:
+            Column in the failures CSV that holds the failure date
+            (default ``"machine_initialisation_date"``).
+        failure_date_format:
+            Format of the failure date column. ``'infer'`` (default) tries
+            ``dayfirst=True`` first then falls back to auto-detection.
+            Pass a strftime string (e.g. ``'%d/%m/%Y'``) to parse explicitly.
+        prediction_horizon_days:
+            Number of days before a failure to label as positive (default 14).
+        exclusion_days_after:
+            Number of days after a failure to exclude from training (recovery period, default 7).
+        target_imbalance_ratio:
+            Maximum ratio of negatives to positives after downsampling (default 10).
+            ``None`` keeps all negatives.
+        sampling_strategy:
+            How negatives are downsampled: ``"block"`` preserves temporal structure,
+            ``"random"`` samples individual rows (default ``"block"``).
+        block_size_days:
+            Calendar-day block size for block-based downsampling (default 14).
+        n_candidates:
+            Number of threshold candidates to evaluate per subsystem (default 200).
+        fallback_quantile:
+            Quantile used as fallback when a subsystem has too few positives (default 0.95).
+        min_positives:
+            Minimum positive rows required to attempt AUC training per subsystem (default 5).
+        lr_c:
+            Logistic regression regularisation strength C (default 0.5).
         timeout:
             Maximum seconds to wait for upload and validation (default 600 s).
 
         Returns
         -------
-        Dict with ``row_count``, ``asset_count``, and your configuration echoed back.
+        Dict with ``row_count``, ``asset_count``, ``supervised``, and your configuration echoed back.
         """
         _v.validate_configure_training(
             file_path=file_path,
@@ -829,19 +876,40 @@ class Session:
             "rolling_window":          str(rolling_window),
             "rolling_feature_type":    rolling_feature_type,
             "quantile_for_thresholds": str(quantile_for_thresholds),
+            "supervised":              str(supervised).lower(),
+            "failure_date_column":     failure_date_column,
+            "failure_date_format":     failure_date_format,
+            "prediction_horizon_days": str(prediction_horizon_days),
+            "exclusion_days_after":    str(exclusion_days_after),
+            "sampling_strategy":       sampling_strategy,
+            "block_size_days":         str(block_size_days),
+            "n_candidates":            str(n_candidates),
+            "fallback_quantile":       str(fallback_quantile),
+            "min_positives":           str(min_positives),
+            "lr_c":                    str(lr_c),
         }
+        if target_imbalance_ratio is not None:
+            data["target_imbalance_ratio"] = str(target_imbalance_ratio)
         if sheet_name:
             data["sheet_name"] = sheet_name
 
         def _call():
             with open(file_path, "rb") as fh:
                 filename = os.path.basename(file_path)
-                return self._http.post(
-                    "/v1/risk-score/configure-training",
-                    data=data,
-                    files={"file": (filename, fh)},
-                    timeout=timeout,
-                )
+                files: list = [("file", (filename, fh))]
+                if supervised and failures_path:
+                    ff = open(failures_path, "rb")  # noqa: WPS515
+                    files.append(("failures_file", (os.path.basename(failures_path), ff)))
+                try:
+                    return self._http.post(
+                        "/v1/risk-score/configure-training",
+                        data=data,
+                        files=files,
+                        timeout=timeout,
+                    )
+                finally:
+                    if supervised and failures_path:
+                        ff.close()
 
         raw = self._run_blocking("configure_training", _call)
         result = {
@@ -855,6 +923,8 @@ class Session:
             "rolling_feature_type":    rolling_feature_type,
             "quantile_for_thresholds": quantile_for_thresholds,
             "sheet_name":              sheet_name,
+            "supervised":              supervised,
+            "failures_path":           os.path.abspath(failures_path) if failures_path else None,
         }
         self._save_artifact("configure_training", result)
         return result
@@ -898,7 +968,7 @@ class Session:
         # Fetch DONE fields (subsystems_calibrated) from Postgres.
         # zip_path from step_data is a server-side storage path — excluded as it is not
         # meaningful to the caller and would conflict with any future zip download key.
-        step_data = {k: v for k, v in self._step_done_data("run_training").items()
+        step_data = {k: v for k, v in self._step_done_data("train_risk_model").items()
                      if k != "zip_path"}
         result: Dict[str, Any] = {"auth_id": self._auth_id, **step_data}
 
@@ -918,9 +988,24 @@ class Session:
                     "training_fe_path",
                 ),
                 (
+                    "training_scores.parquet",
+                    "/v1/risk-score/download-training-scores",
+                    "training_scores_path",
+                ),
+                (
                     "logs_by_system_subsystem.json",
                     "/v1/risk-score/download-logs-mapping",
                     "logs_mapping_path",
+                ),
+                (
+                    "trained_weights.json",
+                    "/v1/risk-score/download-trained-weights",
+                    "trained_weights_path",
+                ),
+                (
+                    "supervised_training_report.json",
+                    "/v1/risk-score/download-supervised-report",
+                    "supervised_report_path",
                 ),
             ]:
                 try:
@@ -955,6 +1040,7 @@ class Session:
         file_path: str,
         date_format: str = "infer",
         sheet_name: Optional[str] = None,
+        weights_source: str = "labelling",
         *,
         timeout: float = 600.0,
     ) -> Dict[str, Any]:
@@ -975,6 +1061,11 @@ class Session:
             ``'infer'`` auto-detects the date format.  Pass a strftime string if needed.
         sheet_name:
             XLSX only.  ``None`` auto-detects the first sheet.
+        weights_source:
+            Which weights to use for risk score generation.
+            ``"labelling"`` (default) uses the expert weights from the labelling step.
+            ``"supervised"`` uses the weights trained via logistic regression —
+            only valid after ``configure_training(supervised=True)`` + ``train_risk_model()``.
         timeout:
             Maximum seconds to wait for upload (default 600 s).
 
@@ -984,8 +1075,9 @@ class Session:
         """
         _v.validate_configure_generation(file_path=file_path, sheet_name=sheet_name)
         data: Dict[str, str] = {
-            "auth_id":     self._auth_id,
-            "date_format": date_format,
+            "auth_id":        self._auth_id,
+            "date_format":    date_format,
+            "weights_source": weights_source,
         }
         if sheet_name:
             data["sheet_name"] = sheet_name
@@ -1003,10 +1095,11 @@ class Session:
         raw = self._run_blocking("configure_generation", _call)
         result = {
             **raw,
-            "auth_id":     self._auth_id,
-            "file_path":   os.path.abspath(file_path),
-            "date_format": date_format,
-            "sheet_name":  sheet_name,
+            "auth_id":        self._auth_id,
+            "file_path":      os.path.abspath(file_path),
+            "date_format":    date_format,
+            "sheet_name":     sheet_name,
+            "weights_source": weights_source,
         }
         self._save_artifact("configure_generation", result)
         return result
@@ -1057,7 +1150,7 @@ class Session:
         # Fetch DONE fields (assets_scored, date_range) before the session is wiped.
         # zip_path from step_data is the server-side storage path — excluded because the
         # session is about to be wiped; abs_path (local download) is the correct value.
-        step_data = {k: v for k, v in self._step_done_data("run_generation").items()
+        step_data = {k: v for k, v in self._step_done_data("generate_risk_scores").items()
                      if k != "zip_path"}
         dest_path = os.path.join(dest_dir, f"complete_model_{self._auth_id}.zip")
         abs_path = self._download_and_wipe("/v1/risk-score/download-zip", dest_path)

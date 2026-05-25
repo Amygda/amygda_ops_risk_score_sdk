@@ -963,9 +963,15 @@ def plot_asset_risk_over_time(
     system_weights: Dict[str, float] = {}
     if weighted:
         if model_config is None:
-            print("weighted=True requires model_config. Pass a path to model_config.json or the dict.")
+            print(
+                "weighted=True requires model_config. Pass a path to model_config.json or the dict."
+            )
             return
-        cfg = _load_result(model_config) if isinstance(model_config, str) else model_config
+        cfg = (
+            _load_result(model_config)
+            if isinstance(model_config, str)
+            else model_config
+        )
         system_weights = cfg.get("system_weights", {})
         if not system_weights:
             print("'system_weights' not found in model_config.")
@@ -976,7 +982,9 @@ def plot_asset_risk_over_time(
 
     asset_df = df[df["asset_id"].astype(str) == str(asset_id)]
     if asset_df.empty:
-        print(f"Asset '{asset_id}' not found. Available: {list(df['asset_id'].unique()[:10])}")
+        print(
+            f"Asset '{asset_id}' not found. Available: {list(df['asset_id'].unique()[:10])}"
+        )
         return
 
     system_cols = sorted([c for c in df.columns if c.endswith("_system_risk")])
@@ -990,10 +998,10 @@ def plot_asset_risk_over_time(
             system = col.replace("_system_risk", "")
             w = system_weights.get(system, 1.0)
             z_systems.append((pivot[col].fillna(0) * w).tolist())
-            row_labels_systems.append(
-                f"{system.replace('_', ' ').title()} (×{w})"
-            )
-        hover = "Risk Type: %{y}<br>Date: %{x}<br>Weighted Score: %{z:.2f}<extra></extra>"
+            row_labels_systems.append(f"{system.replace('_', ' ').title()} (×{w})")
+        hover = (
+            "Risk Type: %{y}<br>Date: %{x}<br>Weighted Score: %{z:.2f}<extra></extra>"
+        )
         colorbar_title = "Weighted Score"
     else:
         z_systems = [pivot[col].tolist() for col in system_cols]
@@ -1003,20 +1011,22 @@ def plot_asset_risk_over_time(
         hover = "Risk Type: %{y}<br>Date: %{x}<br>Score: %{z:.1f}<extra></extra>"
         colorbar_title = "Risk Score"
 
-    z          = [pivot["operational_risk"].tolist()] + z_systems
+    z = [pivot["operational_risk"].tolist()] + z_systems
     row_labels = ["Operational Risk"] + row_labels_systems
 
-    fig = go.Figure(go.Heatmap(
-        z=z,
-        x=dates,
-        y=row_labels,
-        colorscale="RdYlBu_r",
-        zmin=0,
-        zmax=60,
-        colorbar=dict(title=colorbar_title),
-        hoverongaps=False,
-        hovertemplate=hover,
-    ))
+    fig = go.Figure(
+        go.Heatmap(
+            z=z,
+            x=dates,
+            y=row_labels,
+            colorscale="RdYlBu_r",
+            zmin=0,
+            zmax=80,
+            colorbar=dict(title=colorbar_title),
+            hoverongaps=False,
+            hovertemplate=hover,
+        )
+    )
     fig.update_layout(
         title=dict(text=title or f"Risk Analysis — {asset_id}", x=0.5),
         xaxis=dict(title="Date", tickangle=-45),
@@ -1070,9 +1080,15 @@ def plot_asset_system_over_time(
     subsystem_weights: Dict[str, float] = {}
     if weighted:
         if model_config is None:
-            print("weighted=True requires model_config. Pass a path to model_config.json or the dict.")
+            print(
+                "weighted=True requires model_config. Pass a path to model_config.json or the dict."
+            )
             return
-        cfg = _load_result(model_config) if isinstance(model_config, str) else model_config
+        cfg = (
+            _load_result(model_config)
+            if isinstance(model_config, str)
+            else model_config
+        )
         subsystem_weights = cfg.get("subsystem_weights", {}).get(system, {})
         if not subsystem_weights:
             print(f"No subsystem_weights found for system '{system}' in model_config.")
@@ -1083,19 +1099,30 @@ def plot_asset_system_over_time(
 
     asset_df = df[df["asset_id"].astype(str) == str(asset_id)]
     if asset_df.empty:
-        print(f"Asset '{asset_id}' not found. Available: {list(df['asset_id'].unique()[:10])}")
+        print(
+            f"Asset '{asset_id}' not found. Available: {list(df['asset_id'].unique()[:10])}"
+        )
         return
 
     system_col = f"{system}_system_risk"
     if system_col not in asset_df.columns:
-        available = sorted({c.replace("_system_risk", "") for c in df.columns if c.endswith("_system_risk")})
+        available = sorted(
+            {
+                c.replace("_system_risk", "")
+                for c in df.columns
+                if c.endswith("_system_risk")
+            }
+        )
         print(f"System '{system}' not found. Available systems: {available}")
         return
 
-    subsystem_cols = sorted([
-        c for c in df.columns
-        if c.startswith(f"{system}-") and c.endswith("_calibrated_risk")
-    ])
+    subsystem_cols = sorted(
+        [
+            c
+            for c in df.columns
+            if c.startswith(f"{system}-") and c.endswith("_calibrated_risk")
+        ]
+    )
 
     pivot = asset_df.groupby("date")[[system_col] + subsystem_cols].max()
     dates = [str(d) for d in pivot.index]
@@ -1115,28 +1142,37 @@ def plot_asset_system_over_time(
     else:
         z_subsystems = [pivot[col].tolist() for col in subsystem_cols]
         row_labels_subsystems = [
-            c.replace(f"{system}-", "").replace("_calibrated_risk", "").replace("_", " ").title()
+            c.replace(f"{system}-", "")
+            .replace("_calibrated_risk", "")
+            .replace("_", " ")
+            .title()
             for c in subsystem_cols
         ]
         hover = "Row: %{y}<br>Date: %{x}<br>Score: %{z:.1f}<extra></extra>"
         colorbar_title = "Risk Score"
 
-    z          = [pivot[system_col].tolist()] + z_subsystems
-    row_labels = [system.replace("_", " ").title() + " (System Risk)"] + row_labels_subsystems
+    z = [pivot[system_col].tolist()] + z_subsystems
+    row_labels = [
+        system.replace("_", " ").title() + " (System Risk)"
+    ] + row_labels_subsystems
 
-    fig = go.Figure(go.Heatmap(
-        z=z,
-        x=dates,
-        y=row_labels,
-        colorscale="RdYlBu_r",
-        zmin=0,
-        zmax=60,
-        colorbar=dict(title=colorbar_title),
-        hoverongaps=False,
-        hovertemplate=hover,
-    ))
+    fig = go.Figure(
+        go.Heatmap(
+            z=z,
+            x=dates,
+            y=row_labels,
+            colorscale="RdYlBu_r",
+            zmin=0,
+            zmax=60,
+            colorbar=dict(title=colorbar_title),
+            hoverongaps=False,
+            hovertemplate=hover,
+        )
+    )
     fig.update_layout(
-        title=dict(text=title or f"{system.replace('_', ' ').title()} — {asset_id}", x=0.5),
+        title=dict(
+            text=title or f"{system.replace('_', ' ').title()} — {asset_id}", x=0.5
+        ),
         xaxis=dict(title="Date", tickangle=-45),
         yaxis=dict(title=""),
         width=width,
@@ -1214,17 +1250,33 @@ def plot_subsystem_log_activity(
 
     import datetime as _dt
 
-    df       = _load_dataframe(source)
-    end_date   = pd.to_datetime(date).date()
+    df = _load_dataframe(source)
+    end_date = pd.to_datetime(date).date()
     start_date = end_date - _dt.timedelta(days=days_back)
 
     source_is_free_text = "system_name" in df.columns or "subsystem_name" in df.columns
 
     _palette = [
-        "#3498db", "#2ecc71", "#9b59b6", "#f39c12", "#1abc9c",
-        "#e67e22", "#34495e", "#16a085", "#8e44ad", "#d35400",
-        "#27ae60", "#2980b9", "#c0392b", "#7f8c8d", "#f1c40f",
-        "#6c5ce7", "#00b894", "#fd79a8", "#e17055", "#74b9ff",
+        "#3498db",
+        "#2ecc71",
+        "#9b59b6",
+        "#f39c12",
+        "#1abc9c",
+        "#e67e22",
+        "#34495e",
+        "#16a085",
+        "#8e44ad",
+        "#d35400",
+        "#27ae60",
+        "#2980b9",
+        "#c0392b",
+        "#7f8c8d",
+        "#f1c40f",
+        "#6c5ce7",
+        "#00b894",
+        "#fd79a8",
+        "#e17055",
+        "#74b9ff",
     ]
 
     # ── In fixed-log mode, default risk_source to source ─────────────────────
@@ -1236,7 +1288,8 @@ def plot_subsystem_log_activity(
     # ── Build subplot layout ─────────────────────────────────────────────────
     if has_risk:
         fig = make_subplots(
-            rows=3, cols=1,
+            rows=3,
+            cols=1,
             shared_xaxes=True,
             row_heights=[0.45, 0.3, 0.25],
             vertical_spacing=0.07,
@@ -1252,7 +1305,7 @@ def plot_subsystem_log_activity(
     if source_is_free_text:
         sys_col = "system_name" if "system_name" in df.columns else "system"
         sub_col = "subsystem_name" if "subsystem_name" in df.columns else "subsystem"
-        ts_col  = "timestamp" if "timestamp" in df.columns else "date"
+        ts_col = "timestamp" if "timestamp" in df.columns else "date"
 
         df[ts_col] = pd.to_datetime(df[ts_col], errors="coerce")
         df["_date"] = df[ts_col].dt.date
@@ -1266,22 +1319,31 @@ def plot_subsystem_log_activity(
         )
         window_df = df[mask].copy()
         if window_df.empty:
-            print(f"No log entries for asset '{asset_id}' / {system} / {subsystem} "
-                  f"between {start_date} and {end_date}.")
+            print(
+                f"No log entries for asset '{asset_id}' / {system} / {subsystem} "
+                f"between {start_date} and {end_date}."
+            )
             return
 
         daily = window_df.groupby("_date").size().reset_index(name="count")
         daily["_date"] = daily["_date"].astype(str)
 
-        fig.add_trace(go.Bar(
-            x=daily["_date"].tolist(), y=daily["count"].tolist(),
-            name="Log Count", marker_color="#3498db",
-            hovertemplate="%{x}<br>Count: %{y}<extra></extra>",
-        ), row=3 if has_risk else 1, col=1, secondary_y=False)
+        fig.add_trace(
+            go.Bar(
+                x=daily["_date"].tolist(),
+                y=daily["count"].tolist(),
+                name="Log Count",
+                marker_color="#3498db",
+                hovertemplate="%{x}<br>Count: %{y}<extra></extra>",
+            ),
+            row=3 if has_risk else 1,
+            col=1,
+            secondary_y=False,
+        )
 
         chart_title = title or f"Log Occurrences — {asset_id} / {system} / {subsystem}"
-        bar_label   = "Log Count"
-        barmode     = "relative"
+        bar_label = "Log Count"
+        barmode = "relative"
 
     else:
         if logs_mapping is None:
@@ -1294,10 +1356,12 @@ def plot_subsystem_log_activity(
         else:
             mapping = logs_mapping
 
-        pair      = f"{system}-{subsystem}"
+        pair = f"{system}-{subsystem}"
         log_codes = mapping.get(pair, [])
         if not log_codes:
-            print(f"No log codes found for '{pair}'.\nAvailable: {list(mapping.keys())}")
+            print(
+                f"No log codes found for '{pair}'.\nAvailable: {list(mapping.keys())}"
+            )
             return
 
         if "date" not in df.columns:
@@ -1311,7 +1375,9 @@ def plot_subsystem_log_activity(
         )
         window_df = df[mask].sort_values("date")
         if window_df.empty:
-            print(f"No data for asset '{asset_id}' between {start_date} and {end_date}.")
+            print(
+                f"No data for asset '{asset_id}' between {start_date} and {end_date}."
+            )
             return
 
         available_codes = [lc for lc in log_codes if lc in window_df.columns]
@@ -1322,21 +1388,33 @@ def plot_subsystem_log_activity(
         dates_str = [str(d) for d in window_df["date"]]
         for i, lc in enumerate(available_codes):
             label = (lc[:50] + "...") if len(lc) > 50 else lc
-            fig.add_trace(go.Bar(
-                name=label, x=dates_str,
-                y=window_df[lc].fillna(0).tolist(),
-                marker_color=_palette[i % len(_palette)],
-                legendgroup=lc,
-                hovertemplate=f"<b>{lc}</b><br>%{{x}}<br>Count: %{{y}}<extra></extra>",
-            ), row=3 if has_risk else 1, col=1, secondary_y=False)
+            fig.add_trace(
+                go.Bar(
+                    name=label,
+                    x=dates_str,
+                    y=window_df[lc].fillna(0).tolist(),
+                    marker_color=_palette[i % len(_palette)],
+                    legendgroup=lc,
+                    hovertemplate=f"<b>{lc}</b><br>%{{x}}<br>Count: %{{y}}<extra></extra>",
+                ),
+                row=3 if has_risk else 1,
+                col=1,
+                secondary_y=False,
+            )
 
-        chart_title = title or f"Individual Log Occurrences Over Time ({days_back} days)"
-        bar_label   = "Daily Count"
-        barmode     = "stack"
+        chart_title = (
+            title or f"Individual Log Occurrences Over Time ({days_back} days)"
+        )
+        bar_label = "Daily Count"
+        barmode = "stack"
 
     # ── Risk overlay + rolling/binary panels ─────────────────────────────────
     if has_risk:
-        risk_df = _load_dataframe(risk_source) if not isinstance(risk_source, type(df)) else risk_source
+        risk_df = (
+            _load_dataframe(risk_source)
+            if not isinstance(risk_source, type(df))
+            else risk_source
+        )
         if "date" in risk_df.columns:
             risk_df = risk_df.copy()
             risk_df["date"] = pd.to_datetime(risk_df["date"]).dt.date
@@ -1346,67 +1424,95 @@ def plot_subsystem_log_activity(
                 & (risk_df["date"] <= end_date)
             )
             risk_window = risk_df[risk_mask].sort_values("date")
-            fe_dates    = [str(d) for d in risk_window["date"]]
-            pair        = f"{system}-{subsystem}"
+            fe_dates = [str(d) for d in risk_window["date"]]
+            pair = f"{system}-{subsystem}"
 
             # Risk lines on row 1 secondary y
             subsystem_col = f"{pair}_calibrated_risk"
-            system_col    = f"{system}_system_risk"
+            system_col = f"{system}_system_risk"
 
             # Risk lines on row 1 (rolling panel) secondary y
             if subsystem_col in risk_window.columns:
-                sub_daily = risk_window.groupby("date")[subsystem_col].max().reset_index()
-                fig.add_trace(go.Scatter(
-                    x=[str(d) for d in sub_daily["date"]],
-                    y=sub_daily[subsystem_col].tolist(),
-                    name=f"{subsystem.replace('_', ' ').title()} Risk",
-                    mode="lines+markers",
-                    line=dict(color="#e74c3c", width=2),
-                    marker=dict(size=4),
-                    hovertemplate="%{x}<br>Subsystem Risk: %{y:.1f}<extra></extra>",
-                ), row=1, col=1, secondary_y=True)
+                sub_daily = (
+                    risk_window.groupby("date")[subsystem_col].max().reset_index()
+                )
+                fig.add_trace(
+                    go.Scatter(
+                        x=[str(d) for d in sub_daily["date"]],
+                        y=sub_daily[subsystem_col].tolist(),
+                        name=f"{subsystem.replace('_', ' ').title()} Risk",
+                        mode="lines+markers",
+                        line=dict(color="#e74c3c", width=2),
+                        marker=dict(size=4),
+                        hovertemplate="%{x}<br>Subsystem Risk: %{y:.1f}<extra></extra>",
+                    ),
+                    row=1,
+                    col=1,
+                    secondary_y=True,
+                )
 
             if system_col in risk_window.columns:
                 sys_daily = risk_window.groupby("date")[system_col].max().reset_index()
-                fig.add_trace(go.Scatter(
-                    x=[str(d) for d in sys_daily["date"]],
-                    y=sys_daily[system_col].tolist(),
-                    name=f"{system.replace('_', ' ').title()} Risk",
-                    mode="lines+markers",
-                    line=dict(color="#f39c12", width=2, dash="dash"),
-                    marker=dict(size=4),
-                    hovertemplate="%{x}<br>System Risk: %{y:.1f}<extra></extra>",
-                ), row=1, col=1, secondary_y=True)
+                fig.add_trace(
+                    go.Scatter(
+                        x=[str(d) for d in sys_daily["date"]],
+                        y=sys_daily[system_col].tolist(),
+                        name=f"{system.replace('_', ' ').title()} Risk",
+                        mode="lines+markers",
+                        line=dict(color="#f39c12", width=2, dash="dash"),
+                        marker=dict(size=4),
+                        hovertemplate="%{x}<br>System Risk: %{y:.1f}<extra></extra>",
+                    ),
+                    row=1,
+                    col=1,
+                    secondary_y=True,
+                )
 
             # Row 1: rolling, Row 2: binary
             if is_free_text:
                 roll_col = next(
-                    (c for c in risk_df.columns
-                     if c.endswith(f"_binary_{pair}") and c.startswith("rolling_")),
+                    (
+                        c
+                        for c in risk_df.columns
+                        if c.endswith(f"_binary_{pair}") and c.startswith("rolling_")
+                    ),
                     None,
                 )
                 if roll_col and roll_col in risk_window.columns:
-                    fig.add_trace(go.Bar(
-                        x=fe_dates, y=risk_window[roll_col].fillna(0).tolist(),
-                        name="Rolling Feature", showlegend=False,
-                        marker_color="#7fb3d3",
-                        hovertemplate="%{x}<br>Rolling: %{y:.2f}<extra></extra>",
-                    ), row=1, col=1)
+                    fig.add_trace(
+                        go.Bar(
+                            x=fe_dates,
+                            y=risk_window[roll_col].fillna(0).tolist(),
+                            name="Rolling Feature",
+                            showlegend=False,
+                            marker_color="#7fb3d3",
+                            hovertemplate="%{x}<br>Rolling: %{y:.2f}<extra></extra>",
+                        ),
+                        row=1,
+                        col=1,
+                    )
 
                 bin_col = f"binary_{pair}"
                 if bin_col in risk_window.columns:
-                    fig.add_trace(go.Bar(
-                        x=fe_dates, y=risk_window[bin_col].fillna(0).tolist(),
-                        name="Binary", showlegend=False,
-                        marker_color="#e67e22",
-                        hovertemplate="%{x}<br>Binary: %{y}<extra></extra>",
-                    ), row=2, col=1)
+                    fig.add_trace(
+                        go.Bar(
+                            x=fe_dates,
+                            y=risk_window[bin_col].fillna(0).tolist(),
+                            name="Binary",
+                            showlegend=False,
+                            marker_color="#e67e22",
+                            hovertemplate="%{x}<br>Binary: %{y}<extra></extra>",
+                        ),
+                        row=2,
+                        col=1,
+                    )
 
             else:
                 rolling_prefix = None
                 for lc in available_codes:
                     cands = [
-                        c for c in risk_df.columns
+                        c
+                        for c in risk_df.columns
                         if c.endswith(f"_binary_{lc}") and c.startswith("rolling_")
                     ]
                     if cands:
@@ -1420,23 +1526,35 @@ def plot_subsystem_log_activity(
                     if rolling_prefix:
                         roll_col = f"{rolling_prefix}_binary_{lc}"
                         if roll_col in risk_window.columns:
-                            fig.add_trace(go.Bar(
-                                x=fe_dates,
-                                y=risk_window[roll_col].fillna(0).tolist(),
-                                name=label, marker_color=color,
-                                legendgroup=lc, showlegend=False,
-                                hovertemplate=f"<b>{lc}</b><br>%{{x}}<br>Rolling: %{{y:.2f}}<extra></extra>",
-                            ), row=1, col=1)
+                            fig.add_trace(
+                                go.Bar(
+                                    x=fe_dates,
+                                    y=risk_window[roll_col].fillna(0).tolist(),
+                                    name=label,
+                                    marker_color=color,
+                                    legendgroup=lc,
+                                    showlegend=False,
+                                    hovertemplate=f"<b>{lc}</b><br>%{{x}}<br>Rolling: %{{y:.2f}}<extra></extra>",
+                                ),
+                                row=1,
+                                col=1,
+                            )
 
                     bin_col = f"binary_{lc}"
                     if bin_col in risk_window.columns:
-                        fig.add_trace(go.Bar(
-                            x=fe_dates,
-                            y=risk_window[bin_col].fillna(0).tolist(),
-                            name=label, marker_color=color,
-                            legendgroup=lc, showlegend=False,
-                            hovertemplate=f"<b>{lc}</b><br>%{{x}}<br>Binary: %{{y}}<extra></extra>",
-                        ), row=2, col=1)
+                        fig.add_trace(
+                            go.Bar(
+                                x=fe_dates,
+                                y=risk_window[bin_col].fillna(0).tolist(),
+                                name=label,
+                                marker_color=color,
+                                legendgroup=lc,
+                                showlegend=False,
+                                hovertemplate=f"<b>{lc}</b><br>%{{x}}<br>Binary: %{{y}}<extra></extra>",
+                            ),
+                            row=2,
+                            col=1,
+                        )
 
     layout = dict(
         barmode=barmode,
@@ -1450,7 +1568,7 @@ def plot_subsystem_log_activity(
     )
     if has_risk:
         layout["xaxis3"] = dict(title="Date", tickangle=-45)
-        layout["yaxis"]  = dict(title="Rolling Value")
+        layout["yaxis"] = dict(title="Rolling Value")
         layout["yaxis2"] = dict(title="Risk Score (0–100)", range=[0, 100])
         layout["yaxis3"] = dict(title="Binary (0/1)")
         layout["yaxis4"] = dict(title=bar_label)
@@ -3091,16 +3209,30 @@ def plot_system_contributions(
 
     asset_df = df[df["asset_id"].astype(str) == str(asset_id)].sort_values("date")
     if asset_df.empty:
-        print(f"Asset '{asset_id}' not found. Available: {list(df['asset_id'].unique()[:10])}")
+        print(
+            f"Asset '{asset_id}' not found. Available: {list(df['asset_id'].unique()[:10])}"
+        )
         return
 
     daily = asset_df.groupby("date").max().reset_index()
     dates = [str(d) for d in daily["date"]]
 
     _palette = [
-        "#3498db", "#2ecc71", "#9b59b6", "#f39c12", "#1abc9c",
-        "#e67e22", "#34495e", "#16a085", "#8e44ad", "#d35400",
-        "#27ae60", "#2980b9", "#c0392b", "#7f8c8d", "#f1c40f",
+        "#3498db",
+        "#2ecc71",
+        "#9b59b6",
+        "#f39c12",
+        "#1abc9c",
+        "#e67e22",
+        "#34495e",
+        "#16a085",
+        "#8e44ad",
+        "#d35400",
+        "#27ae60",
+        "#2980b9",
+        "#c0392b",
+        "#7f8c8d",
+        "#f1c40f",
     ]
 
     fig = go.Figure()
@@ -3113,29 +3245,35 @@ def plot_system_contributions(
             continue
         weighted = (daily[risk_col].fillna(0) * weight).tolist()
         label = system.replace("_", " ").title()
-        fig.add_trace(go.Bar(
-            x=dates,
-            y=weighted,
-            name=label,
-            marker_color=_palette[found % len(_palette)],
-            hovertemplate=f"<b>{label}</b><br>%{{x}}<br>Contribution: %{{y:.2f}}<extra></extra>",
-        ))
+        fig.add_trace(
+            go.Bar(
+                x=dates,
+                y=weighted,
+                name=label,
+                marker_color=_palette[found % len(_palette)],
+                hovertemplate=f"<b>{label}</b><br>%{{x}}<br>Contribution: %{{y:.2f}}<extra></extra>",
+            )
+        )
         found += 1
 
     if found == 0:
-        print("No system risk columns found in the DataFrame matching model_config system_weights.")
+        print(
+            "No system risk columns found in the DataFrame matching model_config system_weights."
+        )
         return
 
     # ── Operational risk line on top ──────────────────────────────────────────
     if "operational_risk" in daily.columns:
-        fig.add_trace(go.Scatter(
-            x=dates,
-            y=daily["operational_risk"].tolist(),
-            mode="lines",
-            name="Operational Risk",
-            line=dict(color="#2c3e50", width=2.5),
-            hovertemplate="%{x}<br>Operational Risk: %{y:.1f}<extra></extra>",
-        ))
+        fig.add_trace(
+            go.Scatter(
+                x=dates,
+                y=daily["operational_risk"].tolist(),
+                mode="lines",
+                name="Operational Risk",
+                line=dict(color="#2c3e50", width=2.5),
+                hovertemplate="%{x}<br>Operational Risk: %{y:.1f}<extra></extra>",
+            )
+        )
 
     fig.update_layout(
         barmode="stack",
@@ -3146,5 +3284,650 @@ def plot_system_contributions(
         width=width,
         height=height,
         margin=dict(l=60, r=160, t=80, b=80),
+    )
+    fig.show(renderer="notebook")
+
+
+# ===========================================================================
+# Supervised-training helpers
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# Private: shared utilities
+# ---------------------------------------------------------------------------
+
+
+def _load_failures_df(
+    source: Union[str, Dict[str, Any], "pd.DataFrame"],
+    failure_date_column: str = "failure_date",
+) -> "pd.DataFrame":
+    """
+    Load a failures table from a CSV/parquet path or an existing DataFrame.
+    Returns a clean DataFrame with canonical ``asset_id`` (str) and
+    ``failure_date`` (Timestamp, normalised to midnight) columns.
+    """
+    try:
+        import pandas as pd
+    except ImportError:
+        raise ImportError("pandas is required: pip install pandas")
+
+    if isinstance(source, str):
+        df = pd.read_parquet(source) if source.endswith(".parquet") else pd.read_csv(source)
+    else:
+        df = source.copy()
+
+    df = df.copy()
+    df["asset_id"] = df["asset_id"].astype(str)
+
+    raw = df[failure_date_column] if failure_date_column in df.columns else df.get("failure_date")
+    if raw is None:
+        raise ValueError(
+            f"Column '{failure_date_column}' not found. Available: {list(df.columns)}"
+        )
+    df["failure_date"] = pd.to_datetime(raw, dayfirst=True, errors="coerce").dt.normalize()
+    df = df.dropna(subset=["failure_date"])
+    return df[["asset_id", "failure_date"]].drop_duplicates().reset_index(drop=True)
+
+
+def _attach_labels(
+    df: "pd.DataFrame",
+    failures_df: "pd.DataFrame",
+    prediction_horizon_days: int = 14,
+    exclusion_days_after: int = 7,
+) -> "pd.DataFrame":
+    """
+    Attach a ``label`` column to *df* (which must have ``asset_id`` + ``date``):
+
+    * **1**  — positive: within *prediction_horizon_days* before a failure
+    * **-1** — excluded: within *exclusion_days_after* after a failure
+    * **0**  — negative: normal operation
+    """
+    import pandas as pd
+
+    df = df.copy()
+    df["asset_id"] = df["asset_id"].astype(str)
+    df["date"] = pd.to_datetime(df["date"])
+    df["label"] = 0
+
+    for _, row in failures_df.iterrows():
+        asset = str(row["asset_id"])
+        fdate = pd.Timestamp(row["failure_date"])
+        horizon_start = fdate - pd.Timedelta(days=prediction_horizon_days)
+        excl_end      = fdate + pd.Timedelta(days=exclusion_days_after)
+        mask = df["asset_id"] == asset
+        df.loc[mask & (df["date"] >= horizon_start) & (df["date"] <  fdate),    "label"] = 1
+        df.loc[mask & (df["date"] >= fdate)          & (df["date"] <= excl_end), "label"] = -1
+
+    return df
+
+
+# ---------------------------------------------------------------------------
+# plot_label_timeline
+# ---------------------------------------------------------------------------
+
+
+def plot_label_timeline(
+    feature_source: Union[str, "pd.DataFrame"],
+    failures_source: Union[str, Dict[str, Any], "pd.DataFrame"],
+    prediction_horizon_days: int = 14,
+    exclusion_days_after: int = 7,
+    failure_date_column: str = "failure_date",
+    assets: Optional[List[str]] = None,
+    max_assets: int = 25,
+    title: str = "Failure Label Timeline",
+    width: int = 1100,
+    height: Optional[int] = None,
+) -> None:
+    """
+    Horizontal scatter timeline — one row per asset — coloured by label zone.
+
+    * **Blue**  = negative (normal operation)
+    * **Red**   = positive (pre-failure prediction window)
+    * **Grey**  = excluded (post-failure recovery period)
+    * **Stars** = actual failure event dates
+
+    Parameters
+    ----------
+    feature_source:
+        Path to ``training_fe.parquet`` (or any DataFrame with ``asset_id`` + ``date``).
+    failures_source:
+        Path to failures CSV/parquet or a DataFrame.
+    failure_date_column:
+        Column name for the failure date in *failures_source* (default ``"failure_date"``).
+    assets:
+        Optional list of asset IDs to show.  Defaults to all (up to *max_assets*).
+    """
+    try:
+        import plotly.graph_objects as go
+        import pandas as pd
+    except ImportError:
+        raise ImportError("plotly and pandas are required: pip install plotly pandas")
+
+    df = _load_dataframe(feature_source)[["asset_id", "date"]].copy()
+    df["asset_id"] = df["asset_id"].astype(str)
+    df["date"]     = pd.to_datetime(df["date"])
+    df = df.drop_duplicates(["asset_id", "date"])
+
+    failures_df = _load_failures_df(failures_source, failure_date_column)
+
+    if assets:
+        targets = [str(a) for a in assets]
+        df = df[df["asset_id"].isin(targets)]
+        failures_df = failures_df[failures_df["asset_id"].isin(targets)]
+
+    all_assets  = sorted(df["asset_id"].unique())[:max_assets]
+    df          = df[df["asset_id"].isin(all_assets)]
+    failures_df = failures_df[failures_df["asset_id"].isin(all_assets)]
+
+    labeled = _attach_labels(df, failures_df, prediction_horizon_days, exclusion_days_after)
+
+    COLORS = {0: "#93c5fd", 1: "#f87171", -1: "#d1d5db"}
+    NAMES  = {0: "Negative", 1: f"Positive (≤{prediction_horizon_days}d pre-failure)", -1: "Excluded"}
+
+    fig = go.Figure()
+    for lv in [0, -1, 1]:
+        sub = labeled[labeled["label"] == lv]
+        if sub.empty:
+            continue
+        fig.add_trace(go.Scatter(
+            x=sub["date"], y=sub["asset_id"],
+            mode="markers",
+            marker=dict(symbol="square", size=4, color=COLORS[lv], opacity=0.8),
+            name=NAMES[lv],
+            hovertemplate=f"Asset: %{{y}}<br>Date: %{{x}}<br>{NAMES[lv]}<extra></extra>",
+        ))
+
+    if not failures_df.empty:
+        fig.add_trace(go.Scatter(
+            x=failures_df["failure_date"],
+            y=failures_df["asset_id"].astype(str),
+            mode="markers",
+            marker=dict(symbol="star", size=11, color="#111827",
+                        line=dict(width=1, color="white")),
+            name="Failure event",
+            hovertemplate="Asset: %{y}<br>Failure: %{x}<extra></extra>",
+        ))
+
+    h = height or max(350, len(all_assets) * 22 + 130)
+    fig.update_layout(
+        title=dict(text=title, x=0.5),
+        xaxis=dict(title="Date"),
+        yaxis=dict(title="Asset", categoryorder="category ascending"),
+        width=width, height=h,
+        legend=dict(orientation="h", y=1.06),
+        margin=dict(l=100, r=40, t=90, b=60),
+    )
+    fig.show(renderer="notebook")
+
+
+# ---------------------------------------------------------------------------
+# plot_label_distribution
+# ---------------------------------------------------------------------------
+
+
+def plot_label_distribution(
+    feature_source: Union[str, "pd.DataFrame"],
+    failures_source: Union[str, Dict[str, Any], "pd.DataFrame"],
+    prediction_horizon_days: int = 14,
+    exclusion_days_after: int = 7,
+    failure_date_column: str = "failure_date",
+    freq: str = "W",
+    title: str = "Positive vs Negative Label Distribution Over Time",
+    width: int = 1000,
+    height: int = 400,
+) -> None:
+    """
+    Stacked bar chart of positive and negative row counts over time.
+
+    Excluded rows are omitted.  Useful for checking that positive labels
+    are not all clustered in one narrow time window.
+
+    Parameters
+    ----------
+    freq:
+        Pandas period frequency for grouping — ``"W"`` (weekly, default),
+        ``"M"`` (monthly), ``"Q"`` (quarterly).
+    """
+    try:
+        import plotly.graph_objects as go
+        import pandas as pd
+    except ImportError:
+        raise ImportError("plotly and pandas are required: pip install plotly pandas")
+
+    df = _load_dataframe(feature_source)[["asset_id", "date"]].copy()
+    failures_df = _load_failures_df(failures_source, failure_date_column)
+    labeled = _attach_labels(df, failures_df, prediction_horizon_days, exclusion_days_after)
+    labeled = labeled[labeled["label"] != -1]
+
+    labeled["period"] = (
+        pd.to_datetime(labeled["date"]).dt.to_period(freq).dt.start_time
+    )
+    counts = (
+        labeled.groupby(["period", "label"])
+        .size()
+        .unstack(fill_value=0)
+        .rename(columns={0: "Negative", 1: "Positive"})
+        .reset_index()
+    )
+
+    fig = go.Figure()
+    for col, color in [("Negative", "#93c5fd"), ("Positive", "#f87171")]:
+        if col in counts.columns:
+            fig.add_trace(go.Bar(
+                x=counts["period"], y=counts[col],
+                name=col, marker_color=color, opacity=0.85,
+            ))
+
+    total_pos = int(labeled["label"].sum())
+    total_neg = int((labeled["label"] == 0).sum())
+    ratio = f"{total_neg / total_pos:.1f}:1" if total_pos else "N/A"
+
+    fig.update_layout(
+        title=dict(text=f"{title}  (neg:pos ≈ {ratio})", x=0.5),
+        barmode="stack",
+        xaxis=dict(title="Period"),
+        yaxis=dict(title="Row Count"),
+        width=width, height=height,
+        legend=dict(orientation="h", y=1.06),
+        margin=dict(l=60, r=40, t=80, b=60),
+    )
+    fig.show(renderer="notebook")
+
+
+# ---------------------------------------------------------------------------
+# plot_supervised_comparison
+# ---------------------------------------------------------------------------
+
+
+def plot_supervised_comparison(
+    report_source: Union[str, Dict[str, Any]],
+    title: str = "Baseline vs Supervised: Evaluation Metrics",
+    width: int = 680,
+    height: int = 420,
+) -> None:
+    """
+    Grouped bar chart comparing the baseline pipeline
+    (unsupervised quantile thresholds + expert weights) against the fully
+    supervised pipeline (AUC-optimised thresholds + trained weights).
+
+    Reads the ``supervised_training_report.json`` produced by ``train_risk_model``
+    when ``supervised=True``.
+
+    Parameters
+    ----------
+    report_source:
+        Path to ``supervised_training_report.json`` or the dict itself.
+    """
+    try:
+        import plotly.graph_objects as go
+    except ImportError:
+        raise ImportError("plotly is required: pip install plotly")
+
+    report = _load_result(report_source) if isinstance(report_source, str) else report_source
+    ev = report.get("evaluation", {})
+
+    metrics   = ["AUC-ROC", "Avg Precision"]
+    baseline  = [ev.get("baseline_auc_roc"),         ev.get("baseline_avg_precision")]
+    supervised = [ev.get("supervised_auc_roc"),       ev.get("supervised_avg_precision")]
+
+    if all(v is None for v in baseline + supervised):
+        print("No evaluation metrics found. Ensure supervised=True was used in configure_training.")
+        return
+
+    def _fmt(v):
+        return f"{v:.3f}" if v is not None else "N/A"
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        name="Baseline (unsupervised)",
+        x=metrics, y=[v or 0 for v in baseline],
+        marker_color="#6b7280",
+        text=[_fmt(v) for v in baseline], textposition="outside",
+    ))
+    fig.add_trace(go.Bar(
+        name="Supervised",
+        x=metrics, y=[v or 0 for v in supervised],
+        marker_color="#2563eb",
+        text=[_fmt(v) for v in supervised], textposition="outside",
+    ))
+
+    deltas = []
+    for b, s, m in zip(baseline, supervised, metrics):
+        if b is not None and s is not None:
+            d = s - b
+            deltas.append(f"{m}: {'+'if d>=0 else ''}{d:.3f}")
+
+    fig.update_layout(
+        title=dict(text=title, x=0.5),
+        barmode="group",
+        yaxis=dict(title="Score", range=[0, 1.12]),
+        xaxis=dict(title="Metric"),
+        width=width, height=height,
+        legend=dict(orientation="h", y=1.08),
+        margin=dict(l=60, r=40, t=100, b=80),
+    )
+    if deltas:
+        fig.add_annotation(
+            text="Improvement: " + " | ".join(deltas),
+            xref="paper", yref="paper", x=0.5, y=-0.18,
+            showarrow=False, font=dict(size=12, color="#374151"), align="center",
+        )
+
+    print(
+        f"Failures: {report.get('n_failures_used','N/A')}  |  "
+        f"Positive rows: {report.get('n_positive_rows','N/A')} / {report.get('n_total_rows','N/A')}  |  "
+        f"Subsystems trained: {report.get('subsystems_trained','N/A')}  |  "
+        f"Strategy: {report.get('sampling_strategy','N/A')}  |  "
+        f"Imbalance ratio: {report.get('target_imbalance_ratio','N/A')}"
+    )
+    fig.show(renderer="notebook")
+
+
+# ---------------------------------------------------------------------------
+# plot_weight_comparison
+# ---------------------------------------------------------------------------
+
+
+def plot_weight_comparison(
+    expert_source: Union[str, Dict[str, Any]],
+    trained_source: Union[str, Dict[str, Any]],
+    system: Optional[str] = None,
+    title: Optional[str] = None,
+    width: int = 920,
+    height: int = 460,
+) -> None:
+    """
+    Grouped bar chart + printed table comparing expert weights (from the labelling
+    step, in ``model_config.json``) against trained weights (from supervised
+    training, in ``trained_weights.json``).
+
+    Parameters
+    ----------
+    expert_source:
+        Path to ``model_config.json`` or the dict itself.
+    trained_source:
+        Path to ``trained_weights.json`` or the dict itself.
+    system:
+        ``None``  → system-level comparison (default).
+        ``str``   → subsystem-level comparison for that system
+                    (e.g. ``"motion_control"``).
+    """
+    try:
+        import plotly.graph_objects as go
+    except ImportError:
+        raise ImportError("plotly is required: pip install plotly")
+
+    expert  = _load_result(expert_source)  if isinstance(expert_source,  str) else expert_source
+    trained = _load_result(trained_source) if isinstance(trained_source, str) else trained_source
+
+    if system is None:
+        ew = expert.get("system_weights", {})
+        tw = trained.get("system_weights", {})
+        level = "System"
+        auto_title = "System Weights: Expert vs Trained"
+    else:
+        ew = expert.get("subsystem_weights",  {}).get(system, {})
+        tw = trained.get("subsystem_weights", {}).get(system, {})
+        level = f"{system} subsystem"
+        auto_title = f"Subsystem Weights: Expert vs Trained — {system}"
+
+    keys = sorted(set(ew) | set(tw))
+    if not keys:
+        print(f"No weights found for '{level}'. Check the system name.")
+        return
+
+    ev = [ew.get(k, 0.0) for k in keys]
+    tv = [tw.get(k, 0.0) for k in keys]
+
+    # Printed table
+    print(f"\n{'Name':<42} {'Expert':>10} {'Trained':>10} {'Δ':>10}")
+    print("─" * 74)
+    for k, e, t in zip(keys, ev, tv):
+        d = t - e
+        print(f"{k:<42} {e:>10.4f} {t:>10.4f} {'+'if d>=0 else ''}{d:>9.4f}")
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        name="Expert (labelling)", x=keys, y=ev,
+        marker_color="#6b7280", opacity=0.85,
+    ))
+    fig.add_trace(go.Bar(
+        name="Trained (supervised)", x=keys, y=tv,
+        marker_color="#2563eb", opacity=0.85,
+    ))
+
+    fig.update_layout(
+        title=dict(text=title or auto_title, x=0.5),
+        barmode="group",
+        xaxis=dict(title=level, tickangle=-30),
+        yaxis=dict(title="Weight"),
+        width=width, height=height,
+        legend=dict(orientation="h", y=1.08),
+        margin=dict(l=60, r=40, t=100, b=110),
+    )
+    fig.show(renderer="notebook")
+
+
+# ---------------------------------------------------------------------------
+# plot_risk_around_failures
+# ---------------------------------------------------------------------------
+
+
+def plot_risk_around_failures(
+    risk_source: Union[str, "pd.DataFrame"],
+    failures_source: Union[str, Dict[str, Any], "pd.DataFrame"],
+    failure_date_column: str = "failure_date",
+    prediction_horizon_days: int = 14,
+    window_after_days: int = 7,
+    assets: Optional[List[str]] = None,
+    max_assets: int = 6,
+    score_col: str = "operational_risk",
+    title: str = "Risk Score Around Failure Events",
+    width: int = 1100,
+    height: Optional[int] = None,
+) -> None:
+    """
+    Time series of operational risk for each asset that experienced a failure,
+    showing the full available history.
+
+    * **Dashed vertical line** = failure date
+    * **Shaded region**        = prediction horizon (the *prediction_horizon_days*
+      window before failure that is labelled positive)
+
+    One subplot per asset.  Multiple failure events on the same asset are each
+    shown as a separate dashed line and shaded region.
+
+    Parameters
+    ----------
+    risk_source:
+        Path to ``risk_scores.parquet`` or a DataFrame.
+    failures_source:
+        Path to failures CSV/parquet or a DataFrame.
+    prediction_horizon_days:
+        Width of the shaded pre-failure zone (default 14).
+    window_after_days:
+        Extra days shown to the right of the last failure (default 7).
+    max_assets:
+        Maximum subplots to render (default 6).
+    score_col:
+        Risk score column to plot (default ``"operational_risk"``).
+    """
+    try:
+        import plotly.graph_objects as go
+        from plotly.subplots import make_subplots
+        import pandas as pd
+    except ImportError:
+        raise ImportError("plotly and pandas are required: pip install plotly pandas")
+
+    df = _load_dataframe(risk_source)
+    df["date"]     = pd.to_datetime(df["date"])
+    df["asset_id"] = df["asset_id"].astype(str)
+
+    if score_col not in df.columns:
+        raise ValueError(f"Column '{score_col}' not found. Available: {list(df.columns)}")
+
+    failures_df = _load_failures_df(failures_source, failure_date_column)
+
+    if assets:
+        failures_df = failures_df[failures_df["asset_id"].isin([str(a) for a in assets])]
+
+    # Only keep assets present in risk_scores
+    failures_df = failures_df[failures_df["asset_id"].isin(df["asset_id"].unique())]
+
+    # Group failures by asset
+    asset_fdates: Dict[str, list] = {}
+    for _, row in failures_df.iterrows():
+        asset_fdates.setdefault(str(row["asset_id"]), []).append(row["failure_date"])
+
+    assets_to_plot = list(asset_fdates.keys())[:max_assets]
+    if not assets_to_plot:
+        print("No matching assets found between risk_scores and failures.")
+        return
+
+    n     = len(assets_to_plot)
+    ncols = min(2, n)
+    nrows = (n + ncols - 1) // ncols
+
+    fig = make_subplots(
+        rows=nrows, cols=ncols,
+        subplot_titles=[f"Asset: {a}" for a in assets_to_plot],
+    )
+
+    FAIL_COLORS = ["#ef4444", "#f97316", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b"]
+
+    for idx, asset in enumerate(assets_to_plot):
+        row = idx // ncols + 1
+        col = idx % ncols + 1
+
+        asset_df = df[df["asset_id"] == asset].sort_values("date")
+        fdates   = sorted(asset_fdates[asset])
+
+        fig.add_trace(go.Scatter(
+            x=asset_df["date"], y=asset_df[score_col],
+            mode="lines",
+            line=dict(color="#374151", width=1.5),
+            name=asset,
+            showlegend=False,
+            hovertemplate=f"Date: %{{x}}<br>{score_col}: %{{y:.1f}}<extra>{asset}</extra>",
+        ), row=row, col=col)
+
+        for j, fdate in enumerate(fdates):
+            color = FAIL_COLORS[j % len(FAIL_COLORS)]
+            fdate_ts = pd.Timestamp(fdate)
+            horizon_start = fdate_ts - pd.Timedelta(days=prediction_horizon_days)
+
+            fig.add_vline(x=fdate_ts, line_dash="dash", line_color=color,
+                          line_width=2, row=row, col=col)
+            fig.add_vrect(x0=horizon_start, x1=fdate_ts,
+                          fillcolor=color, opacity=0.10, line_width=0,
+                          row=row, col=col)
+
+        # Clip x-axis to meaningful window
+        x0 = min(fdates) - pd.Timedelta(days=prediction_horizon_days + 21)
+        x1 = max(fdates) + pd.Timedelta(days=window_after_days)
+        fig.update_xaxes(range=[x0, x1], row=row, col=col, tickangle=-30)
+        fig.update_yaxes(range=[0, 100], row=row, col=col)
+
+    h = height or (nrows * 300 + 100)
+    fig.update_layout(
+        title=dict(text=title, x=0.5),
+        width=width, height=h,
+        margin=dict(l=60, r=40, t=100, b=60),
+    )
+    fig.show(renderer="notebook")
+
+
+# ---------------------------------------------------------------------------
+# plot_failure_risk_stats
+# ---------------------------------------------------------------------------
+
+
+def plot_failure_risk_stats(
+    risk_source: Union[str, "pd.DataFrame"],
+    failures_source: Union[str, Dict[str, Any], "pd.DataFrame"],
+    prediction_horizon_days: int = 14,
+    exclusion_days_after: int = 7,
+    failure_date_column: str = "failure_date",
+    score_col: str = "operational_risk",
+    title: str = "Risk Score Distribution: Pre-failure vs Normal",
+    width: int = 880,
+    height: int = 480,
+) -> None:
+    """
+    Box plot comparing the distribution of *score_col* in the pre-failure
+    window (positive labels) vs normal operation (negative labels).
+
+    Also prints a summary statistics table so you can quickly judge
+    how much the risk rises before failures relative to the normal baseline.
+
+    Parameters
+    ----------
+    risk_source:
+        Path to ``risk_scores.parquet`` or a DataFrame.
+    failures_source:
+        Path to failures CSV/parquet or a DataFrame.
+    prediction_horizon_days:
+        Days before failure labelled as positive (default 14).
+    exclusion_days_after:
+        Days after failure to exclude from analysis (default 7).
+    score_col:
+        Column to analyse (default ``"operational_risk"``).
+    """
+    try:
+        import plotly.graph_objects as go
+        import pandas as pd
+    except ImportError:
+        raise ImportError("plotly and pandas are required: pip install plotly pandas")
+
+    df          = _load_dataframe(risk_source)
+    failures_df = _load_failures_df(failures_source, failure_date_column)
+    labeled     = _attach_labels(df, failures_df, prediction_horizon_days, exclusion_days_after)
+    labeled     = labeled[labeled["label"] != -1]
+
+    pos = labeled[labeled["label"] == 1][score_col].dropna()
+    neg = labeled[labeled["label"] == 0][score_col].dropna()
+
+    if pos.empty:
+        print(
+            "No positive-label rows found. "
+            "Check prediction_horizon_days or whether failures overlap with the risk data date range."
+        )
+        return
+
+    # Summary table
+    print(f"\n{'Metric':<22} {'Normal':>14} {'Pre-failure':>14} {'Δ':>10}")
+    print("─" * 62)
+    stats = [
+        ("Count",  lambda s: f"{len(s):,.0f}",      None),
+        ("Mean",   lambda s: f"{s.mean():.2f}",      lambda: pos.mean()   - neg.mean()),
+        ("Median", lambda s: f"{s.median():.2f}",    lambda: pos.median() - neg.median()),
+        ("Std",    lambda s: f"{s.std():.2f}",       None),
+        ("P75",    lambda s: f"{s.quantile(.75):.2f}", lambda: pos.quantile(.75) - neg.quantile(.75)),
+        ("P90",    lambda s: f"{s.quantile(.90):.2f}", lambda: pos.quantile(.90) - neg.quantile(.90)),
+        ("Max",    lambda s: f"{s.max():.2f}",       None),
+    ]
+    for name, fmt, delta_fn in stats:
+        nv, pv = fmt(neg), fmt(pos)
+        d = f"+{delta_fn():.2f}" if delta_fn and delta_fn() >= 0 else (f"{delta_fn():.2f}" if delta_fn else "")
+        print(f"{name:<22} {nv:>14} {pv:>14} {d:>10}")
+
+    fig = go.Figure()
+    fig.add_trace(go.Box(
+        y=neg, name=f"Normal ({len(neg):,} rows)",
+        marker_color="#3b82f6", boxmean="sd",
+        hovertemplate="Normal<br>%{y:.1f}<extra></extra>",
+    ))
+    fig.add_trace(go.Box(
+        y=pos, name=f"Pre-failure ({len(pos):,} rows)",
+        marker_color="#ef4444", boxmean="sd",
+        hovertemplate="Pre-failure<br>%{y:.1f}<extra></extra>",
+    ))
+
+    fig.update_layout(
+        title=dict(text=title, x=0.5),
+        yaxis=dict(title=score_col.replace("_", " ").title(), range=[0, 105]),
+        width=width, height=height,
+        showlegend=True,
+        margin=dict(l=60, r=40, t=80, b=60),
     )
     fig.show(renderer="notebook")
