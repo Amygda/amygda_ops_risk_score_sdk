@@ -1010,6 +1010,11 @@ class Session:
                     "logs_mapping_path",
                 ),
                 (
+                    "model_config.json",
+                    "/v1/risk-score/download-model-config",
+                    "model_config_path",
+                ),
+                (
                     "trained_weights.json",
                     "/v1/risk-score/download-trained-weights",
                     "trained_weights_path",
