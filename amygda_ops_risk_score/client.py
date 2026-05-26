@@ -36,6 +36,11 @@ class OpsRiskClient:
 
     _DEFAULT_BASE_URL = "https://amygda-ops-risk-score-api-433688334338.europe-west2.run.app"
 
+    # Minimum API version this SDK requires.
+    # Bump this only when the SDK starts calling an endpoint that didn't exist before.
+    # If the live API is older than this, wait_until_ready() raises CompatibilityError.
+    MIN_API_VERSION = "1.1.0"
+
     def __init__(
         self,
         base_url: Optional[str] = None,
@@ -278,7 +283,8 @@ class OpsRiskClient:
         """
         import time
         import httpx
-        from amygda_ops_risk_score.exceptions import APIError
+        from packaging.version import Version
+        from amygda_ops_risk_score.exceptions import APIError, CompatibilityError
 
         deadline = time.monotonic() + timeout
         per_request_timeout = min(timeout, 300.0)  # avoid individual request timeouts longer than total timeout
@@ -288,6 +294,15 @@ class OpsRiskClient:
                 resp = self._http.get("/v1/ready", timeout=per_request_timeout)
                 if resp.get("status") == "ready":
                     print(" ready.", flush=True)
+                    # Version compatibility check — runs once, after the API is ready
+                    health = self._http.get("/v1/health")
+                    api_version = health.get("api_version", "0.0.0")
+                    if Version(api_version) < Version(self.MIN_API_VERSION):
+                        raise CompatibilityError(
+                            f"This SDK requires API >= {self.MIN_API_VERSION}. "
+                            f"The server is running {api_version}. "
+                            "Ask your admin to redeploy the latest API version."
+                        )
                     return resp
             except APIError as exc:
                 if exc.status_code != 503:

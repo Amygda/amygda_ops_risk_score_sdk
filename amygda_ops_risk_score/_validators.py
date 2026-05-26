@@ -484,6 +484,19 @@ def validate_configure_training(
     rolling_feature_type: str = "sum",
     quantile_for_thresholds: float = 0.99,
     sheet_name: Optional[str] = None,
+    # Supervised-training params (Shery's extension)
+    supervised: bool = False,
+    failures_path: Optional[str] = None,
+    failure_date_column: str = "machine_initialisation_date",
+    sampling_strategy: str = "block",
+    prediction_horizon_days: int = 14,
+    exclusion_days_after: int = 7,
+    target_imbalance_ratio: Optional[float] = 10.0,
+    block_size_days: int = 14,
+    n_candidates: int = 200,
+    fallback_quantile: float = 0.95,
+    min_positives: int = 5,
+    lr_c: float = 0.5,
 ) -> None:
     errors: list = []
 
@@ -519,10 +532,65 @@ def validate_configure_training(
     except (TypeError, ValueError):
         errors.append("quantile_for_thresholds must be a number.")
 
+    # Supervised-training param validation
+    if not isinstance(supervised, bool):
+        errors.append("supervised must be a bool (True or False).")
+
+    if supervised:
+        if not failures_path:
+            errors.append(
+                "failures_path is required when supervised=True. "
+                "Provide a CSV path containing failure event dates."
+            )
+        if not failure_date_column or not failure_date_column.strip():
+            errors.append("failure_date_column is required and cannot be blank.")
+
+    if sampling_strategy not in {"block", "random"}:
+        errors.append(
+            f"sampling_strategy '{sampling_strategy}' is invalid. Must be 'block' or 'random'."
+        )
+
+    if not isinstance(prediction_horizon_days, int) or prediction_horizon_days <= 0:
+        errors.append("prediction_horizon_days must be a positive integer.")
+
+    if not isinstance(exclusion_days_after, int) or exclusion_days_after < 0:
+        errors.append("exclusion_days_after must be a non-negative integer.")
+
+    if target_imbalance_ratio is not None:
+        try:
+            r = float(target_imbalance_ratio)
+            if r <= 0:
+                errors.append("target_imbalance_ratio must be a positive number, or None to keep all negatives.")
+        except (TypeError, ValueError):
+            errors.append("target_imbalance_ratio must be a positive number, or None.")
+
+    if not isinstance(block_size_days, int) or block_size_days <= 0:
+        errors.append("block_size_days must be a positive integer.")
+
+    if not isinstance(n_candidates, int) or n_candidates <= 0:
+        errors.append("n_candidates must be a positive integer.")
+
+    try:
+        fq = float(fallback_quantile)
+        if not (0.5 <= fq < 1.0):
+            errors.append("fallback_quantile must be a float in [0.5, 1.0).")
+    except (TypeError, ValueError):
+        errors.append("fallback_quantile must be a number.")
+
+    if not isinstance(min_positives, int) or min_positives < 1:
+        errors.append("min_positives must be an integer >= 1.")
+
+    try:
+        c = float(lr_c)
+        if c <= 0:
+            errors.append("lr_c must be a positive number.")
+    except (TypeError, ValueError):
+        errors.append("lr_c must be a positive number.")
+
     if errors:
         _raise(errors)
 
-    # Best-effort column presence check
+    # Best-effort column presence check — main training file
     if ext in {".xlsx", ".xls"}:
         with open(file_path, "rb") as fh:
             file_bytes = fh.read()
@@ -547,6 +615,43 @@ def validate_configure_training(
         except Exception:
             pass
 
+    # Best-effort column presence check — failures file (supervised=True only)
+    if supervised and failures_path and os.path.exists(failures_path):
+        fp_ext = os.path.splitext(failures_path)[1].lower()
+
+        fp_size_mb = os.path.getsize(failures_path) / (1024 * 1024)
+        if fp_size_mb > 100:
+            errors.append(
+                f"failures_path file too large ({fp_size_mb:.1f} MB). Maximum is 100 MB."
+            )
+
+        if fp_ext not in {".csv", ".xlsx", ".xls"}:
+            errors.append(
+                f"failures_path has unsupported file type '{fp_ext}'. Must be .csv, .xlsx, or .xls."
+            )
+        elif fp_ext == ".csv":
+            try:
+                import pandas as pd
+                fp_df = pd.read_csv(failures_path, nrows=0)
+                if failure_date_column not in fp_df.columns:
+                    errors.append(
+                        f"Column '{failure_date_column}' not found in failures_path CSV. "
+                        f"Available: {', '.join(fp_df.columns)}"
+                    )
+            except Exception:
+                pass
+        elif fp_ext in {".xlsx", ".xls"}:
+            with open(failures_path, "rb") as fh:
+                fp_bytes = fh.read()
+            fp_headers = _xlsx_header(fp_bytes, None)
+            if fp_headers and failure_date_column not in fp_headers:
+                errors.append(
+                    f"Column '{failure_date_column}' not found in failures_path headers. "
+                    f"Available: {', '.join(fp_headers)}"
+                )
+    elif supervised and failures_path and not os.path.exists(failures_path):
+        errors.append(f"failures_path not found: {failures_path}")
+
     if errors:
         _raise(errors)
 
@@ -558,6 +663,7 @@ def validate_configure_training(
 def validate_configure_generation(
     file_path: str,
     sheet_name: Optional[str] = None,
+    weights_source: str = "labelling",
 ) -> None:
     errors: list = []
 
@@ -571,6 +677,14 @@ def validate_configure_generation(
     ext = os.path.splitext(file_path)[1].lower()
     if ext not in {".csv", ".xlsx", ".xls"}:
         errors.append(f"Unsupported file type '{ext}'. Must be .csv, .xlsx, or .xls.")
+        _raise(errors)
+
+    if weights_source not in {"labelling", "supervised"}:
+        errors.append(
+            f"weights_source '{weights_source}' is invalid. Must be 'labelling' or 'supervised'."
+        )
+
+    if errors:
         _raise(errors)
 
     # Validate sheet selection for XLSX

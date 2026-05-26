@@ -39,3 +39,12 @@ class ValidationError(OpsRiskSDKError):
         super().__init__(f"Validation failed ({len(self.errors)} issue(s)):\n{formatted}")
 
 
+class CompatibilityError(OpsRiskSDKError):
+    """The live API version is older than this SDK requires.
+
+    Raised by ``OpsRiskClient.wait_until_ready()`` when the API's ``api_version``
+    is below ``OpsRiskClient.MIN_API_VERSION``.  Ask your admin to redeploy
+    the latest API version.
+    """
+
+

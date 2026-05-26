@@ -867,6 +867,18 @@ class Session:
             rolling_feature_type=rolling_feature_type,
             quantile_for_thresholds=quantile_for_thresholds,
             sheet_name=sheet_name,
+            supervised=supervised,
+            failures_path=failures_path,
+            failure_date_column=failure_date_column,
+            sampling_strategy=sampling_strategy,
+            prediction_horizon_days=prediction_horizon_days,
+            exclusion_days_after=exclusion_days_after,
+            target_imbalance_ratio=target_imbalance_ratio,
+            block_size_days=block_size_days,
+            n_candidates=n_candidates,
+            fallback_quantile=fallback_quantile,
+            min_positives=min_positives,
+            lr_c=lr_c,
         )
         data = {
             "auth_id":                 self._auth_id,
@@ -1073,7 +1085,11 @@ class Session:
         -------
         Dict with ``row_count``, ``asset_count``, and configuration echoed back.
         """
-        _v.validate_configure_generation(file_path=file_path, sheet_name=sheet_name)
+        _v.validate_configure_generation(
+            file_path=file_path,
+            sheet_name=sheet_name,
+            weights_source=weights_source,
+        )
         data: Dict[str, str] = {
             "auth_id":        self._auth_id,
             "date_format":    date_format,
