@@ -984,11 +984,26 @@ class Session:
                      if k != "zip_path"}
         result: Dict[str, Any] = {"auth_id": self._auth_id, **step_data}
 
-        # Download calibration_thresholds.json and training_fe.parquet into artifact_dir
-        # immediately so the user can inspect them without waiting for run_generation.
+        # Download training artifacts into artifact_dir immediately so the user can
+        # inspect them without waiting for run_generation.
+        # Only attempt downloads that apply to this session type — avoids noisy
+        # 422/500 errors in the backend log for files that were never produced.
         if self._artifact_dir:
             os.makedirs(self._artifact_dir, exist_ok=True)
-            for filename, endpoint, result_key in [
+
+            # Fetch session state once to determine which optional downloads apply.
+            try:
+                _status = self._http.get(f"/v1/sessions/{self._auth_id}/status")
+                _steps  = _status.get("steps", {})
+            except Exception:
+                _steps = {}
+
+            _supervised        = _steps.get("train_risk_model", {}).get("supervised", False)
+            _is_free_text      = _steps.get("configure_labelling_pipeline", {}).get("is_free_text", True)
+            _import_model_done = _steps.get("import_model", {}).get("state") == "DONE"
+
+            # Always produced for every session.
+            downloads = [
                 (
                     "calibration_thresholds.json",
                     "/v1/risk-score/download-thresholds",
@@ -1004,27 +1019,40 @@ class Session:
                     "/v1/risk-score/download-training-scores",
                     "training_scores_path",
                 ),
-                (
+            ]
+
+            # Only for fixed-log (is_free_text=False) sessions.
+            if not _is_free_text:
+                downloads.append((
                     "logs_by_system_subsystem.json",
                     "/v1/risk-score/download-logs-mapping",
                     "logs_mapping_path",
-                ),
-                (
+                ))
+
+            # Only when the risk-score session was started via import_model().
+            if _import_model_done:
+                downloads.append((
                     "model_config.json",
                     "/v1/risk-score/download-model-config",
                     "model_config_path",
-                ),
-                (
-                    "trained_weights.json",
-                    "/v1/risk-score/download-trained-weights",
-                    "trained_weights_path",
-                ),
-                (
-                    "supervised_training_report.json",
-                    "/v1/risk-score/download-supervised-report",
-                    "supervised_report_path",
-                ),
-            ]:
+                ))
+
+            # Only when configure_training(supervised=True) was used.
+            if _supervised:
+                downloads.extend([
+                    (
+                        "trained_weights.json",
+                        "/v1/risk-score/download-trained-weights",
+                        "trained_weights_path",
+                    ),
+                    (
+                        "supervised_training_report.json",
+                        "/v1/risk-score/download-supervised-report",
+                        "supervised_report_path",
+                    ),
+                ])
+
+            for filename, endpoint, result_key in downloads:
                 try:
                     full_url = f"{self._http._client.base_url}{endpoint}"
                     dest = os.path.join(self._artifact_dir, filename)
