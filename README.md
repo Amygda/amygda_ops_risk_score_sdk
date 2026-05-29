@@ -16,45 +16,52 @@ pip install --upgrade git+https://github.com/amygda/amygda_ops_risk_score_sdk.gi
 
 ## Get an API key
 
-**Internal testing:** Two keys are already live in the hosted API — no setup needed:
-
-| Key | Balance | Use for |
-|-----|---------|---------|
-| `yk-amygda-dev-normal` | $20 | Normal testing — credit checks pass, balance drops with each LLM step |
-| `yk-amygda-dev-low` | $0 | Balance is $0 — `InsufficientCreditsError` fires immediately |
-
-**Production:** Contact the Amygda team or log in at https://portal.amygda.io (portal coming soon) to get your own key.
+Log in at [portal.amygda.io](https://portal.amygda.io) → **API Keys → Create Key**, then paste your key into the notebook.
 
 ## Quick start
 
 ```python
 from amygda_ops_risk_score import OpsRiskClient, SessionConfig
 
-client = OpsRiskClient()   # connects to hosted API automatically
+client = OpsRiskClient()
 client.wait_until_ready()
 
-session = client.open_session(api_key="your-api-key", config=SessionConfig(name="my-run"))
+session = client.open_session(
+    api_key="your-api-key",
+    config=SessionConfig(name="my-run"),
+    artifact_dir="artifacts/my_run/labelling/",
+)
 
 # Step 1 — labelling
 result = session.configure_labelling_pipeline(
-    file_path="examples/sample_data/labelling_sample.csv",
-    log_column="cleaned_event_details",
-    timestamp_column="timestamp",
+    file_path="how_to/examples/sample_data/fixed_log_training.csv",
+    log_column="event_code",
+    asset_context="airport baggage sortation station",
     is_free_text=False,
 )
 ```
 
-## Example notebooks
+## Notebooks
 
-The `examples/notebooks/` folder contains three end-to-end notebooks:
+The `how_to/` folder contains everything you need to get started:
 
-| Notebook | What it covers |
-|---|---|
-| `01_labelling.ipynb` | Upload logs, build hierarchy, classify |
-| `02_risk_score.ipynb` | Train thresholds, generate risk scores, visualise |
-| `03_rescore.ipynb` | Score new data against a trained model |
+```
+how_to/
+├── guides/          # Full reference notebooks (detailed explanations)
+│   ├── 01_labelling_guide.ipynb
+│   └── 02_risk_score_guide.ipynb
+├── examples/        # Lean executable notebooks + sample data
+│   ├── 01a_labelling_fixed_log.ipynb
+│   ├── 01b_labelling_free_text.ipynb
+│   ├── 02a_risk_score_fixed_log_supervised.ipynb
+│   ├── 02b_risk_score_fixed_log_unsupervised.ipynb
+│   ├── 02c_risk_score_free_text_unsupervised.ipynb
+│   ├── 02d_risk_score_free_text_supervised.ipynb
+│   └── sample_data/     # Two synthetic datasets (see how_to/README.md)
+└── how_to.md            # Sample data guide
+```
 
-Run them against `examples/sample_data/` to get started.
+**Start here:** Read the relevant guide notebook in `guides/` first, then run the matching example notebook in `examples/` against the sample data. See `how_to/how_to.md` for a full description of the two datasets.
 
 ## Pipeline overview
 
@@ -67,8 +74,8 @@ Two sequential pipelines:
 ## Requirements
 
 - Python 3.10+
-- API key (contact Amygda team)
+- API key from [portal.amygda.io](https://portal.amygda.io)
 
 ## License
 
-Private — Amygda internal use only.
+Private — contact the Amygda team for access.
