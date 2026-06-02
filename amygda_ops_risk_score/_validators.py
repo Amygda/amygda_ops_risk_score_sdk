@@ -318,6 +318,20 @@ def validate_update_weights(
     systems: List[dict],
     original_systems: Optional[List[dict]] = None,
 ) -> None:
+    """
+    Validate weight update payload.
+
+    Parameters
+    ----------
+    systems:
+        List of ``{system_name, weight, subsystems: [{subsystem_name, weight}]}``.
+        Weights must be int or float.  System weights must sum to 1.0.
+        Each system's subsystem weights must sum to 1.0.
+    original_systems:
+        Optional: the ``weights`` list from ``generate_weights()`` or the previous
+        ``update_weights()`` result.  When supplied, any system or subsystem **name**
+        change raises ValidationError — only numeric weight values may change.
+    """
     errors: list = []
 
     if not systems:

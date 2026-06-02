@@ -154,10 +154,10 @@ class Session:
         Use this after a kernel restart to check where you left off before
         re-submitting any steps.
 
-        Returns:
-            Dict with ``auth_id``, ``api_key``, ``name``, ``created_at``,
-            ``expires_at``, ``steps`` (mapping of step name → step state dict),
-            ``config``, ``artifacts``, and ``current_error``.
+        Returns
+        -------
+        Dict with ``auth_id``, ``status``, ``expires_at``, and a ``steps``
+        mapping of step name → step state dict.
         """
         return self._http.get(f"/v1/sessions/{self._auth_id}/status")
 
@@ -169,9 +169,6 @@ class Session:
         as it handles deletion and re-creation in one call.  Call this directly
         only if you need to free up the session slot without immediately opening
         a new one.
-
-        Returns:
-            Dict with ``message`` and ``auth_id``.
         """
         return self._http.delete(f"/v1/sessions/{self._auth_id}")
 
@@ -267,32 +264,32 @@ class Session:
         labelling step.  Can be re-run until Step 2 (downsample) or
         Step 3 (extract_keywords) starts.
 
-        Args:
-            file_path:
-                Path to the log file (.csv or .xlsx).
-            log_column:
-                Name of the column containing the log text or event code.
-            max_systems:
-                Maximum number of top-level systems for the LLM to generate (1–10).
-            max_subsystems:
-                Maximum number of subsystems per system (1–5).
-            asset_context:
-                Plain-English description of the asset being analysed
-                (e.g. ``'rail rolling stock'``).  Helps the LLM generate
-                relevant system and subsystem names.
-            is_free_text:
-                ``True`` if logs are free-form text descriptions.
-                ``False`` if they are structured codes or short category labels.
-            sheet_name:
-                XLSX only — sheet to read.  ``None`` auto-detects the first sheet.
-            timeout:
-                Maximum seconds to wait for upload and validation (default 600 s).
+        Parameters
+        ----------
+        file_path:
+            Path to the log file (.csv or .xlsx).
+        log_column:
+            Name of the column containing the log text or event code.
+        max_systems:
+            Maximum number of top-level systems for the LLM to generate (1–10).
+        max_subsystems:
+            Maximum number of subsystems per system (1–5).
+        asset_context:
+            Plain-English description of the asset being analysed
+            (e.g. ``'rail rolling stock'``).  Helps the LLM generate
+            relevant system and subsystem names.
+        is_free_text:
+            ``True`` if logs are free-form text descriptions.
+            ``False`` if they are structured codes or short category labels.
+        sheet_name:
+            XLSX only — sheet to read.  ``None`` auto-detects the first sheet.
+        timeout:
+            Maximum seconds to wait for upload and validation (default 600 s).
 
-        Returns:
-            Dict with ``message``, ``auth_id``, ``row_count``, ``downsample_required``
-            (bool), ``available_columns``, ``next_step``, and your full configuration
-            echoed back (``file_path``, ``log_column``, ``max_systems``,
-            ``max_subsystems``, ``asset_context``, ``is_free_text``, ``sheet_name``).
+        Returns
+        -------
+        Dict with ``downsample_required`` (bool), ``row_count``,
+        ``unique_log_count``, and your configuration echoed back.
         """
         _v.validate_configure(
             file_path=file_path,
@@ -362,28 +359,6 @@ class Session:
 
         Pass ``file_path`` (same file used in ``configure``) to validate column names
         client-side before sending the request.
-
-        Args:
-            sample_size:
-                Target number of rows after downsampling.
-            asset_column:
-                Column identifying the physical asset (e.g. train number).
-            vehicle_column:
-                Column identifying the vehicle within an asset.
-            timestamp_column:
-                Column containing the event timestamp — used for stratification.
-            file_path:
-                Optional path to the original log file for client-side column validation.
-            sheet_name:
-                XLSX only.  ``None`` auto-detects the first sheet.
-            timeout:
-                Maximum seconds to wait (default 600 s).
-
-        Returns:
-            Dict with ``message``, ``auth_id``, ``original_rows``, ``sampled_rows``,
-            ``next_step``, and your column selections echoed back.  Also includes
-            ``downsampled_path`` (absolute path to ``downsampled.parquet``) when
-            ``artifact_dir`` is set.
         """
         _v.validate_downsample(
             sample_size=sample_size,
@@ -458,21 +433,20 @@ class Session:
         — the more accurate the keyword list, the better the LLM-generated hierarchy.
         Can be re-run until Step 4 (generate_hierarchy) starts.
 
-        Args:
-            extraction_method:
-                ``'fast'`` (default) uses TF-IDF and works well for most datasets.
-                ``'deep'`` uses spaCy and produces better results for noisy or heavily
-                abbreviated log text, but runs slower.
-            timeout:
-                Maximum seconds to wait (default 1200 s).  Increase for very large
-                datasets (100 k+ rows).
+        Parameters
+        ----------
+        extraction_method:
+            ``'fast'`` (default) uses TF-IDF and works well for most datasets.
+            ``'deep'`` uses spaCy and produces better results for noisy or heavily
+            abbreviated log text, but runs slower.
+        timeout:
+            Maximum seconds to wait (default 1200 s).  Increase for very large
+            datasets (100 k+ rows).
 
-        Returns:
-            Dict with ``message``, ``auth_id``, ``extraction_method``,
-            ``raw_keyword_count``, ``filtered_keyword_count``, ``token_budget_used``,
-            ``token_budget_limit``, ``filters_applied``, ``linguistic_keywords_removed``,
-            ``frequency_threshold``, ``keywords`` (list), ``keyword_pool``
-            (frequency map), and ``next_step``.
+        Returns
+        -------
+        Dict with ``keywords`` (list of extracted terms), ``keyword_pool``
+        (frequency map used for visualisation), and ``token_budget_used``.
         """
         _v.validate_extract_keywords(extraction_method)
         raw = self._run_blocking(
@@ -506,23 +480,24 @@ class Session:
         Blocks until complete — typical runtime is 30 s to 3 min.
         Can be re-run until Step 5 (update_hierarchy) or Step 6 (generate_weights) starts.
 
-        Args:
-            keywords:
-                Optional list of keywords to use instead of the ones extracted by
-                :meth:`extract_keywords`.  If provided, the server applies the same
-                token-budget and linguistic filtering that ``extract_keywords`` applies
-                before building the hierarchy.  ``extract_keywords`` must still be
-                completed first.  If ``None`` (default), the server uses the keyword
-                pool produced by ``extract_keywords``.
-            timeout:
-                Maximum seconds to wait (default 1200 s).  Increase for large keyword
-                pools (5 k+ keywords) where LLM processing takes longer.
+        Parameters
+        ----------
+        keywords:
+            Optional list of keywords to use instead of the ones extracted by
+            :meth:`extract_keywords`.  If provided, the server applies the same
+            token-budget and linguistic filtering that ``extract_keywords`` applies
+            before building the hierarchy.  ``extract_keywords`` must still be
+            completed first.  If ``None`` (default), the server uses the keyword
+            pool produced by ``extract_keywords``.
+        timeout:
+            Maximum seconds to wait (default 1200 s).  Increase for large keyword
+            pools (5 k+ keywords) where LLM processing takes longer.
 
-        Returns:
-            Dict with ``message``, ``auth_id``, ``hierarchy`` (list of
-            system/subsystem rows with confidence scores), ``systems_count``,
-            and ``subsystems_count``.  Shape is the same whether or not
-            ``keywords`` is provided.
+        Returns
+        -------
+        Dict with ``hierarchy`` (list of system/subsystem rows with confidence scores),
+        ``systems_count``, and ``subsystems_count``.  Return shape is the same
+        whether or not ``keywords`` is provided.
         """
         if keywords is not None:
             _v.validate_generate_hierarchy(keywords)
@@ -563,18 +538,6 @@ class Session:
 
         Can be called multiple times — each call overwrites the previous result.
         Locked once ``generate_weights`` is called.
-
-        Args:
-            rows:
-                List of dicts with keys ``system``, ``system_confidence``,
-                ``subsystem``, and ``subsystem_confidence``.
-            timeout:
-                Maximum seconds to wait (default 1200 s).
-
-        Returns:
-            Dict with ``message``, ``auth_id``, ``status``, ``systems_count``,
-            ``subsystems_count``, ``hierarchy`` (the saved rows), ``next_step``,
-            and ``rows`` (the input echoed back).
         """
         _v.validate_update_hierarchy(rows)
         raw = self._run_blocking(
@@ -612,15 +575,16 @@ class Session:
 
         Can be re-run until Step 8 (run_classification) starts.
 
-        Args:
-            timeout:
-                Maximum seconds to wait (default 300 s).
+        Parameters
+        ----------
+        timeout:
+            Maximum seconds to wait (default 300 s).
 
-        Returns:
-            Dict with ``message``, ``auth_id``, ``systems_count``, ``next_step``,
-            and ``weights`` — a list of dicts, each with ``system_name``, ``weight``,
-            and ``subsystems`` (list of ``{subsystem_name, weight}``).
-            Pass ``result["weights"]`` to :meth:`update_weights` to adjust before classifying.
+        Returns
+        -------
+        Dict with ``weights`` — a list of systems each with a ``weight`` and a list
+        of subsystems with their weights.  Pass ``result["weights"]`` to
+        :meth:`update_weights` to adjust before classifying.
         """
         raw = self._run_blocking(
             "generate_weights",
@@ -668,20 +632,6 @@ class Session:
         automatically normalises them using the same pin-and-redistribute logic
         as the UI: values you changed relative to ``original_systems`` are locked,
         and only the unchanged values are scaled to fill the remaining budget.
-
-        Args:
-            systems:
-                List of dicts with keys ``system_name``, ``weight``, and ``subsystems``
-                (list of ``{subsystem_name, weight}``).
-            original_systems:
-                The unmodified weights list from :meth:`generate_weights` or a previous
-                :meth:`update_weights` call.  Enables name-change protection when provided.
-            timeout:
-                Maximum seconds to wait (default 1200 s).
-
-        Returns:
-            Dict with ``message``, ``auth_id``, ``systems_count``, ``next_step``,
-            and ``weights`` (the normalised systems list after saving).
         """
         from amygda_ops_risk_score.helpers import normalize_weights as _norm
         systems = _norm(systems, original_systems=original_systems)
@@ -714,15 +664,16 @@ class Session:
         Blocks until complete, then automatically downloads
         ``trained_labelling_model_{auth_id}.zip`` to ``dest_dir`` and wipes the session.
 
-        Args:
-            dest_dir:
-                Directory to save the zip into.  Created if it does not exist.
-            timeout:
-                Maximum seconds to wait for the server to finish (default 1 h).
+        Parameters
+        ----------
+        dest_dir:
+            Directory to save the zip into.  Created if it does not exist.
+        timeout:
+            Maximum seconds to wait for the server to finish (default 1 h).
 
-        Returns:
-            Dict with ``auth_id``, ``zip_path`` (absolute local path of the downloaded
-            zip), ``dest_dir``, and ``total_rows``.
+        Returns
+        -------
+        Dict with ``zip_path`` (absolute path of the downloaded zip) and ``auth_id``.
 
         Example
         -------
@@ -783,19 +734,6 @@ class Session:
         .. note::
             To **retrain from scratch** on a previously-trained session, import the
             labelling zip (not the complete model zip) so training is not skipped.
-
-        Args:
-            zip_path:
-                Path to the zip file produced by :meth:`run_classification` or
-                :meth:`generate_risk_scores`.
-            timeout:
-                Maximum seconds to wait for upload and extraction (default 600 s).
-
-        Returns:
-            Dict with ``message``, ``auth_id``, ``is_free_text``, ``log_column``,
-            ``risk_training_restored`` (bool — True if the zip included calibration
-            thresholds, allowing you to skip straight to ``configure_generation``),
-            ``next_step``, and ``zip_path``.
         """
         _v.validate_import_model(zip_path)
 
@@ -854,10 +792,11 @@ class Session:
 
         Can be re-run until Step 10 (train_risk_model) starts.
 
-        Args:
-            file_path:
-                Path to the historical log file (.csv or .xlsx).  Must contain the
-                same log column as the dataset used in the labelling notebook.
+        Parameters
+        ----------
+        file_path:
+            Path to the historical log file (.csv or .xlsx).  Must contain the
+            same log column as the dataset used in the labelling notebook.
         asset_id_column:
             Column that uniquely identifies each asset (e.g. train number, vehicle ID).
         timestamp_column:
@@ -916,12 +855,9 @@ class Session:
         timeout:
             Maximum seconds to wait for upload and validation (default 600 s).
 
-        Returns:
-            Dict with ``message``, ``row_count``, ``asset_count``, ``is_free_text``,
-            ``supervised``, ``next_step``, and your full configuration echoed back
-            (``file_path``, ``asset_id_column``, ``timestamp_column``,
-            ``rolling_window``, ``rolling_feature_type``, ``quantile_for_thresholds``,
-            ``sheet_name``, ``failures_path``).
+        Returns
+        -------
+        Dict with ``row_count``, ``asset_count``, ``supervised``, and your configuration echoed back.
         """
         _v.validate_configure_training(
             file_path=file_path,
@@ -1032,18 +968,6 @@ class Session:
             with open(result["thresholds_path"]) as f:
                 thresholds = json.load(f)
             # {"motion_control-datum_control": 3.0, ...}
-
-        Args:
-            timeout:
-                Maximum seconds to wait for training to complete (default 1 h).
-
-        Returns:
-            Dict with ``auth_id``, ``subsystems_calibrated``, ``supervised``,
-            ``baseline_auc_roc``, ``supervised_auc_roc``.  When ``artifact_dir``
-            is set, also includes ``thresholds_path``, ``training_fe_path``,
-            ``training_scores_path``; fixed-log sessions add ``logs_mapping_path``;
-            import_model sessions add ``model_config_path``; supervised sessions
-            add ``trained_weights_path`` and ``supervised_report_path``.
         """
         self._run_blocking(
             "run_training",
@@ -1174,25 +1098,25 @@ class Session:
 
         Can be re-run until Step 12 (generate_risk_scores) starts.
 
-        Args:
-            file_path:
-                Path to the log file to score (.csv or .xlsx).
-            date_format:
-                ``'infer'`` auto-detects the date format.  Pass a strftime string if needed.
-            sheet_name:
-                XLSX only.  ``None`` auto-detects the first sheet.
-            weights_source:
-                Which weights to use for risk score generation.
-                ``"labelling"`` (default) uses the expert weights from the labelling step.
-                ``"supervised"`` uses the weights trained via logistic regression —
-                only valid after ``configure_training(supervised=True)`` + ``train_risk_model()``.
-            timeout:
-                Maximum seconds to wait for upload (default 600 s).
+        Parameters
+        ----------
+        file_path:
+            Path to the log file to score (.csv or .xlsx).
+        date_format:
+            ``'infer'`` auto-detects the date format.  Pass a strftime string if needed.
+        sheet_name:
+            XLSX only.  ``None`` auto-detects the first sheet.
+        weights_source:
+            Which weights to use for risk score generation.
+            ``"labelling"`` (default) uses the expert weights from the labelling step.
+            ``"supervised"`` uses the weights trained via logistic regression —
+            only valid after ``configure_training(supervised=True)`` + ``train_risk_model()``.
+        timeout:
+            Maximum seconds to wait for upload (default 600 s).
 
-        Returns:
-            Dict with ``message``, ``row_count``, ``asset_count``, ``weights_source``,
-            ``next_step``, and your configuration echoed back (``file_path``,
-            ``date_format``, ``sheet_name``, ``weights_source``).
+        Returns
+        -------
+        Dict with ``row_count``, ``asset_count``, and configuration echoed back.
         """
         _v.validate_configure_generation(
             file_path=file_path,
@@ -1256,18 +1180,12 @@ class Session:
         - ``calibration_thresholds.json`` → ``result["thresholds_path"]``
         - ``accepted_hierarchy.json`` → ``result["hierarchy_path"]``
 
-        Args:
-            dest_dir:
-                Directory to save the zip into.  Created if it does not exist.
-            timeout:
-                Maximum seconds to wait for the server to finish (default 1 h).
-
-        Returns:
-            Dict with ``auth_id``, ``zip_path`` (absolute path of the complete model zip),
-            ``dest_dir``, ``assets_scored``, ``date_range``.  When ``artifact_dir``
-            is set, also includes ``parquet_path`` (risk_scores.parquet),
-            ``logs_mapping_path``, ``thresholds_path``, ``hierarchy_path``,
-            ``model_config_path``; free-text sessions add ``classified_logs_path``.
+        Parameters
+        ----------
+        dest_dir:
+            Directory to save the zip into.  Created if it does not exist.
+        timeout:
+            Maximum seconds to wait for the server to finish (default 1 h).
         """
         os.makedirs(dest_dir, exist_ok=True)
         self._run_blocking(
