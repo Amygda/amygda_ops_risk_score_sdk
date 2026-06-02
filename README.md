@@ -16,7 +16,11 @@ pip install --upgrade git+https://github.com/amygda/amygda_ops_risk_score_sdk.gi
 
 ## Get an API key
 
-Log in at [portal.amygda.io](https://portal.amygda.io) → **API Keys → Create Key**, then paste your key into the notebook.
+The Amygda API portal is coming soon! Once available, you will be able to log in at
+[portal.amygda.io](https://portal.amygda.io) → **API Keys → Create Key**, then paste your key into the notebook.
+
+In the meantime, to request an API key contact the Amygda CEO directly:
+[faizan@amygdalabs.com](mailto:faizan@amygdalabs.com)
 
 ## Quick start
 
@@ -74,8 +78,5 @@ Two sequential pipelines:
 ## Requirements
 
 - Python 3.10+
-- API key from [portal.amygda.io](https://portal.amygda.io)
+- API key — contact [faizan@amygdalabs.com](mailto:faizan@amygdalabs.com) to request one (portal coming soon)
 
-## License
-
-Private — contact the Amygda team for access.
