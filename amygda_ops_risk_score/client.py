@@ -22,7 +22,7 @@ class OpsRiskClient:
 
         client.wait_until_ready()              # wait for API to be ready
 
-        api_key = client.register_user()       # once ever — save this key
+        api_key = "yk-..."                     # from the Amygda portal
 
         config = SessionConfig(name="rail-may-2025")
         session = client.open_session(api_key=api_key, config=config)
@@ -54,7 +54,7 @@ class OpsRiskClient:
             Pass ``'http://localhost:8000'`` when running the API locally for development.
         timeout:
             Default timeout in seconds for infrastructure calls only
-            (health, register_user, open_session, status).
+            (health, open_session, status).
             Every pipeline step carries its own explicit timeout that overrides this.
         """
         url = (base_url or self._DEFAULT_BASE_URL).rstrip("/")
@@ -74,22 +74,6 @@ class OpsRiskClient:
     # User management
     # ------------------------------------------------------------------ #
 
-    def register_user(self) -> str:
-        """
-        Register a new anonymous user and return a permanent API key.
-
-        Call this once — ever.  The returned ``api_key`` is permanent and never
-        changes between sessions.  Save it somewhere safe — it is the only
-        credential needed to use the API.
-
-        Returns
-        -------
-        str
-            Your API key (e.g. ``'yk-c5221c0e...'``).
-        """
-        body = self._http.post("/v1/users/register")
-        return body["api_key"]
-
     def get_user(self, api_key: str) -> Dict[str, Any]:
         """
         Look up a registered user by API key.
@@ -97,7 +81,7 @@ class OpsRiskClient:
         Parameters
         ----------
         api_key:
-            The API key returned by :meth:`register_user`.
+            Your API key from the Amygda portal.
 
         Returns
         -------
