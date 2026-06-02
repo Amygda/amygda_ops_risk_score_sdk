@@ -88,7 +88,7 @@ class OpsRiskClient:
         Dict with ``api_key`` and ``created_at``.
         Raises ``APIError`` (404) if the key does not exist.
         """
-        return self._http.get(f"/v1/users/{api_key}")
+        return self._http.get(f"/v1/api-keys/{api_key}")
 
     # ------------------------------------------------------------------ #
     # Session management
