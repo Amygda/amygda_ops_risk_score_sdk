@@ -47,15 +47,14 @@ class OpsRiskClient:
         timeout: float = 30.0,
     ):
         """
-        Parameters
-        ----------
-        base_url:
-            Override the API URL.  Leave as ``None`` to use the default hosted API.
-            Pass ``'http://localhost:8000'`` when running the API locally for development.
-        timeout:
-            Default timeout in seconds for infrastructure calls only
-            (health, open_session, status).
-            Every pipeline step carries its own explicit timeout that overrides this.
+        Args:
+            base_url:
+                Override the API URL.  Leave as ``None`` to use the default hosted API.
+                Pass ``'http://localhost:8000'`` when running the API locally for development.
+            timeout:
+                Default timeout in seconds for infrastructure calls only
+                (health, open_session, status).
+                Every pipeline step carries its own explicit timeout that overrides this.
         """
         url = (base_url or self._DEFAULT_BASE_URL).rstrip("/")
         self._http = HTTPClient(base_url=url, timeout=timeout)
@@ -78,15 +77,15 @@ class OpsRiskClient:
         """
         Look up a registered user by API key.
 
-        Parameters
-        ----------
-        api_key:
-            Your API key from the Amygda portal.
+        Args:
+            api_key:
+                Your API key from the Amygda portal.
 
-        Returns
-        -------
-        Dict with ``api_key`` and ``created_at``.
-        Raises ``APIError`` (404) if the key does not exist.
+        Returns:
+            Dict with ``api_key`` and ``created_at``.
+
+        Raises:
+            APIError: 404 if the key does not exist.
         """
         return self._http.get(f"/v1/api-keys/{api_key}")
 
@@ -106,21 +105,19 @@ class OpsRiskClient:
         Only one active session is allowed per user at a time.  If a previous
         session is still open, delete it first with :meth:`restart_session`.
 
-        Parameters
-        ----------
-        api_key:
-            Your permanent API key from :meth:`register_user`.
-        config:
-            A :class:`SessionConfig` with ``name``.
-        artifact_dir:
-            Optional local directory.  When set, every pipeline step automatically
-            saves its result as ``{artifact_dir}/{step_name}.json``.
-            ``generate_risk_scores`` also extracts ``risk_scores.parquet`` there.
-            The directory is created on first write if it does not yet exist.
+        Args:
+            api_key:
+                Your permanent API key from the Amygda portal.
+            config:
+                A :class:`SessionConfig` with ``name``.
+            artifact_dir:
+                Optional local directory.  When set, every pipeline step automatically
+                saves its result as ``{artifact_dir}/{step_name}.json``.
+                ``generate_risk_scores`` also extracts ``risk_scores.parquet`` there.
+                The directory is created on first write if it does not yet exist.
 
-        Returns
-        -------
-        A :class:`Session` ready for Step 1 (labelling) or ``import_model`` (risk score).
+        Returns:
+            A :class:`Session` ready for Step 1 (labelling) or ``import_model`` (risk score).
         """
         if not config.name or not config.name.strip():
             from amygda_ops_risk_score.exceptions import ValidationError
@@ -142,23 +139,19 @@ class OpsRiskClient:
         returns a fully functional :class:`Session` — no need to re-run any
         steps that are already ``DONE``.
 
-        Parameters
-        ----------
-        auth_id:
-            The session ID printed when you called :meth:`open_session`.
-        artifact_dir:
-            Same path used when opening the session so remaining steps continue
-            writing artifacts to the correct directory.
+        Args:
+            auth_id:
+                The session ID printed when you called :meth:`open_session`.
+            artifact_dir:
+                Same path used when opening the session so remaining steps continue
+                writing artifacts to the correct directory.
 
-        Returns
-        -------
-        :class:`Session` reconnected to the existing server-side session.
+        Returns:
+            :class:`Session` reconnected to the existing server-side session.
 
-        Raises
-        ------
-        APIError (404)
-            If the session has expired or does not exist.  In that case, call
-            :meth:`open_session` to start fresh.
+        Raises:
+            APIError: 404 if the session has expired or does not exist.  Call
+                :meth:`open_session` to start fresh.
         """
         self._http.get(f"/v1/sessions/{auth_id}/status")
         return Session(auth_id=auth_id, http=self._http, artifact_dir=artifact_dir)
@@ -183,18 +176,16 @@ class OpsRiskClient:
             **before** calling this.  The ``LabellingHistory`` and
             ``RiskScoreHistory`` records survive as permanent audit entries.
 
-        Parameters
-        ----------
-        session:
-            The active :class:`Session` to discard.
-        api_key:
-            Your API key (same one used to open the original session).
-        config:
-            A :class:`SessionConfig` for the new session.
+        Args:
+            session:
+                The active :class:`Session` to discard.
+            api_key:
+                Your API key (same one used to open the original session).
+            config:
+                A :class:`SessionConfig` for the new session.
 
-        Returns
-        -------
-        A new :class:`Session` starting from Step 1.
+        Returns:
+            A new :class:`Session` starting from Step 1.
         """
         session.delete()
         return self.open_session(api_key=api_key, config=config)
@@ -248,22 +239,19 @@ class OpsRiskClient:
         prints progress dots, and returns as soon as the API is ready.
         On a warm instance it returns immediately.
 
-        Parameters
-        ----------
-        timeout:
-            Maximum seconds to wait (default 3600 s).  On a cold start the API
-            can take 60–120 s to load ML models — the default covers this comfortably.
-        interval:
-            Seconds between polls (default 5 s).
+        Args:
+            timeout:
+                Maximum seconds to wait (default 3600 s).  On a cold start the API
+                can take 60–120 s to load ML models — the default covers this comfortably.
+            interval:
+                Seconds between polls (default 5 s).
 
-        Returns
-        -------
-        The ready-response dict (same as :meth:`ready`).
+        Returns:
+            The ready-response dict (same as :meth:`ready`).
 
-        Raises
-        ------
-        TimeoutError
-            If the API is still not ready after ``timeout`` seconds.
+        Raises:
+            TimeoutError: If the API is still not ready after ``timeout`` seconds.
+            CompatibilityError: If the live API version is older than ``MIN_API_VERSION``.
         """
         import time
         import httpx
