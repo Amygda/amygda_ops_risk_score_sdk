@@ -5,7 +5,6 @@ how_to/
 ├── guides/          # Full reference notebooks (detailed explanations)
 │   ├── 01_labelling_guide.ipynb
 │   ├── 02_risk_score_guide.ipynb
-│   └── 03_continuous_scoring.ipynb
 ├── examples/        # Lean executable notebooks + sample data
 │   ├── 01a_labelling_fixed_log.ipynb
 │   ├── 01b_labelling_free_text.ipynb
@@ -42,9 +41,9 @@ This dataset represents fault event logs from 12 Airport baggage management stat
 | Generation period | Jan–Mar 2024 (~2,700 rows) |
 | Unique event codes | 31, spanning 5 system domains |
 
-The 31 event codes cover five operational domains that the labelling step will discover automatically:
+The 31 event codes cover operational systems that the labelling step will discover automatically. Some examples are as follows. The actual system names or systems might be different as its probabilistic in nature. The total number of systems will also depend on the numbers you specify :
 
-| Domain | Example event codes |
+| System | Example event codes |
 |---|---|
 | Mechanical drive | Motor overtemperature fault, Belt tracking deviation detected, Gearbox oil level low |
 | Sensor network | Photoelectric sensor fault, Barcode reader timeout, RFID tag not detected |
@@ -73,7 +72,7 @@ This dataset represents natural-language maintenance notes logged by technicians
 | Training period | Jan–Dec 2023 (~5,000 rows) |
 | Generation period | Jan–Mar 2024 (~1,100 rows) |
 
-The notes cover five system domains:
+The notes cover the following system domains. The actual system names or systems might be different as its probabilistic in nature. The total number of systems will also depend on the numbers you specify:
 
 | Domain | Example notes |
 |---|---|
