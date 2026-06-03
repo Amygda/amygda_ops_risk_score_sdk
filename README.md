@@ -80,3 +80,43 @@ Two sequential pipelines:
 - Python 3.10+
 - API key — contact [faizan@amygdalabs.com](mailto:faizan@amygdalabs.com) to request one (portal coming soon)
 
+## Data & Infrastructure
+
+| | Detail |
+|---|---|
+| **Compute** | Google Cloud Run — europe-west2 (London, UK) |
+| **Intermediate storage** | Google Cloud Storage — europe-west2 (London, UK) |
+| **Database** | Google Cloud SQL (PostgreSQL) — europe-west2 (London, UK) |
+| **ML models** | Amygda's own models, hosted on GCP Cloud Run — europe-west2 |
+| **Large Language Model** | OpenAI API — gpt-5.2 — processed keywords only (see below) |
+
+### Data retention
+
+Session data (uploaded log files, intermediate artefacts) is stored temporarily
+in GCS during an active pipeline run. **All session data is deleted automatically**
+when the pipeline completes or after a maximum of 6 hours — whichever comes first.
+Amygda retains no access to customer data after deletion.
+
+Permanent audit records (session ID, timestamp, completion status) are kept in
+the database with no customer data content.
+
+### What is sent to OpenAI
+
+The OpenAI API is used **only** during the `generate_hierarchy` and
+`update_hierarchy` steps of the labelling pipeline.
+
+What is sent:
+- A list of extracted **keywords** (domain terms derived from log text — not
+  the original log entries)
+- A plain-text **asset description** (e.g. `"rail rolling stock"`) provided
+  by the user
+
+What is **never** sent:
+- Original log files or any raw customer data
+- Asset IDs, timestamps, or any identifiers from the source data
+
+### No training on customer data
+
+No customer data is used to train Amygda's models or OpenAI's models.
+Amygda does not share data with third parties beyond the OpenAI API calls
+described above.
