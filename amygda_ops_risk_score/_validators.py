@@ -309,6 +309,27 @@ def validate_update_hierarchy(rows: List[dict]) -> None:
     if errors:
         _raise(errors)
 
+    # system_confidence is a system-level attribute — all rows for the same system
+    # must carry the same value.  subsystem_confidence is per-row and may differ freely.
+    system_conf_map: dict = {}
+    for i, row in enumerate(rows):
+        sys  = str(row.get("system", "")).strip()
+        conf = str(row.get("system_confidence", "")).strip().lower()
+        if sys in system_conf_map:
+            if system_conf_map[sys] != conf:
+                errors.append(
+                    f"Row {i}: system_confidence for '{sys}' is inconsistent — "
+                    f"found '{system_conf_map[sys]}' and '{conf}'.\n"
+                    f"    system_confidence is a system-level attribute: all rows for "
+                    f"the same system must have the same value.\n"
+                    f"    subsystem_confidence is per-row and may differ across subsystems."
+                )
+        else:
+            system_conf_map[sys] = conf
+
+    if errors:
+        _raise(errors)
+
 
 # ---------------------------------------------------------------------------
 # update_weights (Step 7)
