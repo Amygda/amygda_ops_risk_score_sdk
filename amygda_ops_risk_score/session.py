@@ -469,9 +469,8 @@ class Session:
 
         Returns:
             Dict with ``message``, ``auth_id``, ``extraction_method``,
-            ``raw_keyword_count``, ``filtered_keyword_count``, ``token_budget_used``,
-            ``token_budget_limit``, ``filters_applied``, ``linguistic_keywords_removed``,
-            ``frequency_threshold``, ``keywords`` (list), ``keyword_pool``
+            ``raw_keyword_count``, ``filtered_keyword_count``,
+            ``linguistic_keywords_removed``, ``keywords`` (list), ``keyword_pool``
             (frequency map), and ``next_step``.
         """
         _v.validate_extract_keywords(extraction_method)
@@ -509,11 +508,10 @@ class Session:
         Args:
             keywords:
                 Optional list of keywords to use instead of the ones extracted by
-                :meth:`extract_keywords`.  If provided, the server applies the same
-                token-budget and linguistic filtering that ``extract_keywords`` applies
-                before building the hierarchy.  ``extract_keywords`` must still be
-                completed first.  If ``None`` (default), the server uses the keyword
-                pool produced by ``extract_keywords``.
+                :meth:`extract_keywords`.  If provided, the server applies linguistic
+                validation (same as ``extract_keywords``) before building the hierarchy.
+                ``extract_keywords`` must still be completed first.
+                If ``None`` (default), the server uses the pool from ``extract_keywords``.
             timeout:
                 Maximum seconds to wait (default 1200 s).  Increase for large keyword
                 pools (5 k+ keywords) where LLM processing takes longer.
@@ -521,12 +519,15 @@ class Session:
         Returns:
             Dict with ``message``, ``auth_id``, ``hierarchy`` (list of
             system/subsystem rows with confidence scores), ``systems_count``,
-            and ``subsystems_count``.  Shape is the same whether or not
-            ``keywords`` is provided.
+            ``subsystems_count``, ``keywords_source`` (``"extract_keywords"`` or
+            ``"user_override"``), ``keywords_finalised`` (the keyword pool
+            actually used — after linguistic filtering), and ``keywords_dropped``
+            (keywords removed during filtering, ``None`` when using extracted pool).
+            Shape is the same whether or not ``keywords`` is provided.
         """
         if keywords is not None:
             _v.validate_generate_hierarchy(keywords)
-        self._run_blocking(
+        raw = self._run_blocking(
             "generate_hierarchy",
             lambda: self._http.post(
                 "/v1/labelling/generate-hierarchy",
@@ -535,9 +536,9 @@ class Session:
                 timeout=timeout,
             ),
         )
-        # Fetch the DONE fields (hierarchy, systems_count, subsystems_count) from Postgres.
-        step_data = self._step_done_data("generate_hierarchy")
-        result = {"auth_id": self._auth_id, "message": "Hierarchy generation complete.", **step_data}
+        # API is synchronous — response body already contains all step data.
+        # No second DB read needed (same pattern as update_hierarchy / accept_hierarchy).
+        result = {**raw, "auth_id": self._auth_id}
         self._save_artifact("generate_hierarchy", result)
         return result
 
@@ -735,7 +736,7 @@ class Session:
             # Use this zip with import_model() on a new risk score session.
         """
         os.makedirs(dest_dir, exist_ok=True)
-        self._run_blocking(
+        raw = self._run_blocking(
             "run_classification",
             lambda: self._http.post(
                 "/v1/labelling/run-classification",
@@ -743,18 +744,13 @@ class Session:
                 timeout=timeout,
             ),
         )
-        # Fetch DONE fields (total_rows) before the session is wiped by _download_and_wipe.
-        # zip_path from step_data is the server-side storage path — excluded because the
-        # session is about to be wiped; abs_path (local download) is the correct value.
-        step_data = {k: v for k, v in self._step_done_data("run_classification").items()
-                     if k != "zip_path"}
         dest_path = os.path.join(dest_dir, f"trained_labelling_model_{self._auth_id}.zip")
         abs_path = self._download_and_wipe("/v1/labelling/download-zip", dest_path)
         result = {
-            "auth_id":  self._auth_id,
-            "zip_path": abs_path,
-            "dest_dir": os.path.abspath(dest_dir),
-            **step_data,
+            "auth_id":   self._auth_id,
+            "zip_path":  abs_path,
+            "dest_dir":  os.path.abspath(dest_dir),
+            "total_rows": raw.get("total_rows", 0),
         }
         self._save_artifact("run_classification", result)
         return result
@@ -1045,7 +1041,7 @@ class Session:
             import_model sessions add ``model_config_path``; supervised sessions
             add ``trained_weights_path`` and ``supervised_report_path``.
         """
-        self._run_blocking(
+        raw = self._run_blocking(
             "run_training",
             lambda: self._http.post(
                 "/v1/risk-score/run-training",
@@ -1053,12 +1049,13 @@ class Session:
                 timeout=timeout,
             ),
         )
-        # Fetch DONE fields (subsystems_calibrated) from Postgres.
-        # zip_path from step_data is a server-side storage path — excluded as it is not
-        # meaningful to the caller and would conflict with any future zip download key.
-        step_data = {k: v for k, v in self._step_done_data("train_risk_model").items()
-                     if k != "zip_path"}
-        result: Dict[str, Any] = {"auth_id": self._auth_id, **step_data}
+        result: Dict[str, Any] = {
+            "auth_id":               self._auth_id,
+            "subsystems_calibrated": raw.get("subsystems_calibrated", 0),
+            "supervised":            raw.get("supervised", False),
+            "baseline_auc_roc":      raw.get("baseline_auc_roc"),
+            "supervised_auc_roc":    raw.get("supervised_auc_roc"),
+        }
 
         # Download training artifacts into artifact_dir immediately so the user can
         # inspect them without waiting for run_generation.
@@ -1270,7 +1267,7 @@ class Session:
             ``model_config_path``; free-text sessions add ``classified_logs_path``.
         """
         os.makedirs(dest_dir, exist_ok=True)
-        self._run_blocking(
+        raw = self._run_blocking(
             "run_generation",
             lambda: self._http.post(
                 "/v1/risk-score/run-generation",
@@ -1278,19 +1275,15 @@ class Session:
                 timeout=timeout,
             ),
         )
-        # Fetch DONE fields (assets_scored, date_range) before the session is wiped.
-        # zip_path from step_data is the server-side storage path — excluded because the
-        # session is about to be wiped; abs_path (local download) is the correct value.
-        step_data = {k: v for k, v in self._step_done_data("generate_risk_scores").items()
-                     if k != "zip_path"}
         dest_path = os.path.join(dest_dir, f"complete_model_{self._auth_id}.zip")
         abs_path = self._download_and_wipe("/v1/risk-score/download-zip", dest_path)
 
         result: Dict[str, Any] = {
-            "auth_id":  self._auth_id,
-            "zip_path": abs_path,
-            "dest_dir": os.path.abspath(dest_dir),
-            **step_data,
+            "auth_id":       self._auth_id,
+            "zip_path":      abs_path,
+            "dest_dir":      os.path.abspath(dest_dir),
+            "assets_scored": raw.get("assets_scored", 0),
+            "date_range":    raw.get("date_range"),
         }
 
         # Extract key artifacts into artifact_dir for quick access

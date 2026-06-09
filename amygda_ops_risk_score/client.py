@@ -39,7 +39,7 @@ class OpsRiskClient:
     # Minimum API version this SDK requires.
     # Bump this only when the SDK starts calling an endpoint that didn't exist before.
     # If the live API is older than this, wait_until_ready() raises CompatibilityError.
-    MIN_API_VERSION = "1.2.3"
+    MIN_API_VERSION = "1.3.0"
 
     def __init__(
         self,
