@@ -449,6 +449,7 @@ class Session:
         self,
         extraction_method: str = "fast",
         *,
+        linguistic_filter: bool = True,
         timeout: float = 1200.0,
     ) -> Dict[str, Any]:
         """
@@ -463,6 +464,12 @@ class Session:
                 ``'fast'`` (default) uses TF-IDF and works well for most datasets.
                 ``'deep'`` uses spaCy and produces better results for noisy or heavily
                 abbreviated log text, but runs slower.
+            linguistic_filter:
+                When ``True`` (default) the extracted n-gram pool is filtered by
+                PyEnchant to remove n-grams containing non-dictionary words.  Set to
+                ``False`` to skip this step and pass the raw deduplicated pool directly
+                to the LLM — useful when domain jargon (e.g. aviation abbreviations)
+                is being incorrectly removed.
             timeout:
                 Maximum seconds to wait (default 1200 s).  Increase for very large
                 datasets (100 k+ rows).
@@ -478,7 +485,11 @@ class Session:
             "extract_keywords",
             lambda: self._http.post(
                 "/v1/labelling/extract-keywords",
-                json={"auth_id": self._auth_id, "extraction_method": extraction_method},
+                json={
+                    "auth_id":           self._auth_id,
+                    "extraction_method": extraction_method,
+                    "linguistic_filter": linguistic_filter,
+                },
                 timeout=timeout,
             ),
         )
