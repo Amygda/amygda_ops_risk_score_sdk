@@ -465,20 +465,23 @@ class Session:
                 ``'deep'`` uses spaCy and produces better results for noisy or heavily
                 abbreviated log text, but runs slower.
             linguistic_filter:
-                When ``True`` (default) the extracted n-gram pool is filtered by
-                PyEnchant to remove n-grams containing non-dictionary words.  Set to
-                ``False`` to skip this step and pass the raw deduplicated pool directly
-                to the LLM — useful when domain jargon (e.g. aviation abbreviations)
-                is being incorrectly removed.
+                When ``True`` (default) the extracted n-gram pool is passed through
+                linguistic validation to remove n-grams that are not recognised as
+                standard English terms.  Set to ``False`` to skip this step and pass
+                the raw deduplicated pool directly to the LLM — useful when domain
+                jargon (e.g. aviation abbreviations) is being incorrectly removed.
             timeout:
                 Maximum seconds to wait (default 1200 s).  Increase for very large
                 datasets (100 k+ rows).
 
         Returns:
             Dict with ``message``, ``auth_id``, ``extraction_method``,
-            ``raw_keyword_count``, ``filtered_keyword_count``,
-            ``linguistic_keywords_removed``, ``keywords`` (list), ``keyword_pool``
-            (frequency map), and ``next_step``.
+            ``raw_keyword_count`` (Gate 2 output before any post-processing),
+            ``filtered_keyword_count`` (after substring-duplicate removal),
+            ``linguistic_filtered_keyword_count`` (n-grams removed by the linguistic
+            filter; 0 when ``linguistic_filter=False``),
+            ``finalised_keyword_count`` (final count sent to the LLM),
+            ``keywords`` (list), ``keyword_pool`` (frequency map), and ``next_step``.
         """
         _v.validate_extract_keywords(extraction_method)
         raw = self._run_blocking(
