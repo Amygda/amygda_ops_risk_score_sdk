@@ -279,13 +279,10 @@ class OpsRiskClient:
             except APIError as exc:
                 if exc.status_code != 503:
                     raise
-            except httpx.ConnectError as exc:
-                raise ConnectionError(
-                    f"Cannot connect to the API at {self._http._client.base_url}. "
-                    "Check your network connection or verify the API URL."
-                ) from exc
-            except (httpx.ReadTimeout, httpx.ConnectTimeout, httpx.TimeoutException):
-                pass
+            except httpx.ConnectError:
+                pass  # server not listening yet during startup — retry
+            except (httpx.ReadError, httpx.ReadTimeout, httpx.ConnectTimeout, httpx.TimeoutException):
+                pass  # transient during uvicorn startup — retry
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 print(" timed out.", flush=True)
