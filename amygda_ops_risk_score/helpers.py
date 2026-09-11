@@ -698,6 +698,7 @@ def plot_risk_heatmap(
     metric: str = "operational_risk",
     asset_ids: Optional[List[str]] = None,
     title: str = "Multi-Asset Risk Heatmap Over Time",
+    max_heatmap_score: float = 35.0,
     width: int = 1000,
     height: int = 500,
 ) -> None:
@@ -769,7 +770,7 @@ def plot_risk_heatmap(
             y=assets,
             colorscale="RdYlBu_r",
             zmin=0,
-            zmax=60,
+            zmax=max_heatmap_score,
             colorbar=dict(title=colorbar_title),
             hoverongaps=False,
             hovertemplate="Asset: %{y}<br>Date: %{x}<br>Risk: %{z:.1f}<extra></extra>",
@@ -928,6 +929,7 @@ def plot_asset_risk_over_time(
     model_config: Union[str, Dict[str, Any], None] = None,
     weighted: bool = False,
     title: Optional[str] = None,
+    max_heatmap_score: float = 80.0,
     width: int = 1000,
     height: int = 400,
 ) -> None:
@@ -1021,7 +1023,7 @@ def plot_asset_risk_over_time(
             y=row_labels,
             colorscale="RdYlBu_r",
             zmin=0,
-            zmax=80,
+            zmax=max_heatmap_score,
             colorbar=dict(title=colorbar_title),
             hoverongaps=False,
             hovertemplate=hover,
@@ -3312,19 +3314,29 @@ def _load_failures_df(
         raise ImportError("pandas is required: pip install pandas")
 
     if isinstance(source, str):
-        df = pd.read_parquet(source) if source.endswith(".parquet") else pd.read_csv(source)
+        df = (
+            pd.read_parquet(source)
+            if source.endswith(".parquet")
+            else pd.read_csv(source)
+        )
     else:
         df = source.copy()
 
     df = df.copy()
     df["asset_id"] = df["asset_id"].astype(str)
 
-    raw = df[failure_date_column] if failure_date_column in df.columns else df.get("failure_date")
+    raw = (
+        df[failure_date_column]
+        if failure_date_column in df.columns
+        else df.get("failure_date")
+    )
     if raw is None:
         raise ValueError(
             f"Column '{failure_date_column}' not found. Available: {list(df.columns)}"
         )
-    df["failure_date"] = pd.to_datetime(raw, dayfirst=True, errors="coerce").dt.normalize()
+    df["failure_date"] = pd.to_datetime(
+        raw, dayfirst=True, errors="coerce"
+    ).dt.normalize()
     df = df.dropna(subset=["failure_date"])
     return df[["asset_id", "failure_date"]].drop_duplicates().reset_index(drop=True)
 
@@ -3353,10 +3365,10 @@ def _attach_labels(
         asset = str(row["asset_id"])
         fdate = pd.Timestamp(row["failure_date"])
         horizon_start = fdate - pd.Timedelta(days=prediction_horizon_days)
-        excl_end      = fdate + pd.Timedelta(days=exclusion_days_after)
+        excl_end = fdate + pd.Timedelta(days=exclusion_days_after)
         mask = df["asset_id"] == asset
-        df.loc[mask & (df["date"] >= horizon_start) & (df["date"] <  fdate),    "label"] = 1
-        df.loc[mask & (df["date"] >= fdate)          & (df["date"] <= excl_end), "label"] = -1
+        df.loc[mask & (df["date"] >= horizon_start) & (df["date"] < fdate), "label"] = 1
+        df.loc[mask & (df["date"] >= fdate) & (df["date"] <= excl_end), "label"] = -1
 
     return df
 
@@ -3405,7 +3417,7 @@ def plot_label_timeline(
 
     df = _load_dataframe(feature_source)[["asset_id", "date"]].copy()
     df["asset_id"] = df["asset_id"].astype(str)
-    df["date"]     = pd.to_datetime(df["date"])
+    df["date"] = pd.to_datetime(df["date"])
     df = df.drop_duplicates(["asset_id", "date"])
 
     failures_df = _load_failures_df(failures_source, failure_date_column)
@@ -3415,45 +3427,61 @@ def plot_label_timeline(
         df = df[df["asset_id"].isin(targets)]
         failures_df = failures_df[failures_df["asset_id"].isin(targets)]
 
-    all_assets  = sorted(df["asset_id"].unique())[:max_assets]
-    df          = df[df["asset_id"].isin(all_assets)]
+    all_assets = sorted(df["asset_id"].unique())[:max_assets]
+    df = df[df["asset_id"].isin(all_assets)]
     failures_df = failures_df[failures_df["asset_id"].isin(all_assets)]
 
-    labeled = _attach_labels(df, failures_df, prediction_horizon_days, exclusion_days_after)
+    labeled = _attach_labels(
+        df, failures_df, prediction_horizon_days, exclusion_days_after
+    )
 
     COLORS = {0: "#93c5fd", 1: "#f87171", -1: "#d1d5db"}
-    NAMES  = {0: "Negative", 1: f"Positive (≤{prediction_horizon_days}d pre-failure)", -1: "Excluded"}
+    NAMES = {
+        0: "Negative",
+        1: f"Positive (≤{prediction_horizon_days}d pre-failure)",
+        -1: "Excluded",
+    }
 
     fig = go.Figure()
     for lv in [0, -1, 1]:
         sub = labeled[labeled["label"] == lv]
         if sub.empty:
             continue
-        fig.add_trace(go.Scatter(
-            x=sub["date"], y=sub["asset_id"],
-            mode="markers",
-            marker=dict(symbol="square", size=4, color=COLORS[lv], opacity=0.8),
-            name=NAMES[lv],
-            hovertemplate=f"Asset: %{{y}}<br>Date: %{{x}}<br>{NAMES[lv]}<extra></extra>",
-        ))
+        fig.add_trace(
+            go.Scatter(
+                x=sub["date"],
+                y=sub["asset_id"],
+                mode="markers",
+                marker=dict(symbol="square", size=4, color=COLORS[lv], opacity=0.8),
+                name=NAMES[lv],
+                hovertemplate=f"Asset: %{{y}}<br>Date: %{{x}}<br>{NAMES[lv]}<extra></extra>",
+            )
+        )
 
     if not failures_df.empty:
-        fig.add_trace(go.Scatter(
-            x=failures_df["failure_date"],
-            y=failures_df["asset_id"].astype(str),
-            mode="markers",
-            marker=dict(symbol="star", size=11, color="#111827",
-                        line=dict(width=1, color="white")),
-            name="Failure event",
-            hovertemplate="Asset: %{y}<br>Failure: %{x}<extra></extra>",
-        ))
+        fig.add_trace(
+            go.Scatter(
+                x=failures_df["failure_date"],
+                y=failures_df["asset_id"].astype(str),
+                mode="markers",
+                marker=dict(
+                    symbol="star",
+                    size=11,
+                    color="#111827",
+                    line=dict(width=1, color="white"),
+                ),
+                name="Failure event",
+                hovertemplate="Asset: %{y}<br>Failure: %{x}<extra></extra>",
+            )
+        )
 
     h = height or max(350, len(all_assets) * 22 + 130)
     fig.update_layout(
         title=dict(text=title, x=0.5),
         xaxis=dict(title="Date"),
         yaxis=dict(title="Asset", categoryorder="category ascending"),
-        width=width, height=h,
+        width=width,
+        height=h,
         legend=dict(orientation="h", y=1.06),
         margin=dict(l=100, r=40, t=90, b=60),
     )
@@ -3496,12 +3524,12 @@ def plot_label_distribution(
 
     df = _load_dataframe(feature_source)[["asset_id", "date"]].copy()
     failures_df = _load_failures_df(failures_source, failure_date_column)
-    labeled = _attach_labels(df, failures_df, prediction_horizon_days, exclusion_days_after)
+    labeled = _attach_labels(
+        df, failures_df, prediction_horizon_days, exclusion_days_after
+    )
     labeled = labeled[labeled["label"] != -1]
 
-    labeled["period"] = (
-        pd.to_datetime(labeled["date"]).dt.to_period(freq).dt.start_time
-    )
+    labeled["period"] = pd.to_datetime(labeled["date"]).dt.to_period(freq).dt.start_time
     counts = (
         labeled.groupby(["period", "label"])
         .size()
@@ -3513,10 +3541,15 @@ def plot_label_distribution(
     fig = go.Figure()
     for col, color in [("Negative", "#93c5fd"), ("Positive", "#f87171")]:
         if col in counts.columns:
-            fig.add_trace(go.Bar(
-                x=counts["period"], y=counts[col],
-                name=col, marker_color=color, opacity=0.85,
-            ))
+            fig.add_trace(
+                go.Bar(
+                    x=counts["period"],
+                    y=counts[col],
+                    name=col,
+                    marker_color=color,
+                    opacity=0.85,
+                )
+            )
 
     total_pos = int(labeled["label"].sum())
     total_neg = int((labeled["label"] == 0).sum())
@@ -3527,7 +3560,8 @@ def plot_label_distribution(
         barmode="stack",
         xaxis=dict(title="Period"),
         yaxis=dict(title="Row Count"),
-        width=width, height=height,
+        width=width,
+        height=height,
         legend=dict(orientation="h", y=1.06),
         margin=dict(l=60, r=40, t=80, b=60),
     )
@@ -3563,33 +3597,45 @@ def plot_supervised_comparison(
     except ImportError:
         raise ImportError("plotly is required: pip install plotly")
 
-    report = _load_result(report_source) if isinstance(report_source, str) else report_source
+    report = (
+        _load_result(report_source) if isinstance(report_source, str) else report_source
+    )
     ev = report.get("evaluation", {})
 
-    metrics   = ["AUC-ROC", "Avg Precision"]
-    baseline  = [ev.get("baseline_auc_roc"),         ev.get("baseline_avg_precision")]
-    supervised = [ev.get("supervised_auc_roc"),       ev.get("supervised_avg_precision")]
+    metrics = ["AUC-ROC", "Avg Precision"]
+    baseline = [ev.get("baseline_auc_roc"), ev.get("baseline_avg_precision")]
+    supervised = [ev.get("supervised_auc_roc"), ev.get("supervised_avg_precision")]
 
     if all(v is None for v in baseline + supervised):
-        print("No evaluation metrics found. Ensure supervised=True was used in configure_training.")
+        print(
+            "No evaluation metrics found. Ensure supervised=True was used in configure_training."
+        )
         return
 
     def _fmt(v):
         return f"{v:.3f}" if v is not None else "N/A"
 
     fig = go.Figure()
-    fig.add_trace(go.Bar(
-        name="Baseline (unsupervised)",
-        x=metrics, y=[v or 0 for v in baseline],
-        marker_color="#6b7280",
-        text=[_fmt(v) for v in baseline], textposition="outside",
-    ))
-    fig.add_trace(go.Bar(
-        name="Supervised",
-        x=metrics, y=[v or 0 for v in supervised],
-        marker_color="#2563eb",
-        text=[_fmt(v) for v in supervised], textposition="outside",
-    ))
+    fig.add_trace(
+        go.Bar(
+            name="Baseline (unsupervised)",
+            x=metrics,
+            y=[v or 0 for v in baseline],
+            marker_color="#6b7280",
+            text=[_fmt(v) for v in baseline],
+            textposition="outside",
+        )
+    )
+    fig.add_trace(
+        go.Bar(
+            name="Supervised",
+            x=metrics,
+            y=[v or 0 for v in supervised],
+            marker_color="#2563eb",
+            text=[_fmt(v) for v in supervised],
+            textposition="outside",
+        )
+    )
 
     deltas = []
     for b, s, m in zip(baseline, supervised, metrics):
@@ -3602,15 +3648,21 @@ def plot_supervised_comparison(
         barmode="group",
         yaxis=dict(title="Score", range=[0, 1.12]),
         xaxis=dict(title="Metric"),
-        width=width, height=height,
+        width=width,
+        height=height,
         legend=dict(orientation="h", y=1.08),
         margin=dict(l=60, r=40, t=100, b=80),
     )
     if deltas:
         fig.add_annotation(
             text="Improvement: " + " | ".join(deltas),
-            xref="paper", yref="paper", x=0.5, y=-0.18,
-            showarrow=False, font=dict(size=12, color="#374151"), align="center",
+            xref="paper",
+            yref="paper",
+            x=0.5,
+            y=-0.18,
+            showarrow=False,
+            font=dict(size=12, color="#374151"),
+            align="center",
         )
 
     print(
@@ -3657,8 +3709,14 @@ def plot_weight_comparison(
     except ImportError:
         raise ImportError("plotly is required: pip install plotly")
 
-    expert  = _load_result(expert_source)  if isinstance(expert_source,  str) else expert_source
-    trained = _load_result(trained_source) if isinstance(trained_source, str) else trained_source
+    expert = (
+        _load_result(expert_source) if isinstance(expert_source, str) else expert_source
+    )
+    trained = (
+        _load_result(trained_source)
+        if isinstance(trained_source, str)
+        else trained_source
+    )
 
     if system is None:
         ew = expert.get("system_weights", {})
@@ -3666,7 +3724,7 @@ def plot_weight_comparison(
         level = "System"
         auto_title = "System Weights: Expert vs Trained"
     else:
-        ew = expert.get("subsystem_weights",  {}).get(system, {})
+        ew = expert.get("subsystem_weights", {}).get(system, {})
         tw = trained.get("subsystem_weights", {}).get(system, {})
         level = f"{system} subsystem"
         auto_title = f"Subsystem Weights: Expert vs Trained — {system}"
@@ -3687,21 +3745,32 @@ def plot_weight_comparison(
         print(f"{k:<42} {e:>10.4f} {t:>10.4f} {'+'if d>=0 else ''}{d:>9.4f}")
 
     fig = go.Figure()
-    fig.add_trace(go.Bar(
-        name="Expert (labelling)", x=keys, y=ev,
-        marker_color="#6b7280", opacity=0.85,
-    ))
-    fig.add_trace(go.Bar(
-        name="Trained (supervised)", x=keys, y=tv,
-        marker_color="#2563eb", opacity=0.85,
-    ))
+    fig.add_trace(
+        go.Bar(
+            name="Expert (labelling)",
+            x=keys,
+            y=ev,
+            marker_color="#6b7280",
+            opacity=0.85,
+        )
+    )
+    fig.add_trace(
+        go.Bar(
+            name="Trained (supervised)",
+            x=keys,
+            y=tv,
+            marker_color="#2563eb",
+            opacity=0.85,
+        )
+    )
 
     fig.update_layout(
         title=dict(text=title or auto_title, x=0.5),
         barmode="group",
         xaxis=dict(title=level, tickangle=-30),
         yaxis=dict(title="Weight"),
-        width=width, height=height,
+        width=width,
+        height=height,
         legend=dict(orientation="h", y=1.08),
         margin=dict(l=60, r=40, t=100, b=110),
     )
@@ -3760,16 +3829,20 @@ def plot_risk_around_failures(
         raise ImportError("plotly and pandas are required: pip install plotly pandas")
 
     df = _load_dataframe(risk_source)
-    df["date"]     = pd.to_datetime(df["date"])
+    df["date"] = pd.to_datetime(df["date"])
     df["asset_id"] = df["asset_id"].astype(str)
 
     if score_col not in df.columns:
-        raise ValueError(f"Column '{score_col}' not found. Available: {list(df.columns)}")
+        raise ValueError(
+            f"Column '{score_col}' not found. Available: {list(df.columns)}"
+        )
 
     failures_df = _load_failures_df(failures_source, failure_date_column)
 
     if assets:
-        failures_df = failures_df[failures_df["asset_id"].isin([str(a) for a in assets])]
+        failures_df = failures_df[
+            failures_df["asset_id"].isin([str(a) for a in assets])
+        ]
 
     # Only keep assets present in risk_scores
     failures_df = failures_df[failures_df["asset_id"].isin(df["asset_id"].unique())]
@@ -3784,12 +3857,13 @@ def plot_risk_around_failures(
         print("No matching assets found between risk_scores and failures.")
         return
 
-    n     = len(assets_to_plot)
+    n = len(assets_to_plot)
     ncols = min(2, n)
     nrows = (n + ncols - 1) // ncols
 
     fig = make_subplots(
-        rows=nrows, cols=ncols,
+        rows=nrows,
+        cols=ncols,
         subplot_titles=[f"Asset: {a}" for a in assets_to_plot],
     )
 
@@ -3800,27 +3874,44 @@ def plot_risk_around_failures(
         col = idx % ncols + 1
 
         asset_df = df[df["asset_id"] == asset].sort_values("date")
-        fdates   = sorted(asset_fdates[asset])
+        fdates = sorted(asset_fdates[asset])
 
-        fig.add_trace(go.Scatter(
-            x=asset_df["date"], y=asset_df[score_col],
-            mode="lines",
-            line=dict(color="#374151", width=1.5),
-            name=asset,
-            showlegend=False,
-            hovertemplate=f"Date: %{{x}}<br>{score_col}: %{{y:.1f}}<extra>{asset}</extra>",
-        ), row=row, col=col)
+        fig.add_trace(
+            go.Scatter(
+                x=asset_df["date"],
+                y=asset_df[score_col],
+                mode="lines",
+                line=dict(color="#374151", width=1.5),
+                name=asset,
+                showlegend=False,
+                hovertemplate=f"Date: %{{x}}<br>{score_col}: %{{y:.1f}}<extra>{asset}</extra>",
+            ),
+            row=row,
+            col=col,
+        )
 
         for j, fdate in enumerate(fdates):
             color = FAIL_COLORS[j % len(FAIL_COLORS)]
             fdate_ts = pd.Timestamp(fdate)
             horizon_start = fdate_ts - pd.Timedelta(days=prediction_horizon_days)
 
-            fig.add_vline(x=fdate_ts, line_dash="dash", line_color=color,
-                          line_width=2, row=row, col=col)
-            fig.add_vrect(x0=horizon_start, x1=fdate_ts,
-                          fillcolor=color, opacity=0.10, line_width=0,
-                          row=row, col=col)
+            fig.add_vline(
+                x=fdate_ts,
+                line_dash="dash",
+                line_color=color,
+                line_width=2,
+                row=row,
+                col=col,
+            )
+            fig.add_vrect(
+                x0=horizon_start,
+                x1=fdate_ts,
+                fillcolor=color,
+                opacity=0.10,
+                line_width=0,
+                row=row,
+                col=col,
+            )
 
         # Clip x-axis to meaningful window
         x0 = min(fdates) - pd.Timedelta(days=prediction_horizon_days + 21)
@@ -3831,7 +3922,8 @@ def plot_risk_around_failures(
     h = height or (nrows * 300 + 100)
     fig.update_layout(
         title=dict(text=title, x=0.5),
-        width=width, height=h,
+        width=width,
+        height=h,
         margin=dict(l=60, r=40, t=100, b=60),
     )
     fig.show(renderer="notebook")
@@ -3879,10 +3971,12 @@ def plot_failure_risk_stats(
     except ImportError:
         raise ImportError("plotly and pandas are required: pip install plotly pandas")
 
-    df          = _load_dataframe(risk_source)
+    df = _load_dataframe(risk_source)
     failures_df = _load_failures_df(failures_source, failure_date_column)
-    labeled     = _attach_labels(df, failures_df, prediction_horizon_days, exclusion_days_after)
-    labeled     = labeled[labeled["label"] != -1]
+    labeled = _attach_labels(
+        df, failures_df, prediction_horizon_days, exclusion_days_after
+    )
+    labeled = labeled[labeled["label"] != -1]
 
     pos = labeled[labeled["label"] == 1][score_col].dropna()
     neg = labeled[labeled["label"] == 0][score_col].dropna()
@@ -3898,36 +3992,656 @@ def plot_failure_risk_stats(
     print(f"\n{'Metric':<22} {'Normal':>14} {'Pre-failure':>14} {'Δ':>10}")
     print("─" * 62)
     stats = [
-        ("Count",  lambda s: f"{len(s):,.0f}",      None),
-        ("Mean",   lambda s: f"{s.mean():.2f}",      lambda: pos.mean()   - neg.mean()),
-        ("Median", lambda s: f"{s.median():.2f}",    lambda: pos.median() - neg.median()),
-        ("Std",    lambda s: f"{s.std():.2f}",       None),
-        ("P75",    lambda s: f"{s.quantile(.75):.2f}", lambda: pos.quantile(.75) - neg.quantile(.75)),
-        ("P90",    lambda s: f"{s.quantile(.90):.2f}", lambda: pos.quantile(.90) - neg.quantile(.90)),
-        ("Max",    lambda s: f"{s.max():.2f}",       None),
+        ("Count", lambda s: f"{len(s):,.0f}", None),
+        ("Mean", lambda s: f"{s.mean():.2f}", lambda: pos.mean() - neg.mean()),
+        ("Median", lambda s: f"{s.median():.2f}", lambda: pos.median() - neg.median()),
+        ("Std", lambda s: f"{s.std():.2f}", None),
+        (
+            "P75",
+            lambda s: f"{s.quantile(.75):.2f}",
+            lambda: pos.quantile(0.75) - neg.quantile(0.75),
+        ),
+        (
+            "P90",
+            lambda s: f"{s.quantile(.90):.2f}",
+            lambda: pos.quantile(0.90) - neg.quantile(0.90),
+        ),
+        ("Max", lambda s: f"{s.max():.2f}", None),
     ]
     for name, fmt, delta_fn in stats:
         nv, pv = fmt(neg), fmt(pos)
-        d = f"+{delta_fn():.2f}" if delta_fn and delta_fn() >= 0 else (f"{delta_fn():.2f}" if delta_fn else "")
+        d = (
+            f"+{delta_fn():.2f}"
+            if delta_fn and delta_fn() >= 0
+            else (f"{delta_fn():.2f}" if delta_fn else "")
+        )
         print(f"{name:<22} {nv:>14} {pv:>14} {d:>10}")
 
     fig = go.Figure()
-    fig.add_trace(go.Box(
-        y=neg, name=f"Normal ({len(neg):,} rows)",
-        marker_color="#3b82f6", boxmean="sd",
-        hovertemplate="Normal<br>%{y:.1f}<extra></extra>",
-    ))
-    fig.add_trace(go.Box(
-        y=pos, name=f"Pre-failure ({len(pos):,} rows)",
-        marker_color="#ef4444", boxmean="sd",
-        hovertemplate="Pre-failure<br>%{y:.1f}<extra></extra>",
-    ))
+    fig.add_trace(
+        go.Box(
+            y=neg,
+            name=f"Normal ({len(neg):,} rows)",
+            marker_color="#3b82f6",
+            boxmean="sd",
+            hovertemplate="Normal<br>%{y:.1f}<extra></extra>",
+        )
+    )
+    fig.add_trace(
+        go.Box(
+            y=pos,
+            name=f"Pre-failure ({len(pos):,} rows)",
+            marker_color="#ef4444",
+            boxmean="sd",
+            hovertemplate="Pre-failure<br>%{y:.1f}<extra></extra>",
+        )
+    )
 
     fig.update_layout(
         title=dict(text=title, x=0.5),
         yaxis=dict(title=score_col.replace("_", " ").title(), range=[0, 105]),
-        width=width, height=height,
+        width=width,
+        height=height,
         showlegend=True,
         margin=dict(l=60, r=40, t=80, b=60),
+    )
+    fig.show(renderer="notebook")
+
+
+# ---------------------------------------------------------------------------
+# plot_detection_roc
+# ---------------------------------------------------------------------------
+
+
+def plot_detection_roc(
+    risk_source: Union[str, "pd.DataFrame"],
+    failures_source: Union[str, Dict[str, Any], "pd.DataFrame"],
+    prediction_horizon_days: int = 14,
+    failure_date_column: str = "failure_date",
+    detection_threshold: Optional[float] = None,
+    score_col: str = "operational_risk",
+    figsize: tuple = (13, 5),
+    title: str = "Optimal detection threshold selection",
+) -> float:
+    """
+    Two-panel figure showing how the Youden's J optimal detection threshold
+    was derived from the ROC curve of *score_col*.
+
+    Left panel  — ROC curve with the optimal point marked.
+    Right panel — Youden's J (TPR − FPR) vs threshold value.
+
+    Parameters
+    ----------
+    risk_source:
+        Path to a risk-scores parquet (e.g. ``training_scores.parquet``) or
+        a DataFrame with ``asset_id``, ``date``, and *score_col* columns.
+    failures_source:
+        Path to a failures CSV/parquet or a DataFrame.
+    prediction_horizon_days:
+        Days before each failure labelled as positive for the ROC (default 14).
+    failure_date_column:
+        Column in *failures_source* holding the failure date.
+    detection_threshold:
+        If provided, mark this fixed value on the chart instead of deriving one.
+    score_col:
+        Risk score column to evaluate (default ``"operational_risk"``).
+    figsize:
+        Matplotlib figure size (default ``(13, 5)``).
+    title:
+        Figure suptitle.
+
+    Returns
+    -------
+    float
+        The threshold used — Youden's J optimal or the supplied value.
+        Pass this to :func:`plot_failure_detection_summary` to keep both in sync.
+    """
+    try:
+        import numpy as np
+        import pandas as pd
+        import matplotlib.pyplot as plt
+        from sklearn.metrics import roc_curve, auc as sklearn_auc
+    except ImportError:
+        raise ImportError("numpy, pandas, matplotlib, and scikit-learn are required.")
+
+    df = _load_dataframe(risk_source)
+    df["date"] = pd.to_datetime(df["date"])
+    df["asset_id"] = df["asset_id"].astype(str)
+
+    failures_df = _load_failures_df(failures_source, failure_date_column)
+
+    labels = pd.Series(0, index=df.index)
+    for _, f in failures_df.iterrows():
+        aid, fdate = str(f["asset_id"]), pd.Timestamp(f["failure_date"])
+        win_start = fdate - pd.Timedelta(days=prediction_horizon_days)
+        mask = (
+            (df["asset_id"] == aid) & (df["date"] >= win_start) & (df["date"] < fdate)
+        )
+        labels[mask] = 1
+
+    fpr, tpr, thr = roc_curve(labels, df[score_col])
+    j_scores = tpr - fpr
+    best_idx = int(np.argmax(j_scores))
+    auc_val = sklearn_auc(fpr, tpr)
+    optimal_thresh = round(float(thr[best_idx]), 2)
+
+    # thresh_used is what gets returned and passed to plot_failure_detection_summary
+    thresh_used = (
+        detection_threshold if detection_threshold is not None else optimal_thresh
+    )
+
+    # Find the index in thr closest to the manual threshold (for J-curve annotation)
+    if detection_threshold is not None:
+        manual_idx = int(np.argmin(np.abs(thr - detection_threshold)))
+    else:
+        manual_idx = None
+
+    print(
+        f"Youden's J optimal:  {optimal_thresh:.2f}  "
+        f"(TPR: {tpr[best_idx]:.3f}  FPR: {fpr[best_idx]:.3f}  J: {j_scores[best_idx]:.3f})"
+    )
+    if manual_idx is not None:
+        print(
+            f"Manual threshold:    {detection_threshold:.2f}  "
+            f"(TPR: {tpr[manual_idx]:.3f}  FPR: {fpr[manual_idx]:.3f}  J: {j_scores[manual_idx]:.3f})"
+        )
+    print(f"AUC-ROC: {auc_val:.3f}")
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize)
+
+    # Left: ROC curve
+    ax1.plot(fpr, tpr, color="#374151", lw=2, label=f"ROC  (AUC = {auc_val:.3f})")
+    ax1.plot(
+        [0, 1], [0, 1], color="#9ca3af", lw=1, linestyle="--", label="Random classifier"
+    )
+
+    # Youden's J optimal — always shown in red
+    ax1.scatter(
+        [fpr[best_idx]],
+        [tpr[best_idx]],
+        color="#ef4444",
+        s=120,
+        zorder=5,
+        label=f"Youden's J optimal  ({optimal_thresh:.2f})",
+    )
+    ax1.axvline(fpr[best_idx], color="#ef4444", linestyle=":", alpha=0.45)
+    ax1.axhline(tpr[best_idx], color="#ef4444", linestyle=":", alpha=0.45)
+    ax1.annotate(
+        f"  {optimal_thresh:.2f}  (J opt)\n  TPR={tpr[best_idx]:.3f}  FPR={fpr[best_idx]:.3f}",
+        xy=(fpr[best_idx], tpr[best_idx]),
+        xytext=(min(fpr[best_idx] + 0.06, 0.62), max(tpr[best_idx] - 0.15, 0.05)),
+        fontsize=9,
+        color="#ef4444",
+    )
+
+    # Manual threshold — shown in orange if supplied
+    if manual_idx is not None:
+        ax1.scatter(
+            [fpr[manual_idx]],
+            [tpr[manual_idx]],
+            color="#f97316",
+            s=120,
+            zorder=6,
+            marker="D",
+            label=f"Manual threshold  ({detection_threshold:.2f})",
+        )
+        ax1.axvline(fpr[manual_idx], color="#f97316", linestyle=":", alpha=0.45)
+        ax1.axhline(tpr[manual_idx], color="#f97316", linestyle=":", alpha=0.45)
+        ax1.annotate(
+            f"  {detection_threshold:.2f}  (manual)\n  TPR={tpr[manual_idx]:.3f}  FPR={fpr[manual_idx]:.3f}",
+            xy=(fpr[manual_idx], tpr[manual_idx]),
+            xytext=(
+                min(fpr[manual_idx] + 0.06, 0.62),
+                min(tpr[manual_idx] + 0.04, 0.92),
+            ),
+            fontsize=9,
+            color="#f97316",
+        )
+
+    ax1.set_xlabel("False Positive Rate (FPR)")
+    ax1.set_ylabel("True Positive Rate (TPR)")
+    ax1.set_title("ROC Curve — detection threshold derivation")
+    ax1.legend(loc="lower right", fontsize=9)
+    ax1.set_xlim(0, 1)
+    ax1.set_ylim(0, 1.02)
+    ax1.grid(True, alpha=0.25)
+
+    # Right: Youden's J vs threshold (skip thr[0] — sklearn sentinel)
+    thr_plot = thr[1:]
+    j_plot = j_scores[1:]
+    _x_nudge = (thr_plot.max() - thr_plot.min()) * 0.04
+
+    ax2.plot(thr_plot, j_plot, color="#374151", lw=2, label="Youden's J  (TPR − FPR)")
+
+    # Optimal — red
+    ax2.axvline(
+        optimal_thresh,
+        color="#ef4444",
+        linestyle="--",
+        lw=1.5,
+        label=f"Youden's J optimal = {optimal_thresh:.2f}",
+    )
+    ax2.scatter(
+        [optimal_thresh], [j_scores[best_idx]], color="#ef4444", s=120, zorder=5
+    )
+    ax2.annotate(
+        f"  J = {j_scores[best_idx]:.3f}",
+        xy=(optimal_thresh, j_scores[best_idx]),
+        xytext=(optimal_thresh + _x_nudge, j_scores[best_idx] - 0.02),
+        fontsize=9,
+        color="#ef4444",
+    )
+
+    # Manual — orange
+    if manual_idx is not None:
+        ax2.axvline(
+            detection_threshold,
+            color="#f97316",
+            linestyle="--",
+            lw=1.5,
+            label=f"Manual threshold = {detection_threshold:.2f}",
+        )
+        ax2.scatter(
+            [detection_threshold],
+            [j_scores[manual_idx]],
+            color="#f97316",
+            s=120,
+            zorder=6,
+            marker="D",
+        )
+        ax2.annotate(
+            f"  J = {j_scores[manual_idx]:.3f}",
+            xy=(detection_threshold, j_scores[manual_idx]),
+            xytext=(detection_threshold + _x_nudge, j_scores[manual_idx] + 0.01),
+            fontsize=9,
+            color="#f97316",
+        )
+
+    ax2.set_xlabel(score_col.replace("_", " ").title())
+    ax2.set_ylabel("Youden's J  (TPR − FPR)")
+    ax2.set_title("Youden's J vs Threshold")
+    ax2.legend(fontsize=9)
+    ax2.grid(True, alpha=0.25)
+
+    plt.suptitle(title, fontsize=12, y=1.01)
+    plt.tight_layout()
+    plt.show()
+
+    return thresh_used
+
+
+# ---------------------------------------------------------------------------
+# plot_failure_detection_summary
+# ---------------------------------------------------------------------------
+
+
+def plot_failure_detection_summary(
+    risk_source: Union[str, "pd.DataFrame"],
+    failures_source: Union[str, Dict[str, Any], "pd.DataFrame"],
+    prediction_horizon_days: int = 14,
+    failure_date_column: str = "failure_date",
+    detection_threshold: Optional[float] = None,
+    score_col: str = "operational_risk",
+    output_csv: Optional[str] = None,
+) -> "pd.DataFrame":
+    """
+    Build a per-failure detection audit table and print a per-asset summary.
+
+    For each failure, reports whether *score_col* exceeded *detection_threshold*
+    at least once in the ``prediction_horizon_days`` window before the event,
+    plus the first detection date and days-in-advance lead time.
+
+    Parameters
+    ----------
+    risk_source:
+        Path to a risk-scores parquet (e.g. ``training_scores.parquet``) or
+        a DataFrame with ``asset_id``, ``date``, and *score_col* columns.
+    failures_source:
+        Path to a failures CSV/parquet or a DataFrame.
+    prediction_horizon_days:
+        Days before each failure used as the detection window (default 14).
+    failure_date_column:
+        Column in *failures_source* holding the failure date.
+    detection_threshold:
+        Minimum *score_col* value to count as a detection.  ``None``
+        auto-derives the Youden's J optimal threshold from the ROC curve.
+    score_col:
+        Risk score column to evaluate (default ``"operational_risk"``).
+    output_csv:
+        If provided, save the per-failure table to this path as a CSV.
+
+    Returns
+    -------
+    pd.DataFrame
+        Per-failure table with columns ``asset_id``, ``failure_date``,
+        ``max_risk_in_window``, ``caught``, ``first_detection_date``,
+        ``days_in_advance``.  Returned so the caller can slice, filter,
+        or plot further.
+    """
+    try:
+        import numpy as np
+        import pandas as pd
+        from sklearn.metrics import roc_curve
+    except ImportError:
+        raise ImportError("numpy, pandas, and scikit-learn are required.")
+
+    df = _load_dataframe(risk_source)
+    df["date"] = pd.to_datetime(df["date"])
+    df["asset_id"] = df["asset_id"].astype(str)
+
+    failures_df = _load_failures_df(failures_source, failure_date_column)
+
+    if detection_threshold is None:
+        labels = pd.Series(0, index=df.index)
+        for _, f in failures_df.iterrows():
+            aid, fdate = str(f["asset_id"]), pd.Timestamp(f["failure_date"])
+            win_start = fdate - pd.Timedelta(days=prediction_horizon_days)
+            mask = (
+                (df["asset_id"] == aid)
+                & (df["date"] >= win_start)
+                & (df["date"] < fdate)
+            )
+            labels[mask] = 1
+        fpr, tpr, thr = roc_curve(labels, df[score_col])
+        thresh_used = round(float(thr[int(np.argmax(tpr - fpr))]), 2)
+        print(f"Detection threshold: {thresh_used:.2f}  (Youden's J auto-derived)\n")
+    else:
+        thresh_used = detection_threshold
+        print(f"Detection threshold: {thresh_used:.2f}  (manual)\n")
+
+    rows = []
+    for _, f in failures_df.sort_values(["asset_id", "failure_date"]).iterrows():
+        aid, fdate = str(f["asset_id"]), pd.Timestamp(f["failure_date"])
+        win_start = fdate - pd.Timedelta(days=prediction_horizon_days)
+        win = df[
+            (df["asset_id"] == aid) & (df["date"] >= win_start) & (df["date"] < fdate)
+        ]
+        if win.empty:
+            rows.append(
+                {
+                    "asset_id": aid,
+                    "failure_date": fdate.date(),
+                    "max_risk_in_window": None,
+                    "caught": False,
+                    "first_detection_date": None,
+                    "days_in_advance": None,
+                }
+            )
+            continue
+        max_risk = win[score_col].max()
+        detected = win[win[score_col] >= thresh_used].sort_values("date")
+        caught = not detected.empty
+        first_det = detected.iloc[0]["date"] if caught else pd.NaT
+        days_adv = int((fdate - first_det).days) if caught else None
+        rows.append(
+            {
+                "asset_id": aid,
+                "failure_date": fdate.date(),
+                "max_risk_in_window": round(float(max_risk), 2),
+                "caught": caught,
+                "first_detection_date": first_det.date() if caught else None,
+                "days_in_advance": days_adv,
+            }
+        )
+
+    det_df = pd.DataFrame(rows)
+
+    if output_csv:
+        det_df.to_csv(output_csv, index=False)
+        print(f"Saved {len(det_df)} failure records → {output_csv}\n")
+
+    try:
+        from IPython.display import display as _display
+
+        _display(det_df)
+    except Exception:
+        print(det_df.to_string(index=False))
+
+    summ = (
+        det_df.groupby("asset_id")
+        .agg(
+            n_failures=("caught", "count"),
+            n_caught=("caught", "sum"),
+            avg_days_in_advance=("days_in_advance", "mean"),
+            avg_max_risk=("max_risk_in_window", "mean"),
+        )
+        .assign(
+            n_missed=lambda d: d["n_failures"] - d["n_caught"],
+            catch_rate_pct=lambda d: (d["n_caught"] / d["n_failures"] * 100).round(1),
+            avg_days_in_advance=lambda d: d["avg_days_in_advance"].round(1),
+            avg_max_risk=lambda d: d["avg_max_risk"].round(2),
+        )[
+            [
+                "n_failures",
+                "n_caught",
+                "n_missed",
+                "catch_rate_pct",
+                "avg_days_in_advance",
+                "avg_max_risk",
+            ]
+        ]
+        .sort_values("catch_rate_pct", ascending=False)
+        .reset_index()
+    )
+
+    total_caught = int(det_df["caught"].sum())
+    total = len(det_df)
+    avg_adv = det_df["days_in_advance"].mean()
+
+    print(f"\n─── Per-asset summary  (threshold = {thresh_used:.2f}) ───")
+    try:
+        _display(summ)
+    except Exception:
+        print(summ.to_string(index=False))
+    print(
+        f"\nOverall: {total_caught}/{total} caught ({100 * total_caught / total:.1f}%) "
+        f"| avg lead time {avg_adv:.1f}d | median {det_df['days_in_advance'].median():.0f}d"
+    )
+
+    return det_df
+
+
+# ---------------------------------------------------------------------------
+# plot_failure_detection_timeline
+# ---------------------------------------------------------------------------
+
+
+def plot_failure_detection_timeline(
+    risk_source: Union[str, "pd.DataFrame"],
+    failures_source: Union[str, Dict[str, Any], "pd.DataFrame"],
+    prediction_horizon_days: int = 14,
+    failure_date_column: str = "failure_date",
+    detection_threshold: Optional[float] = None,
+    score_col: str = "operational_risk",
+    det_df: Optional["pd.DataFrame"] = None,
+    assets: Optional[List[str]] = None,
+    max_assets: int = 25,
+    title: str = "Failure Detection Timeline",
+    width: int = 1100,
+    height: Optional[int] = None,
+) -> None:
+    """
+    Horizontal timeline coloured by detection outcome — one row per asset.
+
+    Days inside a pre-failure window are coloured by whether the score crossed the threshold;
+    all other days share a single background colour.
+
+    * **Green**  = inside pre-failure window, score ≥ threshold (caught)
+    * **Orange** = inside pre-failure window, score < threshold (missed)
+    * **Blue**   = outside any window (normal operation)
+    * **Stars**  = failure events — green star if caught, red star if missed
+
+    Parameters
+    ----------
+    risk_source:
+        Path to a risk-scores parquet or DataFrame with ``asset_id``, ``date``,
+        and *score_col* columns.
+    failures_source:
+        Path to failures CSV/parquet or a DataFrame.
+    prediction_horizon_days:
+        Days before each failure used as the detection window (default 14).
+    failure_date_column:
+        Column in *failures_source* holding the failure date.
+    detection_threshold:
+        Score threshold. ``None`` auto-derives Youden's J from the ROC curve.
+    score_col:
+        Risk score column to evaluate (default ``"operational_risk"``).
+    det_df:
+        Optional pre-computed per-failure DataFrame from
+        :func:`plot_failure_detection_summary`.  When supplied the caught/missed
+        star colours are read directly rather than being recomputed.
+    assets:
+        Optional list of asset IDs to show.  Defaults to all (up to *max_assets*).
+    max_assets:
+        Cap on number of assets shown (default 25).
+    """
+    try:
+        import plotly.graph_objects as go
+        import pandas as pd
+        import numpy as np
+        from sklearn.metrics import roc_curve
+    except ImportError:
+        raise ImportError("plotly, pandas, numpy, and scikit-learn are required.")
+
+    df = _load_dataframe(risk_source)
+    df["date"] = pd.to_datetime(df["date"])
+    df["asset_id"] = df["asset_id"].astype(str)
+    df = df.copy()
+
+    failures_df = _load_failures_df(failures_source, failure_date_column)
+
+    if assets:
+        targets = [str(a) for a in assets]
+        df = df[df["asset_id"].isin(targets)]
+        failures_df = failures_df[failures_df["asset_id"].isin(targets)]
+
+    all_assets = sorted(df["asset_id"].unique())[:max_assets]
+    df = df[df["asset_id"].isin(all_assets)]
+    failures_df = failures_df[failures_df["asset_id"].isin(all_assets)]
+
+    # Derive threshold if not supplied
+    if detection_threshold is None:
+        labels_s = pd.Series(0, index=df.index)
+        for _, f in failures_df.iterrows():
+            aid, fdate = str(f["asset_id"]), pd.Timestamp(f["failure_date"])
+            win_start = fdate - pd.Timedelta(days=prediction_horizon_days)
+            mask = (
+                (df["asset_id"] == aid)
+                & (df["date"] >= win_start)
+                & (df["date"] < fdate)
+            )
+            labels_s[mask] = 1
+        fpr_r, tpr_r, thr_r = roc_curve(labels_s, df[score_col])
+        thresh_used = round(float(thr_r[int(np.argmax(tpr_r - fpr_r))]), 2)
+    else:
+        thresh_used = detection_threshold
+
+    # Label each row: 1 = inside a pre-failure window, 0 = normal
+    df["_label"] = 0
+    for _, f in failures_df.iterrows():
+        aid, fdate = str(f["asset_id"]), pd.Timestamp(f["failure_date"])
+        win_start = fdate - pd.Timedelta(days=prediction_horizon_days)
+        mask = (
+            (df["asset_id"] == aid) & (df["date"] >= win_start) & (df["date"] < fdate)
+        )
+        df.loc[mask, "_label"] = 1
+
+    # Classify into 3 buckets: outside window, window-missed, window-caught
+    above = df[score_col] >= thresh_used
+    df["_cls"] = "outside"
+    df.loc[(df["_label"] == 1) & ~above, "_cls"] = "window_missed"
+    df.loc[(df["_label"] == 1) & above, "_cls"] = "window_caught"
+
+    COLORS = {
+        "outside": "#93c5fd",
+        "window_missed": "#fb923c",
+        "window_caught": "#4ade80",
+    }
+    NAMES = {
+        "outside": "Outside window",
+        "window_missed": f"Window — missed",
+        "window_caught": f"Window — caught",
+    }
+
+    fig = go.Figure()
+    for cls in ["outside", "window_missed", "window_caught"]:
+        sub = df[df["_cls"] == cls]
+        if sub.empty:
+            continue
+        fig.add_trace(
+            go.Scatter(
+                x=sub["date"],
+                y=sub["asset_id"],
+                mode="markers",
+                marker=dict(symbol="square", size=4, color=COLORS[cls], opacity=0.8),
+                name=NAMES[cls],
+                customdata=sub[score_col].values,
+                hovertemplate=(
+                    "Asset: %{y}<br>Date: %{x}<br>"
+                    f"Score: %{{customdata:.2f}}<br>{NAMES[cls]}<extra></extra>"
+                ),
+            )
+        )
+
+    # Build caught/missed lookup from det_df if provided, else compute on the fly
+    if det_df is not None and not det_df.empty:
+        det_lookup = {
+            (str(r["asset_id"]), pd.Timestamp(r["failure_date"]).date()): bool(
+                r["caught"]
+            )
+            for _, r in det_df.iterrows()
+        }
+    else:
+        det_lookup = None
+
+    for caught_val, star_color, star_label in [
+        (True, "#16a34a", "Caught failure"),
+        (False, "#dc2626", "Missed failure"),
+    ]:
+        star_dates, star_assets = [], []
+        for _, f in failures_df.iterrows():
+            aid, fdate = str(f["asset_id"]), pd.Timestamp(f["failure_date"])
+            if aid not in all_assets:
+                continue
+            if det_lookup is not None:
+                caught = det_lookup.get((aid, fdate.date()), False)
+            else:
+                win_start = fdate - pd.Timedelta(days=prediction_horizon_days)
+                win = df[
+                    (df["asset_id"] == aid)
+                    & (df["date"] >= win_start)
+                    & (df["date"] < fdate)
+                ]
+                caught = bool((win[score_col] >= thresh_used).any())
+            if caught == caught_val:
+                star_dates.append(fdate)
+                star_assets.append(aid)
+
+        if star_dates:
+            fig.add_trace(
+                go.Scatter(
+                    x=star_dates,
+                    y=star_assets,
+                    mode="markers",
+                    marker=dict(
+                        symbol="star",
+                        size=12,
+                        color=star_color,
+                        line=dict(width=1, color="white"),
+                    ),
+                    name=star_label,
+                    hovertemplate=f"Asset: %{{y}}<br>Failure: %{{x}}<br>{star_label}<extra></extra>",
+                )
+            )
+
+    h = height or max(350, len(all_assets) * 22 + 130)
+    fig.update_layout(
+        title=dict(text=title, x=0.5),
+        xaxis=dict(title="Date"),
+        yaxis=dict(title="Asset", categoryorder="category ascending"),
+        width=width,
+        height=h,
+        legend=dict(orientation="h", y=1.06),
+        margin=dict(l=100, r=40, t=90, b=60),
     )
     fig.show(renderer="notebook")
