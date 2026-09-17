@@ -39,7 +39,7 @@ class OpsRiskClient:
     # Minimum API version this SDK requires.
     # Bump this only when the SDK starts calling an endpoint that didn't exist before.
     # If the live API is older than this, wait_until_ready() raises CompatibilityError.
-    MIN_API_VERSION = "1.3.0"
+    MIN_API_VERSION = "2.0.0"
 
     def __init__(
         self,
@@ -279,10 +279,13 @@ class OpsRiskClient:
             except APIError as exc:
                 if exc.status_code != 503:
                     raise
-            except httpx.ConnectError:
-                pass  # server not listening yet during startup — retry
-            except (httpx.ReadError, httpx.ReadTimeout, httpx.ConnectTimeout, httpx.TimeoutException):
-                pass  # transient during uvicorn startup — retry
+            except httpx.ConnectError as exc:
+                raise ConnectionError(
+                    f"Cannot connect to the API at {self._http._client.base_url}. "
+                    "Check your network connection or verify the API URL."
+                ) from exc
+            except (httpx.ReadTimeout, httpx.ConnectTimeout, httpx.TimeoutException):
+                pass
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 print(" timed out.", flush=True)

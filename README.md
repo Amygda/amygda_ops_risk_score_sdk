@@ -75,6 +75,10 @@ Two sequential pipelines:
 
 **Risk Score** (steps 9–12): Upload historical logs → train calibration thresholds → upload new logs → generate per-asset, per-period operational risk scores.
 
+## Running the API locally
+
+If you prefer to keep all data on your own machine or use your own LLM API key, you can run the API locally with Docker and point the SDK at `http://localhost:8000`. See [`local_setup/README.md`](local_setup/README.md) for the setup guide.
+
 ## Requirements
 
 - Python 3.10+

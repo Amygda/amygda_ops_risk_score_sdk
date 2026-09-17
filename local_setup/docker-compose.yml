@@ -1,0 +1,51 @@
+# Combined deployment — Ops Risk Score
+#
+# Start only the API:
+#   docker compose --profile api up -d
+#
+# Start only the Streamlit app:
+#   docker compose --profile streamlit up -d
+#
+# Start both:
+#   docker compose --profile full up -d
+#
+# Stop everything:
+#   docker compose --profile full down
+#
+# Requires: .env file in this folder (copy from .env.template and fill in keys)
+#
+# FIRST-TIME SETUP — run once after first `docker compose up`, API only:
+#   docker exec ops-risk-api python seed.py
+#
+# This creates an API key stored in ./data/db/labelling.db.
+# Do NOT re-run after a normal restart — only re-run if ./data was deleted.
+
+services:
+
+  ops-risk-api:
+    profiles: ["api", "full"]
+    image: guna1/ops-risk-api:latest
+    container_name: ops-risk-api
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ${LOCAL_DATA_DIR:-./data}:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+
+  ops-risk-streamlit:
+    profiles: ["streamlit", "full"]
+    image: guna1/ops-risk-streamlit:latest
+    container_name: ops-risk-streamlit
+    env_file: .env
+    ports:
+      - "8501:8501"
+    volumes:
+      - ${TRAINED_MODELS_DIR:-./trained_models}:/data/trained_models
+    restart: unless-stopped
