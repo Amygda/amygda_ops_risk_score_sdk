@@ -20,8 +20,13 @@ _BLOCKING_STEP_MESSAGES: dict = {
         "Organising systems and subsystems, almost there...",
         "Finalising hierarchy, hang tight...",
     ],
+    "preview_classification": [
+        "Building vector database and fetching match pool...",
+        "Calculating optimal similarity threshold...",
+        "Computing coverage statistics...",
+    ],
     "run_classification": [
-        "Running classification — building vector database...",
+        "Running classification — this may take a moment...",
         "Classifying logs against the hierarchy...",
         "Probabilistic inference in progress...",
         "Processing classification results...",
@@ -252,6 +257,7 @@ class Session:
         self,
         file_path: str,
         log_column: str,
+        asset_column: str,
         max_systems: int,
         max_subsystems: int,
         asset_context: str,
@@ -272,6 +278,10 @@ class Session:
                 Path to the log file (.csv or .xlsx).
             log_column:
                 Name of the column containing the log text or event code.
+            asset_column:
+                Name of the column that identifies the asset or equipment unit
+                (e.g. ``'asset_id'``).  Used to track which assets are covered
+                by the classification and to build per-asset event counts.
             max_systems:
                 Maximum number of top-level systems for the LLM to generate (1–10).
             max_subsystems:
@@ -291,12 +301,14 @@ class Session:
         Returns:
             Dict with ``message``, ``auth_id``, ``row_count``, ``downsample_required``
             (bool), ``available_columns``, ``next_step``, and your full configuration
-            echoed back (``file_path``, ``log_column``, ``max_systems``,
-            ``max_subsystems``, ``asset_context``, ``is_free_text``, ``sheet_name``).
+            echoed back (``file_path``, ``log_column``, ``asset_column``,
+            ``max_systems``, ``max_subsystems``, ``asset_context``, ``is_free_text``,
+            ``sheet_name``).
         """
         _v.validate_configure(
             file_path=file_path,
             log_column=log_column,
+            asset_column=asset_column,
             max_systems=max_systems,
             max_subsystems=max_subsystems,
             asset_context=asset_context,
@@ -306,6 +318,7 @@ class Session:
         data = {
             "auth_id":        self._auth_id,
             "log_column":     log_column,
+            "asset_column":   asset_column,
             "max_systems":    str(max_systems),
             "max_subsystems": str(max_subsystems),
             "asset_context":  asset_context,
@@ -330,6 +343,7 @@ class Session:
             "auth_id":        self._auth_id,
             "file_path":      os.path.abspath(file_path),
             "log_column":     log_column,
+            "asset_column":   asset_column,
             "max_systems":    max_systems,
             "max_subsystems": max_subsystems,
             "asset_context":  asset_context,
@@ -714,12 +728,111 @@ class Session:
         return result
 
     # ------------------------------------------------------------------ #
+    # Labelling — Step 7b: preview_classification  (repeatable)
+    # ------------------------------------------------------------------ #
+
+    def preview_classification(
+        self,
+        threshold: float = 0.4,
+        *,
+        timeout: float = 1800.0,
+    ) -> Dict[str, Any]:
+        """
+        Preview classification coverage at a given similarity threshold before committing.
+
+        Repeatable — call as many times as needed with different ``threshold`` values
+        to explore the coverage/precision trade-off.
+
+        **How thresholding works:**
+        A similarity score of 1.0 means a perfect keyword→system match; 0.0 means no
+        similarity at all.  A higher threshold keeps only confident matches (fewer
+        classified logs, higher precision).  A lower threshold accepts weaker matches
+        (more classified logs, more assets covered, potentially lower precision).
+        Typical useful range is 0.30–0.60.
+
+        **First call vs subsequent calls:**
+        On the **first call** the server builds the Qdrant vector database, fetches
+        the full match pool once, and runs a binary search to find the highest threshold
+        that maximises asset coverage (``optimal_threshold``).  Subsequent calls reuse
+        the cached pool and complete instantly — no repeated Qdrant queries.
+
+        **Reading the response:**
+
+        - ``optimal_threshold`` — server-recommended threshold; highest value that still
+          covers the maximum number of assets.  Always returned, regardless of what you
+          pass as ``threshold``.
+        - ``assets_covered`` / ``total_assets`` — how many distinct assets have at least
+          one classified log at the evaluated threshold.
+        - ``logs_classified`` / ``total_logs`` — unique log descriptions classified out
+          of total unique descriptions.
+        - ``classified_log_count`` / ``total_log_count`` — actual raw-log counts
+          (pre-dedup), so a description that appears 1,000 times counts as 1,000 logs.
+        - ``coverage_by_asset`` — one dict per asset with ``asset_id``, ``covered``,
+          ``classified_logs``, ``total_logs``, ``classified_log_count``,
+          ``total_log_count``.  Covered assets appear first, then uncovered.
+        - ``classification_by_log`` — one dict per unique log description with ``log``,
+          ``label`` (top system — subsystem match), ``match_score``, ``status``
+          (``"classified"`` or ``"no_match"``), ``log_count`` (total raw count across
+          all assets), and ``asset_ids`` (list of assets that have this log).
+        - ``classification_detail`` — flat, asset-first view: one dict per
+          ``(asset_id, log)`` pair sorted by asset then log, with ``log_count`` being
+          the count for that specific asset (not the total across all assets).
+          Equivalent to Streamlit's preview table — use this to build a grouped DataFrame.
+
+        Pass ``optimal_threshold`` (or any other value) as ``similarity_threshold``
+        to :meth:`run_classification` to commit.
+
+        Args:
+            threshold:
+                Similarity threshold to evaluate (0.0–1.0, default 0.4).
+                Start at 0.4, then use the returned ``optimal_threshold`` for the
+                recommended setting.
+            timeout:
+                Maximum seconds to wait for the first call (which builds Qdrant).
+                Subsequent calls are instant; the same ceiling applies.
+
+        Returns:
+            Dict containing all coverage statistics and per-asset / per-log detail.
+
+        Example
+        -------
+        ::
+
+            # First call — builds Qdrant, returns optimal threshold
+            preview = session.preview_classification(threshold=0.4)
+            print(f"Assets covered: {preview['assets_covered']} / {preview['total_assets']}")
+            print(f"Optimal threshold: {preview['optimal_threshold']}")
+
+            # Re-call at the optimal threshold — instant, no Qdrant rebuild
+            optimal = preview["optimal_threshold"]
+            if optimal != 0.4:
+                preview = session.preview_classification(threshold=optimal)
+
+            # View per-log detail as a DataFrame
+            import pandas as pd
+            log_df = pd.DataFrame(preview["classification_by_log"])
+        """
+        _v.validate_preview_classification(threshold=threshold)
+        raw = self._run_blocking(
+            "preview_classification",
+            lambda: self._http.post(
+                "/v1/labelling/preview-classification",
+                json={"auth_id": self._auth_id, "threshold": threshold},
+                timeout=timeout,
+            ),
+        )
+        result = {**raw, "auth_id": self._auth_id}
+        self._save_artifact("preview_classification", result)
+        return result
+
+    # ------------------------------------------------------------------ #
     # Labelling — Step 8: run_classification  (one-way door)
     # ------------------------------------------------------------------ #
 
     def run_classification(
         self,
         dest_dir: str,
+        similarity_threshold: Optional[float] = None,
         *,
         timeout: float = 3600.0,
     ) -> Dict[str, Any]:
@@ -729,15 +842,38 @@ class Session:
         Blocks until complete, then automatically downloads
         ``trained_labelling_model_{auth_id}.zip`` to ``dest_dir`` and wipes the session.
 
+        If ``similarity_threshold`` is not provided, the server uses the optimal
+        threshold calculated during :meth:`preview_classification`.  If
+        ``preview_classification`` was not called, the server defaults to 0.4.
+
         Args:
             dest_dir:
                 Directory to save the zip into.  Created if it does not exist.
+            similarity_threshold:
+                Override the similarity threshold (0.0–1.0).  Pass ``None``
+                (the default) to use the server-cached optimal threshold.
             timeout:
                 Maximum seconds to wait for the server to finish (default 1 h).
 
         Returns:
-            Dict with ``auth_id``, ``zip_path`` (absolute local path of the downloaded
-            zip), ``dest_dir``, and ``total_rows``.
+            Dict with:
+
+            ``auth_id``
+                Session identifier.
+            ``zip_path``
+                Absolute local path of the downloaded zip.
+            ``dest_dir``
+                Directory the zip was saved into.
+            ``total_rows``
+                Total log rows that were classified.
+            ``similarity_threshold_used``
+                The threshold that was actually applied — regardless of how it was
+                resolved (user override, optimal from preview, or default 0.4).
+            ``threshold_source``
+                One of ``"user_supplied"`` (caller passed an explicit value),
+                ``"optimal"`` (server used the result of :meth:`preview_classification`),
+                or ``"default"`` (preview was not run; 0.4 was used).  Use this to
+                audit which path the server took.
 
         Example
         -------
@@ -745,26 +881,33 @@ class Session:
 
             result = session.run_classification("outputs/")
             zip_path = result["zip_path"]
-            # → "/abs/path/outputs/trained_labelling_model_ses-xxxx.zip"
+            print(result["similarity_threshold_used"])  # e.g. 0.45
+            print(result["threshold_source"])           # "optimal"
             # Session is wiped automatically.
             # Use this zip with import_model() on a new risk score session.
         """
+        _v.validate_run_classification(similarity_threshold=similarity_threshold)
         os.makedirs(dest_dir, exist_ok=True)
+        params: Dict[str, Any] = {"auth_id": self._auth_id}
+        if similarity_threshold is not None:
+            params["similarity_threshold"] = similarity_threshold
         raw = self._run_blocking(
             "run_classification",
             lambda: self._http.post(
                 "/v1/labelling/run-classification",
-                params={"auth_id": self._auth_id},
+                params=params,
                 timeout=timeout,
             ),
         )
         dest_path = os.path.join(dest_dir, f"trained_labelling_model_{self._auth_id}.zip")
         abs_path = self._download_and_wipe("/v1/labelling/download-zip", dest_path)
         result = {
-            "auth_id":   self._auth_id,
-            "zip_path":  abs_path,
-            "dest_dir":  os.path.abspath(dest_dir),
-            "total_rows": raw.get("total_rows", 0),
+            "auth_id":                   self._auth_id,
+            "zip_path":                  abs_path,
+            "dest_dir":                  os.path.abspath(dest_dir),
+            "total_rows":                raw.get("total_rows", 0),
+            "similarity_threshold_used": raw.get("similarity_threshold_used"),
+            "threshold_source":          raw.get("threshold_source"),
         }
         self._save_artifact("run_classification", result)
         return result

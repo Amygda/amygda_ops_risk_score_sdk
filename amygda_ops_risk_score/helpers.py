@@ -779,7 +779,7 @@ def plot_risk_heatmap(
     fig.update_layout(
         title=dict(text=title, x=0.5),
         xaxis=dict(title="Date", tickangle=-45),
-        yaxis=dict(title="Asset"),
+        yaxis=dict(title="Asset", autorange="reversed"),
         width=width,
         height=max(height, len(assets) * 25 + 150),
         margin=dict(l=120, r=40, t=60, b=80),
@@ -3479,7 +3479,7 @@ def plot_label_timeline(
     fig.update_layout(
         title=dict(text=title, x=0.5),
         xaxis=dict(title="Date"),
-        yaxis=dict(title="Asset", categoryorder="category ascending"),
+        yaxis=dict(title="Asset", categoryorder="category ascending", autorange="reversed"),
         width=width,
         height=h,
         legend=dict(orientation="h", y=1.06),
@@ -4638,7 +4638,7 @@ def plot_failure_detection_timeline(
     fig.update_layout(
         title=dict(text=title, x=0.5),
         xaxis=dict(title="Date"),
-        yaxis=dict(title="Asset", categoryorder="category ascending"),
+        yaxis=dict(title="Asset", categoryorder="category ascending", autorange="reversed"),
         width=width,
         height=h,
         legend=dict(orientation="h", y=1.06),

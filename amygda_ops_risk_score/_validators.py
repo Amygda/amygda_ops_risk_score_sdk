@@ -62,6 +62,7 @@ def _xlsx_header(file_bytes: bytes, sheet_name: Optional[str]) -> list:
 def validate_configure(
     file_path: str,
     log_column: str,
+    asset_column: str,
     max_systems: int,
     max_subsystems: int,
     asset_context: str,
@@ -88,6 +89,9 @@ def validate_configure(
     # Parameter checks
     if not log_column or not log_column.strip():
         errors.append("log_column is required and cannot be blank.")
+
+    if not asset_column or not asset_column.strip():
+        errors.append("asset_column is required and cannot be blank.")
 
     if not asset_context or not asset_context.strip():
         errors.append("asset_context is required and cannot be blank.")
@@ -123,11 +127,17 @@ def validate_configure(
         with open(file_path, "rb") as fh:
             file_bytes = fh.read()
         headers = _xlsx_header(file_bytes, sheet_name)
-        if headers and log_column not in headers:
-            errors.append(
-                f"Column '{log_column}' not found in file headers. "
-                f"Available columns: {', '.join(headers)}"
-            )
+        if headers:
+            if log_column not in headers:
+                errors.append(
+                    f"Column '{log_column}' not found in file headers. "
+                    f"Available columns: {', '.join(headers)}"
+                )
+            if asset_column not in headers:
+                errors.append(
+                    f"Column '{asset_column}' not found in file headers. "
+                    f"Available columns: {', '.join(headers)}"
+                )
     elif ext == ".csv":
         try:
             import pandas as pd
@@ -135,6 +145,11 @@ def validate_configure(
             if log_column not in df.columns:
                 errors.append(
                     f"Column '{log_column}' not found in CSV headers. "
+                    f"Available columns: {', '.join(df.columns)}"
+                )
+            if asset_column not in df.columns:
+                errors.append(
+                    f"Column '{asset_column}' not found in CSV headers. "
                     f"Available columns: {', '.join(df.columns)}"
                 )
         except Exception:
@@ -700,5 +715,37 @@ def validate_configure_generation(
             file_bytes = fh.read()
         _xlsx_header(file_bytes, sheet_name)  # raises if sheet issues
 
+    if errors:
+        _raise(errors)
+
+
+# ---------------------------------------------------------------------------
+# preview_classification (Step 7b — repeatable)
+# ---------------------------------------------------------------------------
+
+def validate_preview_classification(threshold: float) -> None:
+    errors: list = []
+    if not isinstance(threshold, (int, float)):
+        errors.append("threshold must be a number.")
+    elif not (0.0 <= float(threshold) <= 1.0):
+        errors.append(f"threshold must be between 0.0 and 1.0, got {threshold}.")
+    if errors:
+        _raise(errors)
+
+
+# ---------------------------------------------------------------------------
+# run_classification (Step 8 — one-way door)
+# ---------------------------------------------------------------------------
+
+def validate_run_classification(similarity_threshold: Optional[float] = None) -> None:
+    if similarity_threshold is None:
+        return
+    errors: list = []
+    if not isinstance(similarity_threshold, (int, float)):
+        errors.append("similarity_threshold must be a number.")
+    elif not (0.0 <= float(similarity_threshold) <= 1.0):
+        errors.append(
+            f"similarity_threshold must be between 0.0 and 1.0, got {similarity_threshold}."
+        )
     if errors:
         _raise(errors)
