@@ -28,9 +28,6 @@ ide = [
     "ipykernel>=6.0,<7.0",
 ]
 
-[project.scripts]
-ops-risk-setup = "amygda_ops_risk_score._setup_nlp:main"
-
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["amygda_ops_risk_score*"]
