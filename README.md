@@ -45,6 +45,24 @@ result = session.configure_labelling_pipeline(
 )
 ```
 
+## AI coding assistant skill
+
+An agent skill is bundled at `.claude/skills/risk-score/`. It walks any user — technical or non-technical — through the full pipeline conversationally: asking the right upfront questions, executing each SDK call, showing visualisations with interpretation guidance, and flagging irreversible steps. Covers all four journeys (fixed/free-text × supervised/unsupervised) and continuous scoring.
+
+Non-Claude Code tools receive context as **static text injection only** — they cannot follow in-context instructions to load additional files. Where a tool supports multiple context files, add `references/session.md`, `references/client.md`, and `references/helpers.md` (from `.claude/skills/risk-score/references/`) alongside `SKILL.md` for full coverage.
+
+| Tool | How to use it |
+|---|---|
+| **Claude Code** | `cp -r .claude/skills/risk-score/ ~/.claude/skills/risk-score/` — auto-triggers on "ops risk", "amygda", "equipment risk"; invoke directly with `/risk-score` |
+| **Cursor** | Create `.cursor/rules/risk-score.mdc` from `SKILL.md`; add the three `references/*.md` files as additional MDC rules in `.cursor/rules/`, each with `alwaysApply: true` frontmatter |
+| **GitHub Copilot** | Single file: paste `SKILL.md` into `.github/copilot-instructions.md`. Multi-file (VS Code / JetBrains): add each as a separate `.github/instructions/*.instructions.md` with `applyTo: "**"` frontmatter |
+| **Windsurf / Codeium** | Add `SKILL.md` and the three `references/*.md` files as separate Markdown files in `.windsurf/rules/` |
+| **OpenAI Codex (ChatGPT)** | Place `SKILL.md` content in `AGENTS.md` at the repo root; append `references/*.md` content as additional named sections in the same file |
+| **JetBrains AI Assistant** | Settings → Tools → AI Assistant → Rules: add `SKILL.md` and each `references/*.md` file as separate rules with "Always apply" activation |
+| **Amazon Q Developer** | Add `SKILL.md` as `.amazonq/rules/risk-score.md`; add the three `references/*.md` files as additional files in `.amazonq/rules/` |
+| **Gemini Code Assist** | VS Code: paste `SKILL.md` into Gemini Code Assist rules (Settings → search "Gemini Code Assist: Rules"). Agent mode: place `SKILL.md` content in `GEMINI.md` at project root |
+| **Any other tool** | Paste `SKILL.md` as a system prompt or project-level context file; include `references/*.md` content inline or as additional context files if the tool supports them |
+
 ## Notebooks
 
 The `how_to/` folder contains everything you need to get started:
