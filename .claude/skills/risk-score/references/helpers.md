@@ -260,7 +260,7 @@ Source: `all_predictions_exploded.parquet` (inside the labelling zip, also at `{
 
 ### helpers.plot_training_feature_over_time
 
-**Signature:** `helpers.plot_training_feature_over_time(training_fe_source: Union[str, pd.DataFrame], thresholds_source: Union[str, Dict[str, Any]], asset_id: Union[str, List[str]], system: str, subsystem: str, title: Optional[str] = None, width: int = 1000, height: int = 420) -> None`
+**Signature:** `helpers.plot_training_feature_over_time(training_fe_source: Union[str, pd.DataFrame], thresholds_source: Union[str, Dict[str, Any]], asset_id: Union[str, List[str]], system: str, subsystem: str, title: Optional[str] = None, width: int = 1000, height: int = 420, resolution: Optional[str] = None) -> None`
 
 **Source accepts:** `training_fe_source`: file path str (to `training_fe.parquet`) | `pd.DataFrame`; `thresholds_source`: file path str (to `calibration_thresholds.json`) | dict
 
@@ -268,13 +268,13 @@ Source: `all_predictions_exploded.parquet` (inside the labelling zip, also at `{
 
 **Description:** Time series of a subsystem's rolling risk feature for one or more assets with the calibration threshold as a horizontal dashed line.
 
-**Notes:** `asset_id` accepts a single string or a list of strings for multi-asset comparison.
+**Notes:** `asset_id` accepts a single string or a list of strings for multi-asset comparison. `resolution` (e.g. `"12h"`, `"1D"`) combines the model's time buckets into longer periods (highest value per period); `None` (default) plots every bucket.
 
 ---
 
 ### helpers.plot_subsystem_feature_pipeline
 
-**Signature:** `helpers.plot_subsystem_feature_pipeline(training_fe_source: Union[str, pd.DataFrame], thresholds_source: Union[str, Dict[str, Any]], asset_id: str, system: str, subsystem: str, is_free_text: bool = True, logs_mapping: Union[str, Dict[str, List[str]], None] = None, title: Optional[str] = None, width: int = 1000, height: int = 650) -> None`
+**Signature:** `helpers.plot_subsystem_feature_pipeline(training_fe_source: Union[str, pd.DataFrame], thresholds_source: Union[str, Dict[str, Any]], asset_id: str, system: str, subsystem: str, is_free_text: bool = True, logs_mapping: Union[str, Dict[str, List[str]], None] = None, title: Optional[str] = None, width: int = 1000, height: int = 650, resolution: Optional[str] = None) -> None`
 
 **Source accepts:** `training_fe_source`: file path str (to `training_fe.parquet`) | `pd.DataFrame`; `thresholds_source`: file path str (to `calibration_thresholds.json`) | dict
 
@@ -282,25 +282,27 @@ Source: `all_predictions_exploded.parquet` (inside the labelling zip, also at `{
 
 **Description:** Three-panel chart showing how the risk feature is built up for a single asset and subsystem: risk feature line with threshold (row 1), raw daily event count or rolling log-code features (row 2), binary event indicator or binary log-code features (row 3).
 
-**Notes:** `is_free_text=False` requires `logs_mapping` (path to `logs_by_system_subsystem.json` or the dict).
+**Notes:** `is_free_text=False` requires `logs_mapping` (path to `logs_by_system_subsystem.json` or the dict). `resolution` (e.g. `"12h"`, `"1D"`) combines the model's time buckets into longer periods (highest value per period); `None` (default) plots every bucket. For sub-daily data the rolling panel is drawn as stacked areas and the binary/count panels as markers (bars that narrow are invisible over months); daily data keeps bars.
 
 ---
 
 ### helpers.plot_system_contributions
 
-**Signature:** `helpers.plot_system_contributions(source: Union[str, pd.DataFrame], asset_id: str, model_config: Union[str, Dict[str, Any]], title: Optional[str] = None, width: int = 1000, height: int = 600) -> None`
+**Signature:** `helpers.plot_system_contributions(source: Union[str, pd.DataFrame], asset_id: str, model_config: Union[str, Dict[str, Any]], title: Optional[str] = None, width: int = 1000, height: int = 600, resolution: Optional[str] = None) -> None`
 
 **Source accepts:** `source`: file path str (`.parquet` or `.csv`) | `pd.DataFrame`; `model_config`: file path str (to `model_config.json`) | dict
 
 **Returns:** None (renders Plotly stacked bar chart with operational risk line on top)
 
-**Description:** Single-panel stacked bar chart for one asset showing weighted system contributions over time, with the operational risk line tracing the top of the stack.
+**Description:** Single-panel stacked bar chart for one asset showing weighted system contributions over time, with the operational risk line tracing the top of the stack. Sub-daily models draw stacked areas instead of bars.
+
+**Notes:** `resolution` (e.g. `"12h"`, `"1D"`) combines the model's time buckets into longer periods (highest value per period); `None` (default) plots every bucket.
 
 ---
 
 ### helpers.plot_label_timeline
 
-**Signature:** `helpers.plot_label_timeline(feature_source: Union[str, pd.DataFrame], failures_source: Union[str, Dict[str, Any], pd.DataFrame], prediction_horizon_days: int = 14, exclusion_days_after: int = 7, failure_date_column: str = "failure_date", assets: Optional[List[str]] = None, max_assets: int = 25, title: str = "Failure Label Timeline", width: int = 1100, height: Optional[int] = None) -> None`
+**Signature:** `helpers.plot_label_timeline(feature_source: Union[str, pd.DataFrame], failures_source: Union[str, Dict[str, Any], pd.DataFrame], prediction_horizon: Union[int, str] = 14, exclusion_after: Union[int, str] = 7, failure_date_column: str = "failure_date", assets: Optional[List[str]] = None, max_assets: int = 25, title: str = "Failure Label Timeline", width: int = 1100, height: Optional[int] = None) -> None`
 
 **Source accepts:** `feature_source`: file path str (to `training_fe.parquet` or any DataFrame with `asset_id`+`date`) | `pd.DataFrame`; `failures_source`: CSV/parquet file path str | dict | `pd.DataFrame`
 
@@ -308,11 +310,13 @@ Source: `all_predictions_exploded.parquet` (inside the labelling zip, also at `{
 
 **Description:** Horizontal scatter timeline — one row per asset — coloured blue (normal), red (pre-failure), grey (excluded post-failure), with stars for failure events.
 
+**Notes:** `prediction_horizon` / `exclusion_after` accept durations (`"36h"`) or days; pass the same values used in `configure_training` so labels match training. Uses `period_start` (bucket start) when present.
+
 ---
 
 ### helpers.plot_label_distribution
 
-**Signature:** `helpers.plot_label_distribution(feature_source: Union[str, pd.DataFrame], failures_source: Union[str, Dict[str, Any], pd.DataFrame], prediction_horizon_days: int = 14, exclusion_days_after: int = 7, failure_date_column: str = "failure_date", freq: str = "W", title: str = "Positive vs Negative Label Distribution Over Time", width: int = 1000, height: int = 400) -> None`
+**Signature:** `helpers.plot_label_distribution(feature_source: Union[str, pd.DataFrame], failures_source: Union[str, Dict[str, Any], pd.DataFrame], prediction_horizon: Union[int, str] = 14, exclusion_after: Union[int, str] = 7, failure_date_column: str = "failure_date", freq: str = "W", title: str = "Positive vs Negative Label Distribution Over Time", width: int = 1000, height: int = 400) -> None`
 
 **Source accepts:** `feature_source`: file path str | `pd.DataFrame`; `failures_source`: file path str | dict | `pd.DataFrame`
 
@@ -354,7 +358,7 @@ Source: `all_predictions_exploded.parquet` (inside the labelling zip, also at `{
 
 ### helpers.plot_risk_around_failures
 
-**Signature:** `helpers.plot_risk_around_failures(risk_source: Union[str, pd.DataFrame], failures_source: Union[str, Dict[str, Any], pd.DataFrame], failure_date_column: str = "failure_date", prediction_horizon_days: int = 14, window_after_days: int = 7, assets: Optional[List[str]] = None, max_assets: int = 6, score_col: str = "operational_risk", title: str = "Risk Score Around Failure Events", width: int = 1100, height: Optional[int] = None) -> None`
+**Signature:** `helpers.plot_risk_around_failures(risk_source: Union[str, pd.DataFrame], failures_source: Union[str, Dict[str, Any], pd.DataFrame], failure_date_column: str = "failure_date", prediction_horizon: Union[int, str] = 14, window_after: Union[int, str] = 7, assets: Optional[List[str]] = None, max_assets: int = 6, score_col: str = "operational_risk", title: str = "Risk Score Around Failure Events", width: int = 1100, height: Optional[int] = None) -> None`
 
 **Source accepts:** `risk_source`: file path str (`.parquet` or `.csv`) | `pd.DataFrame`; `failures_source`: file path str | dict | `pd.DataFrame`
 
@@ -362,11 +366,13 @@ Source: `all_predictions_exploded.parquet` (inside the labelling zip, also at `{
 
 **Description:** Time series of operational risk for each failing asset showing the full history, with dashed vertical lines at failure dates and shaded pre-failure horizon regions.
 
+**Notes:** `prediction_horizon` and `window_after` accept durations (`"36h"`) or days.
+
 ---
 
 ### helpers.plot_failure_risk_stats
 
-**Signature:** `helpers.plot_failure_risk_stats(risk_source: Union[str, pd.DataFrame], failures_source: Union[str, Dict[str, Any], pd.DataFrame], prediction_horizon_days: int = 14, exclusion_days_after: int = 7, failure_date_column: str = "failure_date", score_col: str = "operational_risk", title: str = "Risk Score Distribution: Pre-failure vs Normal", width: int = 880, height: int = 480) -> None`
+**Signature:** `helpers.plot_failure_risk_stats(risk_source: Union[str, pd.DataFrame], failures_source: Union[str, Dict[str, Any], pd.DataFrame], prediction_horizon: Union[int, str] = 14, exclusion_after: Union[int, str] = 7, failure_date_column: str = "failure_date", score_col: str = "operational_risk", title: str = "Risk Score Distribution: Pre-failure vs Normal", width: int = 880, height: int = 480) -> None`
 
 **Source accepts:** `risk_source`: file path str | `pd.DataFrame`; `failures_source`: file path str | dict | `pd.DataFrame`
 
@@ -378,7 +384,7 @@ Source: `all_predictions_exploded.parquet` (inside the labelling zip, also at `{
 
 ### helpers.plot_detection_roc
 
-**Signature:** `helpers.plot_detection_roc(risk_source: Union[str, pd.DataFrame], failures_source: Union[str, Dict[str, Any], pd.DataFrame], prediction_horizon_days: int = 14, failure_date_column: str = "failure_date", detection_threshold: Optional[float] = None, score_col: str = "operational_risk", figsize: tuple = (13, 5), title: str = "Optimal detection threshold selection") -> float`
+**Signature:** `helpers.plot_detection_roc(risk_source: Union[str, pd.DataFrame], failures_source: Union[str, Dict[str, Any], pd.DataFrame], prediction_horizon: Union[int, str] = 14, failure_date_column: str = "failure_date", detection_threshold: Optional[float] = None, score_col: str = "operational_risk", figsize: tuple = (13, 5), title: str = "Optimal detection threshold selection") -> float`
 
 **Source accepts:** `risk_source`: file path str (to a risk scores parquet, e.g. `training_scores.parquet`) | `pd.DataFrame`; `failures_source`: file path str | dict | `pd.DataFrame`
 
@@ -392,11 +398,11 @@ Source: `all_predictions_exploded.parquet` (inside the labelling zip, also at `{
 
 ### helpers.plot_failure_detection_summary
 
-**Signature:** `helpers.plot_failure_detection_summary(risk_source: Union[str, pd.DataFrame], failures_source: Union[str, Dict[str, Any], pd.DataFrame], prediction_horizon_days: int = 14, failure_date_column: str = "failure_date", detection_threshold: Optional[float] = None, score_col: str = "operational_risk", output_csv: Optional[str] = None) -> pd.DataFrame`
+**Signature:** `helpers.plot_failure_detection_summary(risk_source: Union[str, pd.DataFrame], failures_source: Union[str, Dict[str, Any], pd.DataFrame], prediction_horizon: Union[int, str] = 14, failure_date_column: str = "failure_date", detection_threshold: Optional[float] = None, score_col: str = "operational_risk", output_csv: Optional[str] = None) -> pd.DataFrame`
 
 **Source accepts:** `risk_source`: file path str | `pd.DataFrame`; `failures_source`: file path str | dict | `pd.DataFrame`
 
-**Returns:** `pd.DataFrame` — per-failure table with columns `asset_id`, `failure_date`, `max_risk_in_window`, `caught`, `first_detection_date`, `days_in_advance`
+**Returns:** `pd.DataFrame` — per-failure table with columns `asset_id`, `failure_date`, `max_risk_in_window`, `caught`, `first_detection_date`, `days_in_advance` (fractional for sub-daily data, e.g. `0.25` = 6h)
 
 **Description:** Builds a per-failure detection audit table (displayed inline), prints a per-asset summary, and optionally saves to CSV; auto-derives Youden's J threshold if `detection_threshold` is not supplied.
 
@@ -406,7 +412,7 @@ Source: `all_predictions_exploded.parquet` (inside the labelling zip, also at `{
 
 ### helpers.plot_failure_detection_timeline
 
-**Signature:** `helpers.plot_failure_detection_timeline(risk_source: Union[str, pd.DataFrame], failures_source: Union[str, Dict[str, Any], pd.DataFrame], prediction_horizon_days: int = 14, failure_date_column: str = "failure_date", detection_threshold: Optional[float] = None, score_col: str = "operational_risk", det_df: Optional[pd.DataFrame] = None, assets: Optional[List[str]] = None, max_assets: int = 25, title: str = "Failure Detection Timeline", width: int = 1100, height: Optional[int] = None) -> None`
+**Signature:** `helpers.plot_failure_detection_timeline(risk_source: Union[str, pd.DataFrame], failures_source: Union[str, Dict[str, Any], pd.DataFrame], prediction_horizon: Union[int, str] = 14, failure_date_column: str = "failure_date", detection_threshold: Optional[float] = None, score_col: str = "operational_risk", det_df: Optional[pd.DataFrame] = None, assets: Optional[List[str]] = None, max_assets: int = 25, title: str = "Failure Detection Timeline", width: int = 1100, height: Optional[int] = None) -> None`
 
 **Source accepts:** `risk_source`: file path str | `pd.DataFrame`; `failures_source`: file path str | dict | `pd.DataFrame`
 
@@ -448,15 +454,15 @@ Source: `all_predictions_exploded.parquet` (inside the labelling zip, also at `{
 
 ### helpers.plot_risk_heatmap
 
-**Signature:** `helpers.plot_risk_heatmap(source: Union[str, pd.DataFrame], metric: str = "operational_risk", asset_ids: Optional[List[str]] = None, title: str = "Multi-Asset Risk Heatmap Over Time", max_heatmap_score: float = 35.0, width: int = 1000, height: int = 500) -> None`
+**Signature:** `helpers.plot_risk_heatmap(source: Union[str, pd.DataFrame], metric: str = "operational_risk", asset_ids: Optional[List[str]] = None, title: str = "Multi-Asset Risk Heatmap Over Time", max_heatmap_score: float = 35.0, width: int = 1000, height: int = 500, resolution: Optional[str] = None) -> None`
 
 **Source accepts:** file path str (`.parquet` or `.csv`) | `pd.DataFrame`
 
-**Returns:** None (renders Plotly heatmap: rows = assets, columns = dates)
+**Returns:** None (renders Plotly heatmap: rows = assets, columns = time buckets)
 
-**Description:** Multi-asset risk heatmap over time where each cell is the max risk score for that asset on that date.
+**Description:** Multi-asset risk heatmap over time where each cell is the max risk score for that asset in that time bucket (one column per day for daily models).
 
-**Notes:** `metric` accepts `"operational_risk"` or any `"{system}_system_risk"` column. Use `list_risk_metrics(source)` to discover available columns.
+**Notes:** `metric` accepts `"operational_risk"` or any `"{system}_system_risk"` column. Use `list_risk_metrics(source)` to discover available columns. `resolution` (e.g. `"12h"`, `"1D"`) combines the model's time buckets into longer periods (highest value per period); `None` (default) plots every bucket.
 
 ---
 
@@ -470,13 +476,13 @@ Source: `all_predictions_exploded.parquet` (inside the labelling zip, also at `{
 
 **Description:** Tile panel for a single date showing colour-coded risk scores (blue 0–33, yellow 33–66, red 66–100) for all assets.
 
-**Notes:** If the exact date is not available the closest date is used automatically.
+**Notes:** If the exact date is not available the closest date is used automatically. Each tile shows the highest score that day; for sub-daily models `date="YYYY-MM-DD HH:MM"` selects a single bucket.
 
 ---
 
 ### helpers.plot_asset_risk_over_time
 
-**Signature:** `helpers.plot_asset_risk_over_time(source: Union[str, pd.DataFrame], asset_id: str, model_config: Union[str, Dict[str, Any], None] = None, weighted: bool = False, title: Optional[str] = None, max_heatmap_score: float = 80.0, width: int = 1000, height: int = 400) -> None`
+**Signature:** `helpers.plot_asset_risk_over_time(source: Union[str, pd.DataFrame], asset_id: str, model_config: Union[str, Dict[str, Any], None] = None, weighted: bool = False, title: Optional[str] = None, max_heatmap_score: float = 80.0, width: int = 1000, height: int = 400, resolution: Optional[str] = None) -> None`
 
 **Source accepts:** file path str (`.parquet` or `.csv`) | `pd.DataFrame`
 
@@ -484,13 +490,13 @@ Source: `all_predictions_exploded.parquet` (inside the labelling zip, also at `{
 
 **Description:** Plotly heatmap for a single asset showing operational risk + each system risk over time.
 
-**Notes:** When `weighted=True`, `model_config` is required (path to `model_config.json` or the dict). First `source` parameter is the risk scores parquet.
+**Notes:** When `weighted=True`, `model_config` is required (path to `model_config.json` or the dict). First `source` parameter is the risk scores parquet. `resolution` (e.g. `"12h"`, `"1D"`) combines the model's time buckets into longer periods (highest value per period); `None` (default) plots every bucket.
 
 ---
 
 ### helpers.plot_asset_system_over_time
 
-**Signature:** `helpers.plot_asset_system_over_time(source: Union[str, pd.DataFrame], asset_id: str, system: str, model_config: Union[str, Dict[str, Any], None] = None, weighted: bool = False, title: Optional[str] = None, width: int = 1000, height: int = 400) -> None`
+**Signature:** `helpers.plot_asset_system_over_time(source: Union[str, pd.DataFrame], asset_id: str, system: str, model_config: Union[str, Dict[str, Any], None] = None, weighted: bool = False, title: Optional[str] = None, width: int = 1000, height: int = 400, resolution: Optional[str] = None) -> None`
 
 **Source accepts:** file path str (`.parquet` or `.csv`) | `pd.DataFrame`
 
@@ -498,13 +504,13 @@ Source: `all_predictions_exploded.parquet` (inside the labelling zip, also at `{
 
 **Description:** Plotly heatmap for a single asset and system showing system-level risk and all its subsystem calibrated risks over time.
 
-**Notes:** `system` must match the system name as it appears in column names (e.g. `"motion_control"`). When `weighted=True`, `model_config` is required.
+**Notes:** `system` must match the system name as it appears in column names (e.g. `"motion_control"`). When `weighted=True`, `model_config` is required. `resolution` (e.g. `"12h"`, `"1D"`) combines the model's time buckets into longer periods (highest value per period); `None` (default) plots every bucket.
 
 ---
 
 ### helpers.plot_subsystem_log_activity
 
-**Signature:** `helpers.plot_subsystem_log_activity(source: Union[str, pd.DataFrame], asset_id: str, system: str, subsystem: str, date: str, days_back: int = 30, logs_mapping: Union[str, Dict[str, List[str]], None] = None, log_column: Optional[str] = None, risk_source: Union[str, pd.DataFrame, None] = None, is_free_text: bool = True, title: Optional[str] = None, width: int = 1000, height: int = 450) -> None`
+**Signature:** `helpers.plot_subsystem_log_activity(source: Union[str, pd.DataFrame], asset_id: str, system: str, subsystem: str, date: str, days_back: int = 30, logs_mapping: Union[str, Dict[str, List[str]], None] = None, log_column: Optional[str] = None, risk_source: Union[str, pd.DataFrame, None] = None, is_free_text: bool = True, title: Optional[str] = None, width: int = 1000, height: int = 450, resolution: Optional[str] = None) -> None`
 
 **Source accepts:** file path str (`.parquet` or `.csv`) | `pd.DataFrame` — accepts `classified_logs.parquet` (free-text mode) or `risk_scores.parquet` (fixed-log mode)
 
@@ -512,7 +518,7 @@ Source: `all_predictions_exploded.parquet` (inside the labelling zip, also at `{
 
 **Description:** Bar chart of log occurrences for a specific asset/system/subsystem within a date window; in free-text mode shows daily log counts, in fixed-log mode shows stacked bars per log code.
 
-**Notes:** First parameter is named `source` (NOT `classified_logs_path` or `source_path`). `logs_mapping` is required for fixed-log mode. `is_free_text=False` reads from `risk_scores.parquet` and requires `logs_mapping`.
+**Notes:** First parameter is named `source` (NOT `classified_logs_path` or `source_path`). `logs_mapping` is required for fixed-log mode. `is_free_text=False` reads from `risk_scores.parquet` and requires `logs_mapping`. `date="YYYY-MM-DD"` includes that whole day. Bars are per model bucket; `resolution` (e.g. `"12h"`, `"1D"`) combines the model's time buckets into longer periods (highest value per period); `None` (default) plots every bucket.
 
 ---
 
@@ -552,7 +558,7 @@ Source: `all_predictions_exploded.parquet` (inside the labelling zip, also at `{
 
 **Description:** Returns a full risk breakdown for one asset on one date without needing to know system/subsystem names in advance.
 
-**Notes:** If the exact date is not available, the closest date is used and a warning is printed. Raises `ValueError` if the `asset_id` is not found.
+**Notes:** If the exact date is not available, the closest date is used and a warning is printed. Scores are the max over the day; for sub-daily models `date="YYYY-MM-DD HH:MM"` returns a single bucket. Raises `ValueError` if the `asset_id` is not found.
 
 ---
 

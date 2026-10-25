@@ -498,7 +498,7 @@ def configure_training(
     asset_id_column: str,
     timestamp_column: str,
     date_format: str = "infer",
-    rolling_window: int = 7,
+    rolling_window: Union[str, int] = "7D",
     rolling_feature_type: str = "sum",
     quantile_for_thresholds: float = 0.99,
     sheet_name: Optional[str] = None,
@@ -506,21 +506,26 @@ def configure_training(
     failures_path: Optional[str] = None,
     failure_date_column: str = "machine_initialisation_date",
     failure_date_format: str = "infer",
-    prediction_horizon_days: int = 14,
-    exclusion_days_after: int = 7,
+    prediction_horizon: Union[str, int] = "14D",
+    exclusion_after: Union[str, int] = "7D",
     target_imbalance_ratio: Optional[float] = 10.0,
     sampling_strategy: str = "block",
-    block_size_days: int = 14,
+    block_size: Union[str, int] = "14D",
     n_candidates: int = 200,
     fallback_quantile: float = 0.95,
     min_positives: int = 5,
     lr_c: float = 0.5,
+    feature_frequency: str = "auto",
     *,
     timeout: float = 600.0,
 ) -> Dict[str, Any]:
 ```
 
 Uploads historical log data and sets risk score training parameters. Re-runnable until Step 10 starts.
+
+**Time buckets (SDK 5.0.0 / API ≥ 4.0.0):** features are built per *(asset, time bucket)*. `feature_frequency` sets the bucket width — `"auto"` (default) picks the finest width the data supports (date-only data → `"1D"`); an explicit width finer than the data's timestamps is rejected. Only buckets that contain logs become rows. Windows (`rolling_window`, `prediction_horizon`, `exclusion_after`, `block_size`) are durations such as `"7D"`, `"36h"`, `"90min"`; a bare number means days. The frequency is stored with the model and generation always reuses it.
+
+> **Renamed in 5.0.0:** `prediction_horizon_days` → `prediction_horizon`, `exclusion_days_after` → `exclusion_after`, `block_size_days` → `block_size`. The old names raise `TypeError`.
 
 **Parameters**
 
@@ -530,7 +535,7 @@ Uploads historical log data and sets risk score training parameters. Re-runnable
 | `asset_id_column` | str | — | Column uniquely identifying each asset |
 | `timestamp_column` | str | — | Column containing the event timestamp |
 | `date_format` | str | `"infer"` | `"infer"` auto-detects; pass a strftime string if detection fails |
-| `rolling_window` | int | `7` | Days to aggregate events over (1–30) |
+| `rolling_window` | str or int | `"7D"` | Time span to aggregate events over — duration (`"7D"`, `"36h"`) or number of days; at most `"30D"`, at least one bucket |
 | `rolling_feature_type` | str | `"sum"` | `"sum"`, `"flag"`, `"ewm"`, or `"all"`. `"ewm"` and `"all"` are only valid for fixed-log sessions |
 | `quantile_for_thresholds` | float | `0.99` | Calibration percentile (0–1); 0.99 means the top 1% of activity triggers elevated risk |
 | `sheet_name` | str or None | `None` | XLSX only |
@@ -538,15 +543,16 @@ Uploads historical log data and sets risk score training parameters. Re-runnable
 | `failures_path` | str or None | `None` | Path to a failures CSV; required when `supervised=True` |
 | `failure_date_column` | str | `"machine_initialisation_date"` | Column in the failures CSV holding the failure date |
 | `failure_date_format` | str | `"infer"` | Format of the failure date column |
-| `prediction_horizon_days` | int | `14` | Days before a failure to label as positive |
-| `exclusion_days_after` | int | `7` | Days after a failure to exclude from training (recovery period) |
+| `prediction_horizon` | str or int | `"14D"` | How long before a failure to label as positive — duration or number of days |
+| `exclusion_after` | str or int | `"7D"` | How long after a failure to exclude from training (recovery period); may be `0` |
 | `target_imbalance_ratio` | float or None | `10.0` | Max negatives-to-positives ratio after downsampling; `None` keeps all negatives |
 | `sampling_strategy` | str | `"block"` | `"block"` preserves temporal structure; `"random"` samples individual rows |
-| `block_size_days` | int | `14` | Calendar-day block size for block-based downsampling |
+| `block_size` | str or int | `"14D"` | Block length for block-based downsampling; at least one bucket |
 | `n_candidates` | int | `200` | Threshold candidates evaluated per subsystem |
 | `fallback_quantile` | float | `0.95` | Quantile used as fallback when a subsystem has too few positives |
 | `min_positives` | int | `5` | Minimum positive rows required to attempt AUC training per subsystem |
 | `lr_c` | float | `0.5` | Logistic regression regularisation strength C |
+| `feature_frequency` | str | `"auto"` | Time-bucket width: `"auto"` or `"5min"`, `"15min"`, `"1h"`, `"2h"`, `"4h"`, `"6h"`, `"8h"`, `"12h"`, `"1D"` |
 | `timeout` *(kw-only)* | float | `600.0` | Maximum seconds to wait |
 
 **Returns**
@@ -564,7 +570,11 @@ Uploads historical log data and sets risk score training parameters. Re-runnable
 | `asset_id_column` | str | Always | Echoed config |
 | `timestamp_column` | str | Always | Echoed config |
 | `date_format` | str | Always | Echoed config |
-| `rolling_window` | int | Always | Echoed config |
+| `rolling_window` | str | Always | Canonical duration used, e.g. `"7D"` |
+| `feature_frequency` | str | Always | Resolved bucket width, e.g. `"2h"` or `"1D"` |
+| `feature_frequency_source` | str | Always | `"auto"` or `"explicit"` |
+| `timestamp_resolution` | str | Always | Finest width the data's timestamps support (date-only data → `"1D"`) |
+| `typical_event_gap` | str or None | Always | Median gap between an asset's events, e.g. `"1h24min"` |
 | `rolling_feature_type` | str | Always | Echoed config |
 | `quantile_for_thresholds` | float | Always | Echoed config |
 | `sheet_name` | str or None | Always | Echoed config |
@@ -599,6 +609,7 @@ Trains the risk score model — calibrates per-subsystem thresholds from the tra
 | `supervised` | bool | Always | Whether supervised training was used |
 | `baseline_auc_roc` | float or None | Always | AUC-ROC of the unsupervised baseline |
 | `supervised_auc_roc` | float or None | Always | AUC-ROC of the supervised model; `None` when `supervised=False` |
+| `feature_frequency` | str | Always | Bucket width the model was trained at (reused by generation) |
 | `thresholds_path` | str | `artifact_dir` is set | Absolute path to `calibration_thresholds.json` |
 | `training_fe_path` | str | `artifact_dir` is set | Absolute path to `training_fe.parquet` |
 | `training_scores_path` | str | `artifact_dir` is set | Absolute path to `training_scores.parquet` |
@@ -647,6 +658,7 @@ Uploads the logs to score and locks the generation configuration. The file must 
 | `asset_count` | int | Always | Number of distinct assets |
 | `weights_source` | str | Always | Echoed config |
 | `next_step` | str | Always | Next recommended step |
+| `feature_frequency` | str | Always | The model's bucket width — the file's timestamps must be at least this fine (date-only data is rejected for a sub-daily model) |
 | `file_path` | str | Always | Absolute path of uploaded file |
 | `date_format` | str | Always | Echoed config |
 | `sheet_name` | str or None | Always | Echoed config |
@@ -683,7 +695,7 @@ Generates risk scores for every asset in the generation dataset. Downloads `comp
 | `zip_path` | str | Always | Absolute local path of `complete_model_{auth_id}.zip` |
 | `dest_dir` | str | Always | Absolute path of the destination directory |
 | `assets_scored` | int | Always | Number of assets with generated risk scores |
-| `date_range` | dict or None | Always | Date range covered by the scored logs |
+| `date_range` | str or None | Always | Range covered by the scored data — `"YYYY-MM-DD to YYYY-MM-DD"` for daily models, bucket start times for sub-daily models |
 | `parquet_path` | str | `artifact_dir` is set | Absolute path to `risk_scores.parquet` |
 | `logs_mapping_path` | str | `artifact_dir` is set | Absolute path to `logs_by_system_subsystem.json` |
 | `thresholds_path` | str | `artifact_dir` is set | Absolute path to `calibration_thresholds.json` |

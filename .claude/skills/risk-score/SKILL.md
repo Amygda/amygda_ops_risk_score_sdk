@@ -1,7 +1,7 @@
 ---
 name: risk-score
 description: >
-  Guided agent intelligence for the Amygda Ops Risk Score SDK (v4.0.0).
+  Guided agent intelligence for the Amygda Ops Risk Score SDK (v5.0.0).
   This skill teaches an LLM agent how to walk any user — technical or
   non-technical — through the full end-to-end pipeline: asking the right
   upfront questions, narrating each step in plain language, showing helpers
@@ -11,16 +11,18 @@ description: >
   Trigger on: "risk score", "amygda", "ops risk", "equipment risk",
   "predictive maintenance", "operational risk score", "asset risk", "amygda sdk".
 license: MIT
-compatibility: "SDK v4.0.0 — requires server API >= 3.0.1; Python >= 3.10"
+compatibility: "SDK v5.0.0 — requires server API >= 4.0.0; Python >= 3.10"
 metadata:
-  version: "4.0.0"
+  version: "5.0.0"
   author: "Amygda"
 ---
 
 # Amygda Ops Risk Score — Agent Guide
 
 **Repo:** https://github.com/Amygda/amygda_ops_risk_score_sdk  
-**SDK version:** 4.0.0 | **API minimum:** 3.0.1 | **Python:** ≥ 3.10
+**SDK version:** 5.0.0 | **API minimum:** 4.0.0 | **Python:** ≥ 3.10
+
+> **Breaking in 5.0.0:** `configure_training` and the failure helpers renamed `prediction_horizon_days` → `prediction_horizon`, `exclusion_days_after` → `exclusion_after`, `block_size_days` → `block_size` (helpers also `window_after_days` → `window_after`). Windows take durations (`"14D"`, `"36h"`; a bare number = days). New `feature_frequency` builds features per time bucket (`"auto"` default, `"5min"` … `"1D"`). Never generate code with the old names — they raise `TypeError`.
 
 ---
 
@@ -478,7 +480,8 @@ Also accepts a `complete_model_ses-xxx.zip` from a prior `generate_risk_scores` 
 | Where is the **historical log file** to train on? (Same column structure as labelling data) | `TRAINING_FILE` |
 | Which column is the **asset ID**? | `ASSET_ID_COLUMN` |
 | Which column is the **timestamp/date**? | `TIMESTAMP_COLUMN` |
-| What is the **rolling window** in days? (1–30, default 7) — How many days of log history to aggregate per asset | `ROLLING_WINDOW` |
+| What **feature frequency**? Default `"auto"` — picks the finest time-bucket width the timestamps support (date-only data → `"1D"`). Ask only if they want a specific width: `"5min"`, `"15min"`, `"1h"`, `"2h"`, `"4h"`, `"6h"`, `"8h"`, `"12h"`, `"1D"` | `FEATURE_FREQUENCY` |
+| What **rolling window**? A duration, default `"7D"` (max `"30D"`, at least one bucket) — how much recent log history to aggregate per asset; use hours (e.g. `"36h"`) for sub-daily frequencies | `ROLLING_WINDOW` |
 | What **rolling feature type**? For free-text: `"sum"` or `"flag"` only. For fixed-log: also `"ewm"` or `"all"`. Default `"sum"`. | `ROLLING_FEATURE_TYPE` |
 | Do they have **failure records**? (A file listing when each asset failed) | Determines `SUPERVISED` |
 
@@ -488,28 +491,28 @@ Also accepts a `complete_model_ses-xxx.zip` from a prior `generate_risk_scores` 
 |---|---|
 | Where is the **failures file**? | `FAILURES_FILE` |
 | Which column has the **failure date**? | `FAILURE_DATE_COLUMN` |
-| How many days **before a failure** should logs be labelled as "pre-failure risk"? | `PREDICTION_HORIZON_DAYS` |
-| How many days **after a failure** should be excluded? (Recovery/settling period) | `EXCLUSION_DAYS_AFTER` |
+| How long **before a failure** should logs be labelled as "pre-failure risk"? (duration, e.g. `"14D"` or `"36h"`) | `PREDICTION_HORIZON` |
+| How long **after a failure** should be excluded? (Recovery/settling period, e.g. `"7D"`) | `EXCLUSION_AFTER` |
 
 ---
 
 ### Supervised Parameter Design Guidance
 
-If the user is running supervised mode, help them choose `PREDICTION_HORIZON_DAYS` and `EXCLUSION_DAYS_AFTER` thoughtfully — these are not arbitrary numbers.
+If the user is running supervised mode, help them choose `PREDICTION_HORIZON` and `EXCLUSION_AFTER` thoughtfully — these are not arbitrary numbers.
 
 **Six things to consider:**
 
-1. **Inter-failure gap:** If failures on the same asset happen frequently, a long `PREDICTION_HORIZON_DAYS` means one failure's window can overlap the next — reducing the positive examples available for training. Check: what is the typical gap between failures on the same asset?
+1. **Inter-failure gap:** If failures on the same asset happen frequently, a long `PREDICTION_HORIZON` means one failure's window can overlap the next — reducing the positive examples available for training. Check: what is the typical gap between failures on the same asset?
 
 2. **Operational lead time:** How far in advance would advance warning actually be useful? A 14-day horizon means "we want to know 2 weeks ahead". A 7-day horizon means "a week's notice is enough".
 
-3. **Recovery period:** After a repair, logs often look abnormal while the machine settles back in. `EXCLUSION_DAYS_AFTER` should cover this settling period so recovery logs don't get mislabelled as normal.
+3. **Recovery period:** After a repair, logs often look abnormal while the machine settles back in. `EXCLUSION_AFTER` should cover this settling period so recovery logs don't get mislabelled as normal.
 
-4. **Log density:** `ROLLING_WINDOW` needs enough log entries per asset-day that the rolling feature isn't mostly zeros. Sparse logs may need a longer window.
+4. **Log density:** `ROLLING_WINDOW` needs enough log entries per asset per bucket that the rolling feature isn't mostly zeros. Sparse logs may need a longer window or a coarser `FEATURE_FREQUENCY`. With daily buckets the failure's own day is excluded, so same-day warning signs are only usable with sub-daily buckets.
 
-5. **Window ordering rule:** Keep `rolling_window ≤ prediction_horizon_days` — if the feature window extends beyond the prediction horizon, it reads data from outside the period you're trying to predict.
+5. **Window ordering rule:** Keep `rolling_window ≤ prediction_horizon` — if the feature window extends beyond the prediction horizon, it reads data from outside the period you're trying to predict.
 
-6. **Check the resulting balance:** After Step 10 runs, inspect `n_positive_rows` in the training report. If positives are very few, consider reducing `prediction_horizon_days` (shorter window, fewer conflicts) or lowering `min_positives`.
+6. **Check the resulting balance:** After Step 10 runs, inspect `n_positive_rows` in the training report. If positives are very few, consider reducing `prediction_horizon` (shorter window, fewer conflicts) or lowering `min_positives`.
 
 ---
 
@@ -530,10 +533,10 @@ To go back past a lock: call `client.restart_session()` — this deletes all ser
 
 **What this does:** Uploads the historical log file and stores the configuration for how risk features are calculated. The training file can be the same as the labelling file — it just needs the same column structure.
 
-**Call:** `result = session.configure_training(file_path, asset_id_column, timestamp_column, date_format="infer", rolling_window=7, rolling_feature_type="sum", quantile_for_thresholds=0.99, sheet_name=None, supervised=False, failures_path=None, failure_date_column="machine_initialisation_date", prediction_horizon_days=14, exclusion_days_after=7, *, timeout=600.0)`
+**Call:** `result = session.configure_training(file_path, asset_id_column, timestamp_column, date_format="infer", rolling_window="7D", rolling_feature_type="sum", quantile_for_thresholds=0.99, sheet_name=None, supervised=False, failures_path=None, failure_date_column="machine_initialisation_date", prediction_horizon="14D", exclusion_after="7D", block_size="14D", feature_frequency="auto", *, timeout=600.0)`
 **Ref:** `references/session.md` → `### Step 9 — configure_training`
-**Returns:** `row_count`, `asset_count`, `is_free_text`, `supervised`, `next_step`
-**Note:** `rolling_feature_type` `"ewm"` and `"all"` are fixed-log only; `failures_path` is required when `supervised=True`.
+**Returns:** `row_count`, `asset_count`, `is_free_text`, `supervised`, `next_step`, `feature_frequency`, `feature_frequency_source`, `timestamp_resolution`, `typical_event_gap`
+**Note:** `rolling_feature_type` `"ewm"` and `"all"` are fixed-log only; `failures_path` is required when `supervised=True`. **Tell the user which `feature_frequency` was picked and why** (e.g. "2h — timestamps are recorded to 5min and an asset's events are typically 1h24min apart"). An explicit frequency finer than the data's timestamps is rejected — suggest `"auto"` or a coarser width.
 
 Can be re-run until `train_risk_model` starts.
 
@@ -545,7 +548,7 @@ Can be re-run until `train_risk_model` starts.
 
 **Call:** `result = session.train_risk_model(*, timeout=3600.0)`
 **Ref:** `references/session.md` → `### Step 10 — train_risk_model`
-**Returns:** `subsystems_calibrated`, `supervised`, `thresholds_path`, `training_fe_path`, `training_scores_path`
+**Returns:** `subsystems_calibrated`, `supervised`, `feature_frequency`, `thresholds_path`, `training_fe_path`, `training_scores_path`
 
 **Free-text note:** The `similarity_threshold` baked into the labelling model zip is used automatically during training and generation — you do not need to pass it again.
 
@@ -554,7 +557,7 @@ Can be re-run until `train_risk_model` starts.
 | File | Always? | What it contains |
 |---|---|---|
 | `calibration_thresholds.json` | Yes | Per-subsystem threshold values |
-| `training_fe.parquet` | Yes | Rolling features per asset/date/subsystem |
+| `training_fe.parquet` | Yes | Rolling features per asset / time bucket (`period_start`) / subsystem |
 | `training_scores.parquet` | Yes | Risk scores on historical training data |
 | `logs_by_system_subsystem.json` | Fixed-log only | Code → subsystem mapping |
 | `supervised_training_report.json` | Supervised only | AUC-ROC, average precision, counts |
@@ -647,9 +650,9 @@ Can be re-run until `generate_risk_scores` starts.
 
 **⚠️ WARN THE USER BEFORE CALLING THIS STEP.**
 
-Say: *"This step will score every log entry and produce the final per-asset, per-day risk scores. Once I run it, the server session is permanently deleted. The full model and all results are downloaded to your machine. Are you ready to proceed?"*
+Say: *"This step will score every log entry and produce the final per-asset risk scores for each time bucket (each day, for a daily model). Once I run it, the server session is permanently deleted. The full model and all results are downloaded to your machine. Are you ready to proceed?"*
 
-**What this does:** Scores every log entry against the trained model, generates risk scores for each asset for each day, downloads the complete model zip, extracts all artifacts, then permanently deletes the server session.
+**What this does:** Scores every log entry against the trained model, generates risk scores for each asset for each time bucket (`feature_frequency` from training), downloads the complete model zip, extracts all artifacts, then permanently deletes the server session.
 
 **Call:** `result = session.generate_risk_scores(dest_dir, *, timeout=3600.0)`
 **Ref:** `references/session.md` → `### Step 12 — generate_risk_scores`
@@ -660,7 +663,7 @@ Say: *"This step will score every log entry and produce the final per-asset, per
 | File | What it contains |
 |---|---|
 | `complete_model_ses-xxx.zip` | Full trained model — re-import for future scoring without retraining |
-| `risk_scores.parquet` | **Primary output:** per-asset, per-day risk scores |
+| `risk_scores.parquet` | **Primary output:** per-asset risk scores per time bucket — `period_start` is the bucket start, `date` its calendar date |
 | `classified_logs.parquet` | Per-log classification *(free-text mode only)* |
 | `logs_by_system_subsystem.json` | Code → subsystem mapping *(fixed-log only)* |
 | `calibration_thresholds.json` | Per-subsystem threshold values |
@@ -691,9 +694,9 @@ Then proceed to the visualisations below.
 **Call:** `metrics = helpers.list_risk_metrics(source)` — returns `["operational_risk", ...]` for use with `plot_risk_heatmap`
 **Ref:** `references/helpers.md` → `### helpers.list_risk_metrics`
 
-**Fleet heatmap — assets over time:** `helpers.plot_risk_heatmap(source, metric="operational_risk")` — rows=assets, cols=dates; `metric` accepts `"operational_risk"` or any `{system}_system_risk` column.
+**Fleet heatmap — assets over time:** `helpers.plot_risk_heatmap(source, metric="operational_risk", resolution=None)` — rows=assets, cols=time buckets; `metric` accepts `"operational_risk"` or any `{system}_system_risk` column. For a sub-daily model over a long period, pass `resolution="1D"` for a readable daily view.
 
-**Single-day snapshot — all assets on one day:** `helpers.plot_daily_risk_snapshot(source, date)` — tile panel, one per asset; colour: blue (0–33), yellow (33–66), red (66–100); closest available date used if exact date not found.
+**Single-day snapshot — all assets on one day:** `helpers.plot_daily_risk_snapshot(source, date)` — tile panel, one per asset (highest score that day); colour: blue (0–33), yellow (33–66), red (66–100); closest available date used if exact date not found. For sub-daily models, `date="YYYY-MM-DD HH:MM"` shows a single bucket.
 
 **Single asset deep-dive — how risk evolved over time:**
 - [ ] `helpers.plot_asset_risk_over_time(...)` (raw or `weighted=True`)
