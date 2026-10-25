@@ -498,11 +498,63 @@ def validate_import_model(zip_path: str) -> None:
 # configure_training (Risk Score — Step 9)
 # ---------------------------------------------------------------------------
 
+# Mirrors src.feature_frequency.SUPPORTED_FREQUENCIES on the server.
+SUPPORTED_FEATURE_FREQUENCIES = ("5min", "15min", "1h", "2h", "4h", "6h", "8h", "12h", "1D")
+
+
+def _parse_duration(value, name: str, errors: list, allow_zero: bool = False):
+    """
+    Parse a duration ('7D', '36h', '90min') or a bare number of days.
+    Appends to *errors* and returns None when invalid.
+    """
+    import pandas as pd
+
+    hint = f"{name} must be a duration like '7D', '36h' or '90min', or a number of days."
+    if isinstance(value, bool) or value is None:
+        errors.append(hint)
+        return None
+    try:
+        if isinstance(value, (int, float)):
+            td = pd.Timedelta(days=float(value))
+        else:
+            text = str(value).strip()
+            try:
+                td = pd.Timedelta(days=float(text))
+            except ValueError:
+                td = pd.Timedelta(text)
+    except (ValueError, TypeError):
+        errors.append(hint)
+        return None
+    if td < pd.Timedelta(0) or (td == pd.Timedelta(0) and not allow_zero):
+        errors.append(f"{name} must be {'non-negative' if allow_zero else 'positive'}.")
+        return None
+    return td
+
+
+def _check_feature_frequency(value, errors: list) -> None:
+    import pandas as pd
+
+    text = str(value).strip().lower() if value is not None else ""
+    if text == "auto":
+        return
+    if text[:1].isalpha():
+        text = "1" + text
+    try:
+        width = pd.Timedelta(text)
+    except (ValueError, TypeError):
+        width = None
+    if width is None or all(width != pd.Timedelta(f) for f in SUPPORTED_FEATURE_FREQUENCIES):
+        errors.append(
+            f"feature_frequency '{value}' is not supported. "
+            f"Use 'auto' or one of: {', '.join(SUPPORTED_FEATURE_FREQUENCIES)}."
+        )
+
+
 def validate_configure_training(
     file_path: str,
     asset_id_column: str,
     timestamp_column: str,
-    rolling_window: int = 7,
+    rolling_window="7D",
     rolling_feature_type: str = "sum",
     quantile_for_thresholds: float = 0.99,
     sheet_name: Optional[str] = None,
@@ -511,14 +563,15 @@ def validate_configure_training(
     failures_path: Optional[str] = None,
     failure_date_column: str = "machine_initialisation_date",
     sampling_strategy: str = "block",
-    prediction_horizon_days: int = 14,
-    exclusion_days_after: int = 7,
+    prediction_horizon="14D",
+    exclusion_after="7D",
     target_imbalance_ratio: Optional[float] = 10.0,
-    block_size_days: int = 14,
+    block_size="14D",
     n_candidates: int = 200,
     fallback_quantile: float = 0.95,
     min_positives: int = 5,
     lr_c: float = 0.5,
+    feature_frequency: str = "auto",
 ) -> None:
     errors: list = []
 
@@ -539,8 +592,11 @@ def validate_configure_training(
     if not timestamp_column or not timestamp_column.strip():
         errors.append("timestamp_column is required and cannot be blank.")
 
-    if not isinstance(rolling_window, int) or not (1 <= rolling_window <= 30):
-        errors.append("rolling_window must be an integer between 1 and 30.")
+    window = _parse_duration(rolling_window, "rolling_window", errors)
+    if window is not None and window.total_seconds() > 30 * 86400:
+        errors.append("rolling_window must be at most 30 days ('30D').")
+
+    _check_feature_frequency(feature_frequency, errors)
 
     if rolling_feature_type not in {"sum", "flag", "ewm", "all"}:
         errors.append(
@@ -572,11 +628,8 @@ def validate_configure_training(
             f"sampling_strategy '{sampling_strategy}' is invalid. Must be 'block' or 'random'."
         )
 
-    if not isinstance(prediction_horizon_days, int) or prediction_horizon_days <= 0:
-        errors.append("prediction_horizon_days must be a positive integer.")
-
-    if not isinstance(exclusion_days_after, int) or exclusion_days_after < 0:
-        errors.append("exclusion_days_after must be a non-negative integer.")
+    _parse_duration(prediction_horizon, "prediction_horizon", errors)
+    _parse_duration(exclusion_after, "exclusion_after", errors, allow_zero=True)
 
     if target_imbalance_ratio is not None:
         try:
@@ -586,8 +639,7 @@ def validate_configure_training(
         except (TypeError, ValueError):
             errors.append("target_imbalance_ratio must be a positive number, or None.")
 
-    if not isinstance(block_size_days, int) or block_size_days <= 0:
-        errors.append("block_size_days must be a positive integer.")
+    _parse_duration(block_size, "block_size", errors)
 
     if not isinstance(n_candidates, int) or n_candidates <= 0:
         errors.append("n_candidates must be a positive integer.")

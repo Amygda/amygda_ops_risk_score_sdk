@@ -171,6 +171,158 @@ def _load_dataframe(source: Union[str, "pd.DataFrame"]) -> "pd.DataFrame":
     return source.copy()
 
 
+# ---------------------------------------------------------------------------
+# Time-bucket utilities
+#
+# Risk score outputs have one row per (asset_id, period_start) bucket. The
+# bucket width is the session's feature_frequency ('5min' … '1D'); 'date' is
+# the bucket's calendar date. Older (daily) outputs have no period_start, in
+# which case 'date' is the bucket.
+# ---------------------------------------------------------------------------
+
+# Mirrors the server's supported feature frequencies, finest → coarsest.
+_BUCKET_WIDTHS = ("5min", "15min", "1h", "2h", "4h", "6h", "8h", "12h", "1D")
+
+
+def _duration(value, name: str = "duration") -> "pd.Timedelta":
+    """A duration ('7D', '36h', '90min') or a bare number of days → Timedelta."""
+    import pandas as pd
+
+    if isinstance(value, pd.Timedelta):
+        return value
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return pd.Timedelta(days=float(value))
+    text = str(value).strip()
+    try:
+        return pd.Timedelta(days=float(text))
+    except ValueError:
+        pass
+    try:
+        return pd.Timedelta(text)
+    except (ValueError, TypeError):
+        raise ValueError(
+            f"{name} must be a duration like '7D', '36h' or '90min', "
+            f"or a number of days (got {value!r})."
+        )
+
+
+def _fmt_duration(value) -> str:
+    """Short label for a duration: '14d', '36h', '1h30min'."""
+    import pandas as pd
+
+    td = _duration(value)
+    if td % pd.Timedelta(days=1) == pd.Timedelta(0):
+        return f"{td // pd.Timedelta(days=1)}d"
+    parts, rest = [], td
+    for unit, step in (("d", pd.Timedelta(days=1)), ("h", pd.Timedelta(hours=1)),
+                       ("min", pd.Timedelta(minutes=1))):
+        n, rest = divmod(rest, step)
+        if n:
+            parts.append(f"{n}{unit}")
+    return "".join(parts) or "0min"
+
+
+def _row_times(df: "pd.DataFrame") -> "pd.Series":
+    """Bucket start per row: ``period_start`` when present, else ``date``."""
+    import pandas as pd
+
+    col = "period_start" if "period_start" in df.columns else "date"
+    return pd.to_datetime(df[col])
+
+
+def _bucket_times(df: "pd.DataFrame", resolution: Optional[str] = None) -> "pd.Series":
+    """Row bucket starts, optionally rolled up to a coarser *resolution* (e.g. '1D')."""
+    times = _row_times(df)
+    return times.dt.floor(_duration(resolution, "resolution")) if resolution else times
+
+
+def _bucket_width(df: "pd.DataFrame") -> str:
+    """
+    Bucket width of a feature/risk DataFrame: the coarsest supported width that
+    every ``period_start`` sits on. Daily outputs (or no ``period_start``) → '1D'.
+    """
+    if "period_start" not in df.columns or df.empty:
+        return "1D"
+    times = _row_times(df).dropna()
+    for width in reversed(_BUCKET_WIDTHS):
+        if (times == times.dt.floor(width)).mean() >= 0.99:
+            return width
+    return _BUCKET_WIDTHS[0]
+
+
+def _time_labels(times) -> List[str]:
+    """Axis labels: plain dates when every value is midnight, else 'YYYY-MM-DD HH:MM'."""
+    import pandas as pd
+
+    times = pd.to_datetime(pd.Series(list(times)))
+    if (times == times.dt.normalize()).all():
+        return [str(t.date()) for t in times]
+    return times.dt.strftime("%Y-%m-%d %H:%M").tolist()
+
+
+def _fmt_time(ts):
+    """A date when *ts* is midnight (daily data), otherwise the Timestamp itself."""
+    import pandas as pd
+
+    ts = pd.Timestamp(ts)
+    return ts.date() if ts == ts.normalize() else ts
+
+
+def _rollup(df: "pd.DataFrame", resolution: Optional[str], sum_cols=()) -> "pd.DataFrame":
+    """
+    Aggregate rows (keyed by ``_t``) to a coarser *resolution*: ``sum`` for
+    count columns in *sum_cols*, ``max`` for every other numeric column.
+    ``None`` returns *df* unchanged.
+    """
+    if not resolution:
+        return df
+    out = df.copy()
+    out["_t"] = out["_t"].dt.floor(_duration(resolution, "resolution"))
+    numeric = [c for c in out.select_dtypes("number").columns]
+    agg = {c: ("sum" if c in sum_cols else "max") for c in numeric}
+    return out.groupby("_t", as_index=False).agg(agg)
+
+
+def _time_bars(x, y, sub_daily: bool, color: str, stackgroup: Optional[str] = None, **kw):
+    """
+    A bar trace for daily data. For sub-daily buckets, bars are too narrow to
+    see across a long time axis (one 2h bar on a year-long axis is a fraction
+    of a pixel), so draw a stacked area (*stackgroup*) or markers instead.
+    """
+    import plotly.graph_objects as go
+
+    if not sub_daily:
+        return go.Bar(x=x, y=y, marker_color=color, **kw)
+    if stackgroup:
+        return go.Scatter(x=x, y=y, mode="lines", stackgroup=stackgroup,
+                          line=dict(width=0.8, color=color), **kw)
+    keep = [i for i, v in enumerate(y) if v not in (0, None) and v == v]
+    return go.Scatter(x=[x[i] for i in keep], y=[y[i] for i in keep], mode="markers",
+                      marker=dict(color=color, size=5), **kw)
+
+
+def _select_period(df: "pd.DataFrame", when: str):
+    """
+    Rows for the day (``"YYYY-MM-DD"``) or bucket (``"YYYY-MM-DD HH:MM"``)
+    closest to *when*. A time of day only selects a single bucket when the
+    data has sub-daily ``period_start`` buckets; otherwise the whole day is used.
+
+    Returns ``(rows, label, exact)``.
+    """
+    import pandas as pd
+
+    target = pd.Timestamp(when)
+    times = _row_times(df)
+    if target != target.normalize() and _bucket_width(df) != "1D":
+        keys, target_key = times, target
+    else:
+        keys, target_key = times.dt.normalize(), target.normalize()
+    available = keys.drop_duplicates().sort_values()
+    exact = bool((available == target_key).any())
+    chosen = target_key if exact else available.iloc[int((available - target_key).abs().argmin())]
+    return df[keys == chosen], _time_labels([chosen])[0], exact
+
+
 def plot_asset_risk_ranking(
     source: Union[str, "pd.DataFrame"],
     asset_id_col: str = "asset_id",
@@ -701,12 +853,15 @@ def plot_risk_heatmap(
     max_heatmap_score: float = 35.0,
     width: int = 1000,
     height: int = 500,
+    resolution: Optional[str] = None,
 ) -> None:
     """
-    Plotly heatmap: rows = assets, columns = dates, cell colour = risk score.
+    Plotly heatmap: rows = assets, columns = time buckets, cell colour = risk score.
 
     Mirrors the Multi-Asset Risk Heatmap panel on the Streamlit Risk Score page.
-    Each cell is the **max** risk score across all records for that asset on that day.
+    Each cell is the **max** risk score for that asset in that bucket — one
+    column per day for daily models, one per ``feature_frequency`` bucket for
+    sub-daily models.
 
     Parameters
     ----------
@@ -725,6 +880,18 @@ def plot_risk_heatmap(
         Optional subset of assets to include.  Defaults to all assets.
     title:
         Chart title.
+    resolution:
+        How much time each point on the x-axis covers.
+
+        - ``None`` (default): one point per model time bucket — every 2 hours
+          for a model trained with ``feature_frequency="2h"``, every day for a
+          daily model.
+        - A longer period, e.g. ``"12h"`` or ``"1D"``: buckets inside each
+          period are combined into one point showing the **highest** value in
+          that period.  Use this to get a readable overview of a sub-daily
+          model over a long date range.
+
+        A period shorter than the model's buckets has no effect.
 
     """
     try:
@@ -745,12 +912,12 @@ def plot_risk_heatmap(
             f"  'operational_risk'\n" + "\n".join(f"  '{c}'" for c in system_cols)
         )
 
-    df["date"] = pd.to_datetime(df["date"]).dt.date
+    df["_t"] = _bucket_times(df, resolution)
     if asset_ids:
         df = df[df["asset_id"].isin(asset_ids)]
 
-    pivot = df.groupby(["asset_id", "date"])[metric].max().unstack("date").sort_index()
-    dates = [str(d) for d in pivot.columns]
+    pivot = df.groupby(["asset_id", "_t"])[metric].max().unstack("_t").sort_index()
+    dates = _time_labels(pivot.columns)
     assets = list(pivot.index.astype(str))
     z = pivot.values.tolist()
 
@@ -808,7 +975,9 @@ def plot_daily_risk_snapshot(
     source:
         Path to ``risk_scores.parquet``, a CSV, or a DataFrame.
     date:
-        Date string (``"YYYY-MM-DD"``).  Selects the closest available date.
+        Date string (``"YYYY-MM-DD"``) — each tile shows the max over that
+        day.  For sub-daily models a time (``"YYYY-MM-DD HH:MM"``) selects a
+        single bucket instead.  The closest available day/bucket is used.
     asset_ids:
         Optional subset of assets to include.  Defaults to all assets.
     min_score:
@@ -825,14 +994,8 @@ def plot_daily_risk_snapshot(
         raise ImportError("plotly and pandas are required: pip install plotly pandas")
 
     df = _load_dataframe(source)
-    df["date"] = pd.to_datetime(df["date"]).dt.date
-    target = pd.to_datetime(date).date()
-
-    if target not in df["date"].values:
-        available = sorted(df["date"].unique())
-        target = min(available, key=lambda d: abs((d - target).days))
-
-    day_df = df[df["date"] == target].copy()
+    day_df, target, _ = _select_period(df, date)
+    day_df = day_df.copy()
     if asset_ids:
         day_df = day_df[day_df["asset_id"].isin(asset_ids)]
 
@@ -932,9 +1095,10 @@ def plot_asset_risk_over_time(
     max_heatmap_score: float = 80.0,
     width: int = 1000,
     height: int = 400,
+    resolution: Optional[str] = None,
 ) -> None:
     """
-    Plotly heatmap for a single asset: rows = risk types, columns = dates.
+    Plotly heatmap for a single asset: rows = risk types, columns = time buckets.
 
     Row order: Operational Risk at the top, then each system risk.
     Mirrors the "Single Asset Risk Analysis" panel on the Streamlit Risk Score page.
@@ -955,6 +1119,18 @@ def plot_asset_risk_over_time(
         Requires ``model_config``.
     title:
         Chart title.  Defaults to ``"Risk Analysis — {asset_id}"``.
+    resolution:
+        How much time each point on the x-axis covers.
+
+        - ``None`` (default): one point per model time bucket — every 2 hours
+          for a model trained with ``feature_frequency="2h"``, every day for a
+          daily model.
+        - A longer period, e.g. ``"12h"`` or ``"1D"``: buckets inside each
+          period are combined into one point showing the **highest** value in
+          that period.  Use this to get a readable overview of a sub-daily
+          model over a long date range.
+
+        A period shorter than the model's buckets has no effect.
     """
     try:
         import plotly.graph_objects as go
@@ -980,7 +1156,7 @@ def plot_asset_risk_over_time(
             return
 
     df = _load_dataframe(source)
-    df["date"] = pd.to_datetime(df["date"]).dt.date
+    df["_t"] = _bucket_times(df, resolution)
 
     asset_df = df[df["asset_id"].astype(str) == str(asset_id)]
     if asset_df.empty:
@@ -990,8 +1166,8 @@ def plot_asset_risk_over_time(
         return
 
     system_cols = sorted([c for c in df.columns if c.endswith("_system_risk")])
-    pivot = asset_df.groupby("date")[["operational_risk"] + system_cols].max()
-    dates = [str(d) for d in pivot.index]
+    pivot = asset_df.groupby("_t")[["operational_risk"] + system_cols].max()
+    dates = _time_labels(pivot.index)
 
     if weighted:
         z_systems = []
@@ -1049,9 +1225,10 @@ def plot_asset_system_over_time(
     title: Optional[str] = None,
     width: int = 1000,
     height: int = 400,
+    resolution: Optional[str] = None,
 ) -> None:
     """
-    Plotly heatmap for a single asset and system: rows = system risk + its subsystems, columns = dates.
+    Plotly heatmap for a single asset and system: rows = system risk + its subsystems, columns = time buckets.
 
     Row order: system risk at the top, then each subsystem risk below.
 
@@ -1072,6 +1249,18 @@ def plot_asset_system_over_time(
         of raw calibrated risk scores. Requires ``model_config``.
     title:
         Chart title. Defaults to ``"{system} — {asset_id}"``.
+    resolution:
+        How much time each point on the x-axis covers.
+
+        - ``None`` (default): one point per model time bucket — every 2 hours
+          for a model trained with ``feature_frequency="2h"``, every day for a
+          daily model.
+        - A longer period, e.g. ``"12h"`` or ``"1D"``: buckets inside each
+          period are combined into one point showing the **highest** value in
+          that period.  Use this to get a readable overview of a sub-daily
+          model over a long date range.
+
+        A period shorter than the model's buckets has no effect.
     """
     try:
         import plotly.graph_objects as go
@@ -1097,7 +1286,7 @@ def plot_asset_system_over_time(
             return
 
     df = _load_dataframe(source)
-    df["date"] = pd.to_datetime(df["date"]).dt.date
+    df["_t"] = _bucket_times(df, resolution)
 
     asset_df = df[df["asset_id"].astype(str) == str(asset_id)]
     if asset_df.empty:
@@ -1126,8 +1315,8 @@ def plot_asset_system_over_time(
         ]
     )
 
-    pivot = asset_df.groupby("date")[[system_col] + subsystem_cols].max()
-    dates = [str(d) for d in pivot.index]
+    pivot = asset_df.groupby("_t")[[system_col] + subsystem_cols].max()
+    dates = _time_labels(pivot.index)
 
     if weighted:
         z_subsystems = []
@@ -1198,6 +1387,7 @@ def plot_subsystem_log_activity(
     title: Optional[str] = None,
     width: int = 1000,
     height: int = 450,
+    resolution: Optional[str] = None,
 ) -> None:
     """
     Bar chart of log occurrences for a subsystem within a date window.
@@ -1225,12 +1415,17 @@ def plot_subsystem_log_activity(
     subsystem:
         Subsystem name (e.g. ``"datum_control"``).
     date:
-        End date for the window (``"YYYY-MM-DD"``).
+        End of the window: ``"YYYY-MM-DD"`` includes that whole day;
+        ``"YYYY-MM-DD HH:MM"`` ends at that time.
     days_back:
         Number of days before ``date`` to include (default 30).
     logs_mapping:
         **Fixed-log mode only.** Path to ``logs_by_system_subsystem.json`` or
         the dict itself.
+
+    One point per model time bucket (read from the risk data), or per day
+    when no risk data is supplied.  Sub-daily points are drawn as stacked
+    areas and dots rather than bars, which would be too thin to see.
     log_column:
         Free-text mode only — log text column name, used for hover tooltips.
     risk_source:
@@ -1242,6 +1437,18 @@ def plot_subsystem_log_activity(
         correct binary/rolling column names in ``risk_source``.
     title:
         Chart title.
+    resolution:
+        How much time each point on the x-axis covers.
+
+        - ``None`` (default): one point per model time bucket — every 2 hours
+          for a model trained with ``feature_frequency="2h"``, every day for a
+          daily model.
+        - A longer period, e.g. ``"12h"`` or ``"1D"``: buckets inside each
+          period are combined into one point showing the **highest** value in
+          that period (event counts are **added up** instead).  Use this to
+          get a readable overview of a sub-daily model over a long date range.
+
+        A period shorter than the model's buckets has no effect.
     """
     try:
         import plotly.graph_objects as go
@@ -1250,11 +1457,12 @@ def plot_subsystem_log_activity(
     except ImportError:
         raise ImportError("plotly and pandas are required: pip install plotly pandas")
 
-    import datetime as _dt
-
     df = _load_dataframe(source)
-    end_date = pd.to_datetime(date).date()
-    start_date = end_date - _dt.timedelta(days=days_back)
+    when = pd.Timestamp(date)
+    # Exclusive end: a bare date covers the whole day
+    window_end = when + pd.Timedelta(days=1) if when == when.normalize() else when
+    window_start = when.normalize() - pd.Timedelta(days=days_back)
+    start_date, end_date = window_start.date(), date
 
     source_is_free_text = "system_name" in df.columns or "subsystem_name" in df.columns
 
@@ -1286,6 +1494,15 @@ def plot_subsystem_log_activity(
         risk_source = df
 
     has_risk = risk_source is not None
+    risk_df = None
+    if has_risk:
+        risk_df = (
+            _load_dataframe(risk_source)
+            if not isinstance(risk_source, type(df))
+            else risk_source.copy()
+        )
+    width_ = resolution or (_bucket_width(risk_df) if risk_df is not None else "1D")
+    fine_buckets = width_ not in ("1D", "D", "1d")
 
     # ── Build subplot layout ─────────────────────────────────────────────────
     if has_risk:
@@ -1310,14 +1527,14 @@ def plot_subsystem_log_activity(
         ts_col = "timestamp" if "timestamp" in df.columns else "date"
 
         df[ts_col] = pd.to_datetime(df[ts_col], errors="coerce")
-        df["_date"] = df[ts_col].dt.date
+        df["_t"] = df[ts_col].dt.floor(width_)
 
         mask = (
             (df["asset_id"].astype(str) == str(asset_id))
             & (df[sys_col] == system)
             & (df[sub_col] == subsystem)
-            & (df["_date"] >= start_date)
-            & (df["_date"] <= end_date)
+            & (df[ts_col] >= window_start)
+            & (df[ts_col] < window_end)
         )
         window_df = df[mask].copy()
         if window_df.empty:
@@ -1327,15 +1544,15 @@ def plot_subsystem_log_activity(
             )
             return
 
-        daily = window_df.groupby("_date").size().reset_index(name="count")
-        daily["_date"] = daily["_date"].astype(str)
+        daily = window_df.groupby("_t").size().reset_index(name="count")
 
         fig.add_trace(
-            go.Bar(
-                x=daily["_date"].tolist(),
-                y=daily["count"].tolist(),
+            _time_bars(
+                _time_labels(daily["_t"]),
+                daily["count"].tolist(),
+                fine_buckets,
+                "#3498db",
                 name="Log Count",
-                marker_color="#3498db",
                 hovertemplate="%{x}<br>Count: %{y}<extra></extra>",
             ),
             row=3 if has_risk else 1,
@@ -1368,14 +1585,14 @@ def plot_subsystem_log_activity(
 
         if "date" not in df.columns:
             raise ValueError("Source DataFrame has no 'date' column.")
-        df["date"] = pd.to_datetime(df["date"]).dt.date
+        df["_t"] = _row_times(df)
 
         mask = (
             (df["asset_id"].astype(str) == str(asset_id))
-            & (df["date"] >= start_date)
-            & (df["date"] <= end_date)
+            & (df["_t"] >= window_start)
+            & (df["_t"] < window_end)
         )
-        window_df = df[mask].sort_values("date")
+        window_df = df[mask].sort_values("_t")
         if window_df.empty:
             print(
                 f"No data for asset '{asset_id}' between {start_date} and {end_date}."
@@ -1387,15 +1604,18 @@ def plot_subsystem_log_activity(
             print(f"No log-code columns found for '{pair}'.")
             return
 
-        dates_str = [str(d) for d in window_df["date"]]
+        window_df = _rollup(window_df, resolution, sum_cols=available_codes)
+        dates_str = _time_labels(window_df["_t"])
         for i, lc in enumerate(available_codes):
             label = (lc[:50] + "...") if len(lc) > 50 else lc
             fig.add_trace(
-                go.Bar(
+                _time_bars(
+                    dates_str,
+                    window_df[lc].fillna(0).tolist(),
+                    fine_buckets,
+                    _palette[i % len(_palette)],
+                    stackgroup="counts",
                     name=label,
-                    x=dates_str,
-                    y=window_df[lc].fillna(0).tolist(),
-                    marker_color=_palette[i % len(_palette)],
                     legendgroup=lc,
                     hovertemplate=f"<b>{lc}</b><br>%{{x}}<br>Count: %{{y}}<extra></extra>",
                 ),
@@ -1407,26 +1627,20 @@ def plot_subsystem_log_activity(
         chart_title = (
             title or f"Individual Log Occurrences Over Time ({days_back} days)"
         )
-        bar_label = "Daily Count"
+        bar_label = "Count per Bucket"
         barmode = "stack"
 
     # ── Risk overlay + rolling/binary panels ─────────────────────────────────
     if has_risk:
-        risk_df = (
-            _load_dataframe(risk_source)
-            if not isinstance(risk_source, type(df))
-            else risk_source
-        )
         if "date" in risk_df.columns:
-            risk_df = risk_df.copy()
-            risk_df["date"] = pd.to_datetime(risk_df["date"]).dt.date
+            risk_df["_t"] = _row_times(risk_df)
             risk_mask = (
                 (risk_df["asset_id"].astype(str) == str(asset_id))
-                & (risk_df["date"] >= start_date)
-                & (risk_df["date"] <= end_date)
+                & (risk_df["_t"] >= window_start)
+                & (risk_df["_t"] < window_end)
             )
-            risk_window = risk_df[risk_mask].sort_values("date")
-            fe_dates = [str(d) for d in risk_window["date"]]
+            risk_window = _rollup(risk_df[risk_mask].sort_values("_t"), resolution)
+            fe_dates = _time_labels(risk_window["_t"])
             pair = f"{system}-{subsystem}"
 
             # Risk lines on row 1 secondary y
@@ -1436,11 +1650,11 @@ def plot_subsystem_log_activity(
             # Risk lines on row 1 (rolling panel) secondary y
             if subsystem_col in risk_window.columns:
                 sub_daily = (
-                    risk_window.groupby("date")[subsystem_col].max().reset_index()
+                    risk_window.groupby("_t")[subsystem_col].max().reset_index()
                 )
                 fig.add_trace(
                     go.Scatter(
-                        x=[str(d) for d in sub_daily["date"]],
+                        x=_time_labels(sub_daily["_t"]),
                         y=sub_daily[subsystem_col].tolist(),
                         name=f"{subsystem.replace('_', ' ').title()} Risk",
                         mode="lines+markers",
@@ -1454,10 +1668,10 @@ def plot_subsystem_log_activity(
                 )
 
             if system_col in risk_window.columns:
-                sys_daily = risk_window.groupby("date")[system_col].max().reset_index()
+                sys_daily = risk_window.groupby("_t")[system_col].max().reset_index()
                 fig.add_trace(
                     go.Scatter(
-                        x=[str(d) for d in sys_daily["date"]],
+                        x=_time_labels(sys_daily["_t"]),
                         y=sys_daily[system_col].tolist(),
                         name=f"{system.replace('_', ' ').title()} Risk",
                         mode="lines+markers",
@@ -1482,12 +1696,14 @@ def plot_subsystem_log_activity(
                 )
                 if roll_col and roll_col in risk_window.columns:
                     fig.add_trace(
-                        go.Bar(
-                            x=fe_dates,
-                            y=risk_window[roll_col].fillna(0).tolist(),
+                        _time_bars(
+                            fe_dates,
+                            risk_window[roll_col].fillna(0).tolist(),
+                            fine_buckets,
+                            "#7fb3d3",
+                            stackgroup="rolling",
                             name="Rolling Feature",
                             showlegend=False,
-                            marker_color="#7fb3d3",
                             hovertemplate="%{x}<br>Rolling: %{y:.2f}<extra></extra>",
                         ),
                         row=1,
@@ -1497,12 +1713,13 @@ def plot_subsystem_log_activity(
                 bin_col = f"binary_{pair}"
                 if bin_col in risk_window.columns:
                     fig.add_trace(
-                        go.Bar(
-                            x=fe_dates,
-                            y=risk_window[bin_col].fillna(0).tolist(),
+                        _time_bars(
+                            fe_dates,
+                            risk_window[bin_col].fillna(0).tolist(),
+                            fine_buckets,
+                            "#e67e22",
                             name="Binary",
                             showlegend=False,
-                            marker_color="#e67e22",
                             hovertemplate="%{x}<br>Binary: %{y}<extra></extra>",
                         ),
                         row=2,
@@ -1529,11 +1746,13 @@ def plot_subsystem_log_activity(
                         roll_col = f"{rolling_prefix}_binary_{lc}"
                         if roll_col in risk_window.columns:
                             fig.add_trace(
-                                go.Bar(
-                                    x=fe_dates,
-                                    y=risk_window[roll_col].fillna(0).tolist(),
+                                _time_bars(
+                                    fe_dates,
+                                    risk_window[roll_col].fillna(0).tolist(),
+                                    fine_buckets,
+                                    color,
+                                    stackgroup="rolling",
                                     name=label,
-                                    marker_color=color,
                                     legendgroup=lc,
                                     showlegend=False,
                                     hovertemplate=f"<b>{lc}</b><br>%{{x}}<br>Rolling: %{{y:.2f}}<extra></extra>",
@@ -1545,11 +1764,12 @@ def plot_subsystem_log_activity(
                     bin_col = f"binary_{lc}"
                     if bin_col in risk_window.columns:
                         fig.add_trace(
-                            go.Bar(
-                                x=fe_dates,
-                                y=risk_window[bin_col].fillna(0).tolist(),
+                            _time_bars(
+                                fe_dates,
+                                risk_window[bin_col].fillna(0).tolist(),
+                                fine_buckets,
+                                color,
                                 name=label,
-                                marker_color=color,
                                 legendgroup=lc,
                                 showlegend=False,
                                 hovertemplate=f"<b>{lc}</b><br>%{{x}}<br>Binary: %{{y}}<extra></extra>",
@@ -1646,8 +1866,10 @@ def get_logs_for_subsystem(
 
     df = _load_dataframe(source)
 
-    end_date = pd.to_datetime(date)
-    start_date = end_date - __import__("datetime").timedelta(days=days_back)
+    when = pd.Timestamp(date)
+    # A bare date includes that whole day (logs carry times of day)
+    end_date = when + pd.Timedelta(days=1) if when == when.normalize() else when
+    start_date = when.normalize() - pd.Timedelta(days=days_back)
 
     sys_col = (
         "system_name"
@@ -1669,7 +1891,7 @@ def get_logs_for_subsystem(
     if "timestamp" in df.columns:
         df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
         mask = (
-            base_mask & (df["timestamp"] >= start_date) & (df["timestamp"] <= end_date)
+            base_mask & (df["timestamp"] >= start_date) & (df["timestamp"] < end_date)
         )
     else:
         mask = base_mask
@@ -2442,7 +2664,8 @@ def get_risk_breakdown(
       calibrated subsystem pair
 
     If the exact date is not available, the **closest** date in the parquet is
-    used and a warning is printed.
+    used and a warning is printed.  Scores are the max over the day; for
+    sub-daily models pass a time (``"YYYY-MM-DD HH:MM"``) to get one bucket.
 
     Parameters
     ----------
@@ -2451,7 +2674,8 @@ def get_risk_breakdown(
     asset_id:
         The asset to inspect (e.g. ``"K236"``).
     date:
-        Date string in any common format (``"YYYY-MM-DD"``).
+        Date string in any common format (``"YYYY-MM-DD"``), optionally with
+        a time of day for sub-daily models.
 
     Returns
     -------
@@ -2472,8 +2696,6 @@ def get_risk_breakdown(
         raise ImportError("pandas is required: pip install pandas")
 
     df = _load_dataframe(source)
-    df["date"] = pd.to_datetime(df["date"]).dt.date
-    target = pd.to_datetime(date).date()
 
     # --- asset filter ---
     asset_df = df[df["asset_id"] == asset_id]
@@ -2483,14 +2705,12 @@ def get_risk_breakdown(
             f"asset_id '{asset_id}' not found.\n" f"Available asset IDs: {available}"
         )
 
-    # --- closest date ---
-    available_dates = sorted(asset_df["date"].unique())
-    if target not in available_dates:
-        target = min(available_dates, key=lambda d: abs((d - target).days))
+    # --- closest day / bucket ---
+    day_df, target, exact = _select_period(asset_df, date)
+    if not exact:
         print(f"Exact date not found — using closest available date: {target}")
 
-    # --- aggregate (max) across rows for the same asset+date ---
-    day_df = asset_df[asset_df["date"] == target]
+    # --- aggregate (max) across rows in the selected day / bucket ---
     row = day_df.max(numeric_only=True)
 
     # --- system risks ---
@@ -2747,6 +2967,7 @@ def plot_training_feature_over_time(
     title: Optional[str] = None,
     width: int = 1000,
     height: int = 420,
+    resolution: Optional[str] = None,
 ) -> None:
     """
     Time series of a subsystem's rolling risk feature for one or more assets,
@@ -2767,6 +2988,18 @@ def plot_training_feature_over_time(
         System name (e.g. ``"motion_control"``).
     subsystem:
         Subsystem name (e.g. ``"datum_control"``).
+    resolution:
+        How much time each point on the x-axis covers.
+
+        - ``None`` (default): one point per model time bucket — every 2 hours
+          for a model trained with ``feature_frequency="2h"``, every day for a
+          daily model.
+        - A longer period, e.g. ``"12h"`` or ``"1D"``: buckets inside each
+          period are combined into one point showing the **highest** value in
+          that period.  Use this to get a readable overview of a sub-daily
+          model over a long date range.
+
+        A period shorter than the model's buckets has no effect.
     """
     try:
         import plotly.graph_objects as go
@@ -2780,6 +3013,7 @@ def plot_training_feature_over_time(
         else thresholds_source
     )
     fe_df = _load_dataframe(training_fe_source)
+    fe_df["_t"] = _row_times(fe_df)
 
     pair = f"{system}-{subsystem}"
     feat_col = f"{pair}_risk_feature"
@@ -2823,13 +3057,14 @@ def plot_training_feature_over_time(
     found_any = False
 
     for i, aid in enumerate(asset_ids):
-        asset_df = fe_df[fe_df["asset_id"].astype(str) == str(aid)].sort_values("date")
+        asset_df = fe_df[fe_df["asset_id"].astype(str) == str(aid)].sort_values("_t")
         if asset_df.empty:
             print(f"Asset '{aid}' not found — skipping.")
             continue
+        asset_df = _rollup(asset_df[["_t", feat_col]], resolution)
         found_any = True
         color = _palette[i % len(_palette)]
-        dates = [str(d) for d in asset_df["date"]]
+        dates = _time_labels(asset_df["_t"])
         values = asset_df[feat_col].tolist()
         fig.add_trace(
             go.Scatter(
@@ -2887,6 +3122,7 @@ def plot_subsystem_feature_pipeline(
     title: Optional[str] = None,
     width: int = 1000,
     height: int = 650,
+    resolution: Optional[str] = None,
 ) -> None:
     """
     Two-panel chart showing how the risk feature is built up for a single asset
@@ -2895,8 +3131,8 @@ def plot_subsystem_feature_pipeline(
     **Free-text mode** (``is_free_text=True``):
 
     - Top: risk feature line + threshold
-    - Bottom: raw daily event count for that subsystem (the source that feeds
-      binary → rolling → risk feature)
+    - Bottom: raw event count per time bucket for that subsystem (the source
+      that feeds binary → rolling → risk feature)
 
     **Fixed-log mode** (``is_free_text=False``):
 
@@ -2924,6 +3160,22 @@ def plot_subsystem_feature_pipeline(
         **Fixed-log mode only.** Path to ``logs_by_system_subsystem.json`` or
         the dict itself. Maps ``"{system}-{subsystem}"`` → list of log code
         strings. Required when ``is_free_text=False``.
+    resolution:
+        How much time each point on the x-axis covers.
+
+        - ``None`` (default): one point per model time bucket — every 2 hours
+          for a model trained with ``feature_frequency="2h"``, every day for a
+          daily model.
+        - A longer period, e.g. ``"12h"`` or ``"1D"``: buckets inside each
+          period are combined into one point showing the **highest** value in
+          that period (event counts are **added up** instead).  Use this to
+          get a readable overview of a sub-daily model over a long date range.
+
+        A period shorter than the model's buckets has no effect.
+
+    Daily points are drawn as bars.  Sub-daily points are drawn as stacked
+    areas (rolling panel) and dots (binary/count panels), because bars only a
+    few hours wide are too thin to see across months of data.
     """
     try:
         import plotly.graph_objects as go
@@ -2951,14 +3203,17 @@ def plot_subsystem_feature_pipeline(
         print(f"Feature column '{feat_col}' not found.\nAvailable pairs: {available}")
         return
 
-    asset_df = fe_df[fe_df["asset_id"].astype(str) == str(asset_id)].sort_values("date")
+    fe_df["_t"] = _row_times(fe_df)
+    asset_df = fe_df[fe_df["asset_id"].astype(str) == str(asset_id)].sort_values("_t")
     if asset_df.empty:
         print(
             f"Asset '{asset_id}' not found. Available: {list(fe_df['asset_id'].unique()[:10])}"
         )
         return
 
-    dates = [str(d) for d in asset_df["date"]]
+    asset_df = _rollup(asset_df, resolution, sum_cols=[pair])
+    sub_daily = (resolution or _bucket_width(fe_df)) not in ("1D", "D", "1d")
+    dates = _time_labels(asset_df["_t"])
     threshold = thresholds.get(pair)
 
     _palette = [
@@ -2995,7 +3250,7 @@ def plot_subsystem_feature_pipeline(
             (
                 "Rolling Features per Log Code"
                 if not is_free_text
-                else "Raw Daily Event Count"
+                else "Raw Event Count per Bucket"
             ),
             (
                 "Binary Features per Log Code"
@@ -3033,15 +3288,16 @@ def plot_subsystem_feature_pipeline(
 
     # ── Rows 2 & 3 ───────────────────────────────────────────────────────────
     if is_free_text:
-        # Row 2: raw daily count
+        # Row 2: raw count per bucket
         if pair in asset_df.columns:
             fig.add_trace(
-                go.Bar(
-                    x=dates,
-                    y=asset_df[pair].tolist(),
-                    name="Daily Count",
+                _time_bars(
+                    dates,
+                    asset_df[pair].tolist(),
+                    sub_daily,
+                    "#7fb3d3",
+                    name="Event Count",
                     showlegend=False,
-                    marker_color="#7fb3d3",
                     hovertemplate="%{x}<br>Count: %{y}<extra></extra>",
                 ),
                 row=2,
@@ -3054,12 +3310,13 @@ def plot_subsystem_feature_pipeline(
         binary_col = f"binary_{pair}"
         if binary_col in asset_df.columns:
             fig.add_trace(
-                go.Bar(
-                    x=dates,
-                    y=asset_df[binary_col].tolist(),
+                _time_bars(
+                    dates,
+                    asset_df[binary_col].tolist(),
+                    sub_daily,
+                    "#e67e22",
                     name="Binary",
                     showlegend=False,
-                    marker_color="#e67e22",
                     hovertemplate="%{x}<br>Binary: %{y}<extra></extra>",
                 ),
                 row=3,
@@ -3109,11 +3366,13 @@ def plot_subsystem_feature_pipeline(
                     roll_col = f"{rolling_prefix}_binary_{lc}"
                     if roll_col in asset_df.columns:
                         fig.add_trace(
-                            go.Bar(
-                                x=dates,
-                                y=asset_df[roll_col].fillna(0).tolist(),
+                            _time_bars(
+                                dates,
+                                asset_df[roll_col].fillna(0).tolist(),
+                                sub_daily,
+                                color,
+                                stackgroup="rolling",
                                 name=label,
-                                marker_color=color,
                                 legendgroup=lc,
                                 hovertemplate=f"<b>{lc}</b><br>%{{x}}<br>Rolling: %{{y:.2f}}<extra></extra>",
                             ),
@@ -3126,11 +3385,12 @@ def plot_subsystem_feature_pipeline(
                 bin_col = f"binary_{lc}"
                 if bin_col in asset_df.columns:
                     fig.add_trace(
-                        go.Bar(
-                            x=dates,
-                            y=asset_df[bin_col].fillna(0).tolist(),
+                        _time_bars(
+                            dates,
+                            asset_df[bin_col].fillna(0).tolist(),
+                            sub_daily,
+                            color,
                             name=label,
-                            marker_color=color,
                             legendgroup=lc,
                             showlegend=(
                                 rolling_found == 0
@@ -3174,10 +3434,12 @@ def plot_system_contributions(
     title: Optional[str] = None,
     width: int = 1000,
     height: int = 600,
+    resolution: Optional[str] = None,
 ) -> None:
     """
     Single-panel chart for a single asset showing system weighted contributions
     as stacked bars with the operational risk line tracing the top of the stack.
+    One bar per time bucket (drawn as stacked areas for sub-daily models).
 
     Each bar segment = ``{system}_system_risk × weight``. The operational risk
     line sits on top, forming a border around the stack.
@@ -3193,6 +3455,18 @@ def plot_system_contributions(
         ``"system_weights"`` key mapping system names to their weights.
     title:
         Chart title. Defaults to ``"Operational Risk Breakdown — {asset_id}"``.
+    resolution:
+        How much time each point on the x-axis covers.
+
+        - ``None`` (default): one point per model time bucket — every 2 hours
+          for a model trained with ``feature_frequency="2h"``, every day for a
+          daily model.
+        - A longer period, e.g. ``"12h"`` or ``"1D"``: buckets inside each
+          period are combined into one point showing the **highest** value in
+          that period.  Use this to get a readable overview of a sub-daily
+          model over a long date range.
+
+        A period shorter than the model's buckets has no effect.
     """
     try:
         import plotly.graph_objects as go
@@ -3207,17 +3481,18 @@ def plot_system_contributions(
         return
 
     df = _load_dataframe(source)
-    df["date"] = pd.to_datetime(df["date"]).dt.date
+    df["_t"] = _bucket_times(df, resolution)
 
-    asset_df = df[df["asset_id"].astype(str) == str(asset_id)].sort_values("date")
+    asset_df = df[df["asset_id"].astype(str) == str(asset_id)].sort_values("_t")
     if asset_df.empty:
         print(
             f"Asset '{asset_id}' not found. Available: {list(df['asset_id'].unique()[:10])}"
         )
         return
 
-    daily = asset_df.groupby("date").max().reset_index()
-    dates = [str(d) for d in daily["date"]]
+    daily = asset_df.groupby("_t").max(numeric_only=True).reset_index()
+    dates = _time_labels(daily["_t"])
+    sub_daily = (resolution or _bucket_width(df)) not in ("1D", "D", "1d")
 
     _palette = [
         "#3498db",
@@ -3248,11 +3523,13 @@ def plot_system_contributions(
         weighted = (daily[risk_col].fillna(0) * weight).tolist()
         label = system.replace("_", " ").title()
         fig.add_trace(
-            go.Bar(
-                x=dates,
-                y=weighted,
+            _time_bars(
+                dates,
+                weighted,
+                sub_daily,
+                _palette[found % len(_palette)],
+                stackgroup="contributions",
                 name=label,
-                marker_color=_palette[found % len(_palette)],
                 hovertemplate=f"<b>{label}</b><br>%{{x}}<br>Contribution: %{{y:.2f}}<extra></extra>",
             )
         )
@@ -3302,11 +3579,16 @@ def plot_system_contributions(
 def _load_failures_df(
     source: Union[str, Dict[str, Any], "pd.DataFrame"],
     failure_date_column: str = "failure_date",
+    align_to: str = "1D",
 ) -> "pd.DataFrame":
     """
     Load a failures table from a CSV/parquet path or an existing DataFrame.
     Returns a clean DataFrame with canonical ``asset_id`` (str) and
-    ``failure_date`` (Timestamp, normalised to midnight) columns.
+    ``failure_date`` (Timestamp) columns.
+
+    Failure times are floored to *align_to* — the bucket width of the risk
+    data being compared (midnight for daily data) — matching how the server
+    labels training rows.
     """
     try:
         import pandas as pd
@@ -3334,9 +3616,14 @@ def _load_failures_df(
         raise ValueError(
             f"Column '{failure_date_column}' not found. Available: {list(df.columns)}"
         )
-    df["failure_date"] = pd.to_datetime(
-        raw, dayfirst=True, errors="coerce"
-    ).dt.normalize()
+    # ISO values ('2024-01-03 14:00') must not go through dayfirst=True: pandas
+    # infers one format from the first value and would read them as YYYY-DD-MM.
+    text = raw.dropna().astype(str).str.strip()
+    if len(text) and text.str.match(r"^\d{4}-\d{1,2}-\d{1,2}").all():
+        parsed = pd.to_datetime(raw, format="ISO8601", errors="coerce")
+    else:
+        parsed = pd.to_datetime(raw, dayfirst=True, errors="coerce")
+    df["failure_date"] = parsed.dt.floor(align_to)
     df = df.dropna(subset=["failure_date"])
     return df[["asset_id", "failure_date"]].drop_duplicates().reset_index(drop=True)
 
@@ -3344,28 +3631,29 @@ def _load_failures_df(
 def _attach_labels(
     df: "pd.DataFrame",
     failures_df: "pd.DataFrame",
-    prediction_horizon_days: int = 14,
-    exclusion_days_after: int = 7,
+    prediction_horizon: Union[int, str] = 14,
+    exclusion_after: Union[int, str] = 7,
 ) -> "pd.DataFrame":
     """
-    Attach a ``label`` column to *df* (which must have ``asset_id`` + ``date``):
+    Attach a ``label`` column to *df* (``asset_id`` + ``period_start`` or ``date``).
+    ``date`` in the returned frame holds each row's bucket start time:
 
-    * **1**  — positive: within *prediction_horizon_days* before a failure
-    * **-1** — excluded: within *exclusion_days_after* after a failure
+    * **1**  — positive: within *prediction_horizon* before a failure
+    * **-1** — excluded: within *exclusion_after* after a failure
     * **0**  — negative: normal operation
     """
     import pandas as pd
 
     df = df.copy()
     df["asset_id"] = df["asset_id"].astype(str)
-    df["date"] = pd.to_datetime(df["date"])
+    df["date"] = _row_times(df)
     df["label"] = 0
 
     for _, row in failures_df.iterrows():
         asset = str(row["asset_id"])
         fdate = pd.Timestamp(row["failure_date"])
-        horizon_start = fdate - pd.Timedelta(days=prediction_horizon_days)
-        excl_end = fdate + pd.Timedelta(days=exclusion_days_after)
+        horizon_start = fdate - _duration(prediction_horizon, "prediction_horizon")
+        excl_end = fdate + _duration(exclusion_after, "exclusion_after")
         mask = df["asset_id"] == asset
         df.loc[mask & (df["date"] >= horizon_start) & (df["date"] < fdate), "label"] = 1
         df.loc[mask & (df["date"] >= fdate) & (df["date"] <= excl_end), "label"] = -1
@@ -3381,8 +3669,8 @@ def _attach_labels(
 def plot_label_timeline(
     feature_source: Union[str, "pd.DataFrame"],
     failures_source: Union[str, Dict[str, Any], "pd.DataFrame"],
-    prediction_horizon_days: int = 14,
-    exclusion_days_after: int = 7,
+    prediction_horizon: Union[int, str] = 14,
+    exclusion_after: Union[int, str] = 7,
     failure_date_column: str = "failure_date",
     assets: Optional[List[str]] = None,
     max_assets: int = 25,
@@ -3415,12 +3703,13 @@ def plot_label_timeline(
     except ImportError:
         raise ImportError("plotly and pandas are required: pip install plotly pandas")
 
-    df = _load_dataframe(feature_source)[["asset_id", "date"]].copy()
+    df = _load_dataframe(feature_source)
+    df = df[[c for c in ("asset_id", "date", "period_start") if c in df.columns]].copy()
     df["asset_id"] = df["asset_id"].astype(str)
-    df["date"] = pd.to_datetime(df["date"])
+    df["date"] = _row_times(df)
     df = df.drop_duplicates(["asset_id", "date"])
 
-    failures_df = _load_failures_df(failures_source, failure_date_column)
+    failures_df = _load_failures_df(failures_source, failure_date_column, _bucket_width(df))
 
     if assets:
         targets = [str(a) for a in assets]
@@ -3432,13 +3721,13 @@ def plot_label_timeline(
     failures_df = failures_df[failures_df["asset_id"].isin(all_assets)]
 
     labeled = _attach_labels(
-        df, failures_df, prediction_horizon_days, exclusion_days_after
+        df, failures_df, prediction_horizon, exclusion_after
     )
 
     COLORS = {0: "#93c5fd", 1: "#f87171", -1: "#d1d5db"}
     NAMES = {
         0: "Negative",
-        1: f"Positive (≤{prediction_horizon_days}d pre-failure)",
+        1: f"Positive (≤{_fmt_duration(prediction_horizon)} pre-failure)",
         -1: "Excluded",
     }
 
@@ -3496,8 +3785,8 @@ def plot_label_timeline(
 def plot_label_distribution(
     feature_source: Union[str, "pd.DataFrame"],
     failures_source: Union[str, Dict[str, Any], "pd.DataFrame"],
-    prediction_horizon_days: int = 14,
-    exclusion_days_after: int = 7,
+    prediction_horizon: Union[int, str] = 14,
+    exclusion_after: Union[int, str] = 7,
     failure_date_column: str = "failure_date",
     freq: str = "W",
     title: str = "Positive vs Negative Label Distribution Over Time",
@@ -3522,10 +3811,11 @@ def plot_label_distribution(
     except ImportError:
         raise ImportError("plotly and pandas are required: pip install plotly pandas")
 
-    df = _load_dataframe(feature_source)[["asset_id", "date"]].copy()
-    failures_df = _load_failures_df(failures_source, failure_date_column)
+    df = _load_dataframe(feature_source)
+    df = df[[c for c in ("asset_id", "date", "period_start") if c in df.columns]].copy()
+    failures_df = _load_failures_df(failures_source, failure_date_column, _bucket_width(df))
     labeled = _attach_labels(
-        df, failures_df, prediction_horizon_days, exclusion_days_after
+        df, failures_df, prediction_horizon, exclusion_after
     )
     labeled = labeled[labeled["label"] != -1]
 
@@ -3786,8 +4076,8 @@ def plot_risk_around_failures(
     risk_source: Union[str, "pd.DataFrame"],
     failures_source: Union[str, Dict[str, Any], "pd.DataFrame"],
     failure_date_column: str = "failure_date",
-    prediction_horizon_days: int = 14,
-    window_after_days: int = 7,
+    prediction_horizon: Union[int, str] = 14,
+    window_after: Union[int, str] = 7,
     assets: Optional[List[str]] = None,
     max_assets: int = 6,
     score_col: str = "operational_risk",
@@ -3800,7 +4090,7 @@ def plot_risk_around_failures(
     showing the full available history.
 
     * **Dashed vertical line** = failure date
-    * **Shaded region**        = prediction horizon (the *prediction_horizon_days*
+    * **Shaded region**        = prediction horizon (the *prediction_horizon*
       window before failure that is labelled positive)
 
     One subplot per asset.  Multiple failure events on the same asset are each
@@ -3812,10 +4102,10 @@ def plot_risk_around_failures(
         Path to ``risk_scores.parquet`` or a DataFrame.
     failures_source:
         Path to failures CSV/parquet or a DataFrame.
-    prediction_horizon_days:
-        Width of the shaded pre-failure zone (default 14).
-    window_after_days:
-        Extra days shown to the right of the last failure (default 7).
+    prediction_horizon:
+        Width of the shaded pre-failure zone — days, or a duration (default 14).
+    window_after:
+        Extra time shown to the right of the last failure — days, or a duration (default 7).
     max_assets:
         Maximum subplots to render (default 6).
     score_col:
@@ -3829,7 +4119,7 @@ def plot_risk_around_failures(
         raise ImportError("plotly and pandas are required: pip install plotly pandas")
 
     df = _load_dataframe(risk_source)
-    df["date"] = pd.to_datetime(df["date"])
+    df["date"] = _row_times(df)
     df["asset_id"] = df["asset_id"].astype(str)
 
     if score_col not in df.columns:
@@ -3837,7 +4127,7 @@ def plot_risk_around_failures(
             f"Column '{score_col}' not found. Available: {list(df.columns)}"
         )
 
-    failures_df = _load_failures_df(failures_source, failure_date_column)
+    failures_df = _load_failures_df(failures_source, failure_date_column, _bucket_width(df))
 
     if assets:
         failures_df = failures_df[
@@ -3893,7 +4183,7 @@ def plot_risk_around_failures(
         for j, fdate in enumerate(fdates):
             color = FAIL_COLORS[j % len(FAIL_COLORS)]
             fdate_ts = pd.Timestamp(fdate)
-            horizon_start = fdate_ts - pd.Timedelta(days=prediction_horizon_days)
+            horizon_start = fdate_ts - _duration(prediction_horizon, "prediction_horizon")
 
             fig.add_vline(
                 x=fdate_ts,
@@ -3914,8 +4204,8 @@ def plot_risk_around_failures(
             )
 
         # Clip x-axis to meaningful window
-        x0 = min(fdates) - pd.Timedelta(days=prediction_horizon_days + 21)
-        x1 = max(fdates) + pd.Timedelta(days=window_after_days)
+        x0 = min(fdates) - (_duration(prediction_horizon, "prediction_horizon") + pd.Timedelta(days=21))
+        x1 = max(fdates) + _duration(window_after, "window_after")
         fig.update_xaxes(range=[x0, x1], row=row, col=col, tickangle=-30)
         fig.update_yaxes(range=[0, 100], row=row, col=col)
 
@@ -3937,8 +4227,8 @@ def plot_risk_around_failures(
 def plot_failure_risk_stats(
     risk_source: Union[str, "pd.DataFrame"],
     failures_source: Union[str, Dict[str, Any], "pd.DataFrame"],
-    prediction_horizon_days: int = 14,
-    exclusion_days_after: int = 7,
+    prediction_horizon: Union[int, str] = 14,
+    exclusion_after: Union[int, str] = 7,
     failure_date_column: str = "failure_date",
     score_col: str = "operational_risk",
     title: str = "Risk Score Distribution: Pre-failure vs Normal",
@@ -3958,10 +4248,10 @@ def plot_failure_risk_stats(
         Path to ``risk_scores.parquet`` or a DataFrame.
     failures_source:
         Path to failures CSV/parquet or a DataFrame.
-    prediction_horizon_days:
-        Days before failure labelled as positive (default 14).
-    exclusion_days_after:
-        Days after failure to exclude from analysis (default 7).
+    prediction_horizon:
+        Window before failure labelled positive — days, or a duration such as ``'36h'`` (default 14).
+    exclusion_after:
+        Window after failure to exclude — days, or a duration (default 7).
     score_col:
         Column to analyse (default ``"operational_risk"``).
     """
@@ -3972,9 +4262,9 @@ def plot_failure_risk_stats(
         raise ImportError("plotly and pandas are required: pip install plotly pandas")
 
     df = _load_dataframe(risk_source)
-    failures_df = _load_failures_df(failures_source, failure_date_column)
+    failures_df = _load_failures_df(failures_source, failure_date_column, _bucket_width(df))
     labeled = _attach_labels(
-        df, failures_df, prediction_horizon_days, exclusion_days_after
+        df, failures_df, prediction_horizon, exclusion_after
     )
     labeled = labeled[labeled["label"] != -1]
 
@@ -3984,7 +4274,7 @@ def plot_failure_risk_stats(
     if pos.empty:
         print(
             "No positive-label rows found. "
-            "Check prediction_horizon_days or whether failures overlap with the risk data date range."
+            "Check prediction_horizon or whether failures overlap with the risk data date range."
         )
         return
 
@@ -4056,7 +4346,7 @@ def plot_failure_risk_stats(
 def plot_detection_roc(
     risk_source: Union[str, "pd.DataFrame"],
     failures_source: Union[str, Dict[str, Any], "pd.DataFrame"],
-    prediction_horizon_days: int = 14,
+    prediction_horizon: Union[int, str] = 14,
     failure_date_column: str = "failure_date",
     detection_threshold: Optional[float] = None,
     score_col: str = "operational_risk",
@@ -4077,8 +4367,8 @@ def plot_detection_roc(
         a DataFrame with ``asset_id``, ``date``, and *score_col* columns.
     failures_source:
         Path to a failures CSV/parquet or a DataFrame.
-    prediction_horizon_days:
-        Days before each failure labelled as positive for the ROC (default 14).
+    prediction_horizon:
+        Window before each failure labelled positive for the ROC — days, or a duration such as ``'36h'`` (default 14).
     failure_date_column:
         Column in *failures_source* holding the failure date.
     detection_threshold:
@@ -4105,15 +4395,15 @@ def plot_detection_roc(
         raise ImportError("numpy, pandas, matplotlib, and scikit-learn are required.")
 
     df = _load_dataframe(risk_source)
-    df["date"] = pd.to_datetime(df["date"])
+    df["date"] = _row_times(df)
     df["asset_id"] = df["asset_id"].astype(str)
 
-    failures_df = _load_failures_df(failures_source, failure_date_column)
+    failures_df = _load_failures_df(failures_source, failure_date_column, _bucket_width(df))
 
     labels = pd.Series(0, index=df.index)
     for _, f in failures_df.iterrows():
         aid, fdate = str(f["asset_id"]), pd.Timestamp(f["failure_date"])
-        win_start = fdate - pd.Timedelta(days=prediction_horizon_days)
+        win_start = fdate - _duration(prediction_horizon, "prediction_horizon")
         mask = (
             (df["asset_id"] == aid) & (df["date"] >= win_start) & (df["date"] < fdate)
         )
@@ -4278,7 +4568,7 @@ def plot_detection_roc(
 def plot_failure_detection_summary(
     risk_source: Union[str, "pd.DataFrame"],
     failures_source: Union[str, Dict[str, Any], "pd.DataFrame"],
-    prediction_horizon_days: int = 14,
+    prediction_horizon: Union[int, str] = 14,
     failure_date_column: str = "failure_date",
     detection_threshold: Optional[float] = None,
     score_col: str = "operational_risk",
@@ -4288,7 +4578,7 @@ def plot_failure_detection_summary(
     Build a per-failure detection audit table and print a per-asset summary.
 
     For each failure, reports whether *score_col* exceeded *detection_threshold*
-    at least once in the ``prediction_horizon_days`` window before the event,
+    at least once in the ``prediction_horizon`` window before the event,
     plus the first detection date and days-in-advance lead time.
 
     Parameters
@@ -4298,8 +4588,8 @@ def plot_failure_detection_summary(
         a DataFrame with ``asset_id``, ``date``, and *score_col* columns.
     failures_source:
         Path to a failures CSV/parquet or a DataFrame.
-    prediction_horizon_days:
-        Days before each failure used as the detection window (default 14).
+    prediction_horizon:
+        Detection window before each failure — days, or a duration such as ``'36h'`` (default 14).
     failure_date_column:
         Column in *failures_source* holding the failure date.
     detection_threshold:
@@ -4315,7 +4605,7 @@ def plot_failure_detection_summary(
     pd.DataFrame
         Per-failure table with columns ``asset_id``, ``failure_date``,
         ``max_risk_in_window``, ``caught``, ``first_detection_date``,
-        ``days_in_advance``.  Returned so the caller can slice, filter,
+        ``days_in_advance`` (fractional for sub-daily data, e.g. ``0.25`` = 6h).  Returned so the caller can slice, filter,
         or plot further.
     """
     try:
@@ -4326,16 +4616,16 @@ def plot_failure_detection_summary(
         raise ImportError("numpy, pandas, and scikit-learn are required.")
 
     df = _load_dataframe(risk_source)
-    df["date"] = pd.to_datetime(df["date"])
+    df["date"] = _row_times(df)
     df["asset_id"] = df["asset_id"].astype(str)
 
-    failures_df = _load_failures_df(failures_source, failure_date_column)
+    failures_df = _load_failures_df(failures_source, failure_date_column, _bucket_width(df))
 
     if detection_threshold is None:
         labels = pd.Series(0, index=df.index)
         for _, f in failures_df.iterrows():
             aid, fdate = str(f["asset_id"]), pd.Timestamp(f["failure_date"])
-            win_start = fdate - pd.Timedelta(days=prediction_horizon_days)
+            win_start = fdate - _duration(prediction_horizon, "prediction_horizon")
             mask = (
                 (df["asset_id"] == aid)
                 & (df["date"] >= win_start)
@@ -4352,7 +4642,7 @@ def plot_failure_detection_summary(
     rows = []
     for _, f in failures_df.sort_values(["asset_id", "failure_date"]).iterrows():
         aid, fdate = str(f["asset_id"]), pd.Timestamp(f["failure_date"])
-        win_start = fdate - pd.Timedelta(days=prediction_horizon_days)
+        win_start = fdate - _duration(prediction_horizon, "prediction_horizon")
         win = df[
             (df["asset_id"] == aid) & (df["date"] >= win_start) & (df["date"] < fdate)
         ]
@@ -4360,7 +4650,7 @@ def plot_failure_detection_summary(
             rows.append(
                 {
                     "asset_id": aid,
-                    "failure_date": fdate.date(),
+                    "failure_date": _fmt_time(fdate),
                     "max_risk_in_window": None,
                     "caught": False,
                     "first_detection_date": None,
@@ -4372,19 +4662,23 @@ def plot_failure_detection_summary(
         detected = win[win[score_col] >= thresh_used].sort_values("date")
         caught = not detected.empty
         first_det = detected.iloc[0]["date"] if caught else pd.NaT
-        days_adv = int((fdate - first_det).days) if caught else None
+        days_adv = round((fdate - first_det) / pd.Timedelta(days=1), 2) if caught else None
         rows.append(
             {
                 "asset_id": aid,
-                "failure_date": fdate.date(),
+                "failure_date": _fmt_time(fdate),
                 "max_risk_in_window": round(float(max_risk), 2),
                 "caught": caught,
-                "first_detection_date": first_det.date() if caught else None,
+                "first_detection_date": _fmt_time(first_det) if caught else None,
                 "days_in_advance": days_adv,
             }
         )
 
     det_df = pd.DataFrame(rows)
+    # Keep numeric even when every value is None (nothing caught / no data),
+    # otherwise the per-asset means below fail on an object column.
+    for col in ("max_risk_in_window", "days_in_advance"):
+        det_df[col] = pd.to_numeric(det_df[col], errors="coerce")
 
     if output_csv:
         det_df.to_csv(output_csv, index=False)
@@ -4449,7 +4743,7 @@ def plot_failure_detection_summary(
 def plot_failure_detection_timeline(
     risk_source: Union[str, "pd.DataFrame"],
     failures_source: Union[str, Dict[str, Any], "pd.DataFrame"],
-    prediction_horizon_days: int = 14,
+    prediction_horizon: Union[int, str] = 14,
     failure_date_column: str = "failure_date",
     detection_threshold: Optional[float] = None,
     score_col: str = "operational_risk",
@@ -4478,8 +4772,8 @@ def plot_failure_detection_timeline(
         and *score_col* columns.
     failures_source:
         Path to failures CSV/parquet or a DataFrame.
-    prediction_horizon_days:
-        Days before each failure used as the detection window (default 14).
+    prediction_horizon:
+        Detection window before each failure — days, or a duration such as ``'36h'`` (default 14).
     failure_date_column:
         Column in *failures_source* holding the failure date.
     detection_threshold:
@@ -4504,11 +4798,11 @@ def plot_failure_detection_timeline(
         raise ImportError("plotly, pandas, numpy, and scikit-learn are required.")
 
     df = _load_dataframe(risk_source)
-    df["date"] = pd.to_datetime(df["date"])
+    df["date"] = _row_times(df)
     df["asset_id"] = df["asset_id"].astype(str)
     df = df.copy()
 
-    failures_df = _load_failures_df(failures_source, failure_date_column)
+    failures_df = _load_failures_df(failures_source, failure_date_column, _bucket_width(df))
 
     if assets:
         targets = [str(a) for a in assets]
@@ -4524,7 +4818,7 @@ def plot_failure_detection_timeline(
         labels_s = pd.Series(0, index=df.index)
         for _, f in failures_df.iterrows():
             aid, fdate = str(f["asset_id"]), pd.Timestamp(f["failure_date"])
-            win_start = fdate - pd.Timedelta(days=prediction_horizon_days)
+            win_start = fdate - _duration(prediction_horizon, "prediction_horizon")
             mask = (
                 (df["asset_id"] == aid)
                 & (df["date"] >= win_start)
@@ -4540,7 +4834,7 @@ def plot_failure_detection_timeline(
     df["_label"] = 0
     for _, f in failures_df.iterrows():
         aid, fdate = str(f["asset_id"]), pd.Timestamp(f["failure_date"])
-        win_start = fdate - pd.Timedelta(days=prediction_horizon_days)
+        win_start = fdate - _duration(prediction_horizon, "prediction_horizon")
         mask = (
             (df["asset_id"] == aid) & (df["date"] >= win_start) & (df["date"] < fdate)
         )
@@ -4606,7 +4900,7 @@ def plot_failure_detection_timeline(
             if det_lookup is not None:
                 caught = det_lookup.get((aid, fdate.date()), False)
             else:
-                win_start = fdate - pd.Timedelta(days=prediction_horizon_days)
+                win_start = fdate - _duration(prediction_horizon, "prediction_horizon")
                 win = df[
                     (df["asset_id"] == aid)
                     & (df["date"] >= win_start)

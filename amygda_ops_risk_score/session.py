@@ -6,7 +6,7 @@ import json as _json
 import os
 import threading
 import zipfile
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import amygda_ops_risk_score._validators as _v
 from amygda_ops_risk_score._http import HTTPClient
@@ -978,7 +978,7 @@ class Session:
         asset_id_column: str,
         timestamp_column: str,
         date_format: str = "infer",
-        rolling_window: int = 7,
+        rolling_window: Union[str, int] = "7D",
         rolling_feature_type: str = "sum",
         quantile_for_thresholds: float = 0.99,
         sheet_name: Optional[str] = None,
@@ -986,15 +986,16 @@ class Session:
         failures_path: Optional[str] = None,
         failure_date_column: str = "machine_initialisation_date",
         failure_date_format: str = "infer",
-        prediction_horizon_days: int = 14,
-        exclusion_days_after: int = 7,
+        prediction_horizon: Union[str, int] = "14D",
+        exclusion_after: Union[str, int] = "7D",
         target_imbalance_ratio: Optional[float] = 10.0,
         sampling_strategy: str = "block",
-        block_size_days: int = 14,
+        block_size: Union[str, int] = "14D",
         n_candidates: int = 200,
         fallback_quantile: float = 0.95,
         min_positives: int = 5,
         lr_c: float = 0.5,
+        feature_frequency: str = "auto",
         *,
         timeout: float = 600.0,
     ) -> Dict[str, Any]:
@@ -1019,7 +1020,11 @@ class Session:
             ``'infer'`` lets pandas auto-detect the format.  Pass a strftime string
             (e.g. ``'%d/%m/%Y'``) if auto-detection fails.
         rolling_window:
-            Number of days to aggregate events over (1–30, default 7).
+            Time span to aggregate events over, as a duration — ``'7D'``,
+            ``'36h'``, ``'90min'`` (default ``'7D'``, max ``'30D'``).  A bare
+            number is read as days, so ``7`` still means seven days.  Must be at
+            least one ``feature_frequency`` bucket.  Windows span calendar time:
+            gaps with no logs count towards the window rather than being skipped.
         rolling_feature_type:
             How events are aggregated in the rolling window.
             ``'sum'`` counts total events; ``'flag'`` marks any-or-none;
@@ -1046,18 +1051,21 @@ class Session:
             Format of the failure date column. ``'infer'`` (default) tries
             ``dayfirst=True`` first then falls back to auto-detection.
             Pass a strftime string (e.g. ``'%d/%m/%Y'``) to parse explicitly.
-        prediction_horizon_days:
-            Number of days before a failure to label as positive (default 14).
-        exclusion_days_after:
-            Number of days after a failure to exclude from training (recovery period, default 7).
+        prediction_horizon:
+            How long before a failure to label as positive — a duration such as
+            ``'14D'`` or ``'36h'``, or a number of days (default ``'14D'``).
+        exclusion_after:
+            How long after a failure to exclude from training (recovery period) —
+            a duration or number of days (default ``'7D'``).
         target_imbalance_ratio:
             Maximum ratio of negatives to positives after downsampling (default 10).
             ``None`` keeps all negatives.
         sampling_strategy:
             How negatives are downsampled: ``"block"`` preserves temporal structure,
             ``"random"`` samples individual rows (default ``"block"``).
-        block_size_days:
-            Calendar-day block size for block-based downsampling (default 14).
+        block_size:
+            Block size for block-based downsampling — a duration or number of
+            days (default ``'14D'``).  Must be at least one ``feature_frequency`` bucket.
         n_candidates:
             Number of threshold candidates to evaluate per subsystem (default 200).
         fallback_quantile:
@@ -1066,15 +1074,32 @@ class Session:
             Minimum positive rows required to attempt AUC training per subsystem (default 5).
         lr_c:
             Logistic regression regularisation strength C (default 0.5).
+        feature_frequency:
+            Width of the time buckets features are built on: ``'auto'`` (default)
+            or one of ``'5min'``, ``'15min'``, ``'1h'``, ``'2h'``, ``'4h'``,
+            ``'6h'``, ``'8h'``, ``'12h'``, ``'1D'``.
+
+            ``'auto'`` picks the finest width supported by both the timestamp
+            resolution of your data and the typical gap between an asset's
+            events (so a bucket usually holds about one event), capped at
+            ``'1D'``.  Date-only data always resolves to ``'1D'``.
+
+            An explicit value is used as given, but is rejected if it is finer
+            than your timestamps are recorded (e.g. ``'1h'`` on date-only data).
+
+            Only buckets that contain logs become rows — gaps are never filled.
+            Generation always reuses the training frequency.
         timeout:
             Maximum seconds to wait for upload and validation (default 600 s).
 
         Returns:
             Dict with ``message``, ``row_count``, ``asset_count``, ``is_free_text``,
-            ``supervised``, ``next_step``, and your full configuration echoed back
-            (``file_path``, ``asset_id_column``, ``timestamp_column``,
-            ``rolling_window``, ``rolling_feature_type``, ``quantile_for_thresholds``,
-            ``sheet_name``, ``failures_path``).
+            ``supervised``, ``next_step``, the resolved ``feature_frequency``
+            with ``feature_frequency_source`` (``'auto'`` / ``'explicit'``),
+            ``timestamp_resolution`` and ``typical_event_gap``, and your full
+            configuration echoed back (``file_path``, ``asset_id_column``,
+            ``timestamp_column``, ``rolling_window``, ``rolling_feature_type``,
+            ``quantile_for_thresholds``, ``sheet_name``, ``failures_path``).
         """
         _v.validate_configure_training(
             file_path=file_path,
@@ -1088,14 +1113,15 @@ class Session:
             failures_path=failures_path,
             failure_date_column=failure_date_column,
             sampling_strategy=sampling_strategy,
-            prediction_horizon_days=prediction_horizon_days,
-            exclusion_days_after=exclusion_days_after,
+            prediction_horizon=prediction_horizon,
+            exclusion_after=exclusion_after,
             target_imbalance_ratio=target_imbalance_ratio,
-            block_size_days=block_size_days,
+            block_size=block_size,
             n_candidates=n_candidates,
             fallback_quantile=fallback_quantile,
             min_positives=min_positives,
             lr_c=lr_c,
+            feature_frequency=feature_frequency,
         )
         data = {
             "auth_id":                 self._auth_id,
@@ -1108,14 +1134,15 @@ class Session:
             "supervised":              str(supervised).lower(),
             "failure_date_column":     failure_date_column,
             "failure_date_format":     failure_date_format,
-            "prediction_horizon_days": str(prediction_horizon_days),
-            "exclusion_days_after":    str(exclusion_days_after),
+            "prediction_horizon":      str(prediction_horizon),
+            "exclusion_after":         str(exclusion_after),
             "sampling_strategy":       sampling_strategy,
-            "block_size_days":         str(block_size_days),
+            "block_size":              str(block_size),
             "n_candidates":            str(n_candidates),
             "fallback_quantile":       str(fallback_quantile),
             "min_positives":           str(min_positives),
             "lr_c":                    str(lr_c),
+            "feature_frequency":       feature_frequency,
         }
         if target_imbalance_ratio is not None:
             data["target_imbalance_ratio"] = str(target_imbalance_ratio)
@@ -1148,7 +1175,8 @@ class Session:
             "asset_id_column":         asset_id_column,
             "timestamp_column":        timestamp_column,
             "date_format":             date_format,
-            "rolling_window":          rolling_window,
+            # Server's canonical form (e.g. 7 → "7D") when available
+            "rolling_window":          raw.get("rolling_window", rolling_window),
             "rolling_feature_type":    rolling_feature_type,
             "quantile_for_thresholds": quantile_for_thresholds,
             "sheet_name":              sheet_name,
@@ -1192,7 +1220,7 @@ class Session:
 
         Returns:
             Dict with ``auth_id``, ``subsystems_calibrated``, ``supervised``,
-            ``baseline_auc_roc``, ``supervised_auc_roc``.  When ``artifact_dir``
+            ``baseline_auc_roc``, ``supervised_auc_roc``, ``feature_frequency``.  When ``artifact_dir``
             is set, also includes ``thresholds_path``, ``training_fe_path``,
             ``training_scores_path``; fixed-log sessions add ``logs_mapping_path``;
             import_model sessions add ``model_config_path``; supervised sessions
@@ -1212,6 +1240,7 @@ class Session:
             "supervised":            raw.get("supervised", False),
             "baseline_auc_roc":      raw.get("baseline_auc_roc"),
             "supervised_auc_roc":    raw.get("supervised_auc_roc"),
+            "feature_frequency":     raw.get("feature_frequency"),
         }
 
         # Download training artifacts into artifact_dir immediately so the user can
