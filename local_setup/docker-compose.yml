@@ -24,7 +24,7 @@ services:
 
   ops-risk-api:
     profiles: ["api", "full"]
-    image: guna1/ops-risk-api:latest
+    image: sykhan88/ops-risk-api:latest
     container_name: ops-risk-api
     env_file: .env
     ports:
@@ -41,7 +41,7 @@ services:
 
   ops-risk-streamlit:
     profiles: ["streamlit", "full"]
-    image: guna1/ops-risk-streamlit:latest
+    image: sykhan88/ops-risk-streamlit:latest
     container_name: ops-risk-streamlit
     env_file: .env
     ports:
