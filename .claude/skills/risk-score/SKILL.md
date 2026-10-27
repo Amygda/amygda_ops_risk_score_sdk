@@ -34,19 +34,26 @@ You are acting as an expert guide for the Amygda Ops Risk Score pipeline. Your j
 
 **Guide the user step by step in conversation — do not produce files for them to run.** Everything you need is in the `references/` files — load them as instructed below. Do not use the word "notebook" in any user-facing response.
 
-**Do not run any pipeline step before asking the upfront questions in the relevant section below.** A non-technical user will not know what parameters to supply — you need to elicit them through conversation first.
+**Before Step 1, profile the data (Step 0), then ask every upfront question for the part you are about to run, including the ones with defaults.** A non-technical user won't know what to supply, and a default chosen silently is a decision taken away from them. If your question tool limits how many you can ask at once, ask in rounds.
 
-**Helper plot functions display via IPython and return `None` — call them but never assign or use the return value. Do not try to save, write, or capture their output.**
+**Running the SDK from scripts or a shell rather than a notebook?** Read `references/agent-execution.md` before Step 1. It covers sessions between commands, progress streaming, the API key, session lifetime, hangs and charts.
+
+**Helper plot functions display via IPython and return `None`.** In a notebook, call them but never assign or use the return value. Outside a notebook, see `references/agent-execution.md`.
+
+**Check results before presenting them as good.** Steps can return output that looks fine and isn't. Each step below names the check to run from `references/validation.md`. All scores you show come from the API's outputs, never a local recalculation.
 
 Reference files (load on demand — each step below tells you which to load):
 - `references/client.md` — OpsRiskClient methods (open_session, get_session, restart_session, wait_until_ready)
 - `references/session.md` — Session pipeline methods (Steps 1–12)
 - `references/helpers.md` — all helper/visualisation functions
+- `references/data-checks.md` — Step 0: profiling the user's files before Step 1
+- `references/agent-execution.md` — running steps from scripts: sessions, progress, secrets, API-only scores
+- `references/validation.md` — checks after Steps 3, 5, 7b, 8, 10 and 12
 
 The pipeline has two phases:
 
 - **Labelling (Steps 1–8):** Upload logs → extract vocabulary → build equipment hierarchy with AI → classify every log entry → download the trained labelling model
-- **Risk Score (Steps 9–12):** Load historical logs → calibrate risk thresholds → score new logs → download per-asset, per-day risk scores
+- **Risk Score (Steps 9–12):** Load historical logs → calibrate risk thresholds → score new logs → download per-asset risk scores for each time bucket (each day for a daily model)
 
 Steps 8 and 12 are **ONE-WAY DOORS** — the server session is permanently deleted when they complete. Always warn the user before calling them.
 
@@ -142,7 +149,9 @@ Every time a session starts, establish which scenario applies before running any
 
 **Case 1 — Brand new session** (default): Create a fresh session with `open_session()`.
 
-**Case 2 — Kernel restarted, server session still alive:** The server holds session state for up to 6 hours. Ask the user for their `AUTH_ID` (printed when the original session opened) and reconnect:
+Before Case 2–4, note two things from `references/agent-execution.md` ("Session lifetime and the one-session-per-key rule", "Keeping the API key out of output"): sessions expire after about 4 hours, so tell the user at the start; and `session.status()` contains the API key.
+
+**Case 2 — Kernel restarted, server session still alive:** Ask the user for their `AUTH_ID` (printed when the original session opened; if you are running scripts, read it from the file you saved it to) and reconnect:
 ```python
 session = client.get_session(auth_id="ses-xxxxxxxx", artifact_dir="artifacts/my_run/")
 # Reload step results from saved JSON files in artifact_dir as needed
@@ -152,7 +161,7 @@ session = client.get_session(auth_id="ses-xxxxxxxx", artifact_dir="artifacts/my_
 ```python
 status = session.status()   # dict of step states
 ```
-If the step is DONE, continue. If `session.status()` raises `APIError` with status 404, the session expired during the outage — call `open_session()` again; it auto-resumes if the server session is still alive, or creates a fresh one if not.
+If the step is DONE, continue. If `session.status()` raises `APIError` with status 404, the session expired during the outage — call `open_session()` again; it auto-resumes if the server session is still alive, or creates a fresh one if not. If that returns `500 internal_error`, see `references/agent-execution.md` ("Session lifetime and the one-session-per-key rule").
 
 **Case 4 — Step is locked (need to go back):** Some steps lock out earlier ones. Use `restart_session()` to create a fresh session and re-run from the beginning:
 ```python
@@ -166,14 +175,21 @@ The `next_step` field in every step response tells you exactly which method the 
 
 ## PART 1 — LABELLING PIPELINE (Steps 1–8)
 
+### Step 0 — Profile the Data First
+
+Before the questions below, profile the log file (and the failures file, if any) as described in `references/data-checks.md`, and report the findings in plain language. They decide which of the conditional questions below to ask, and which checks to run later.
+
 ### Before You Begin — Ask the User These Questions
 
-Before writing a single line of code, collect:
+Before writing a single line of code, collect all of these. Ask about every row, even where a default exists: say what the default is and why, and let the user choose.
 
 | Question | Why it matters |
 |---|---|
 | What is the **file path** to their log data? (CSV or XLSX) | Required for Step 1 |
 | Which **column contains the log entries** — event codes or maintenance text? | `log_column` |
+| Should the log text **combine columns** (e.g. status + message)? *(if Step 0 found a status column)* | See `references/data-checks.md` → "How each finding changes the setup" |
+| Should **routine status entries** be removed? *(if Step 0 found them)* | Same reference |
+| Should **floods of repeated messages** be collapsed? *(if Step 0 found them)* | Same reference |
 | Which **column identifies each asset/machine**? | `asset_column` |
 | What **type of asset** is this? Give a specific description. | `asset_context` — sent to the AI to build the hierarchy. Quality matters. Bad: "industrial machine". Good: "rail vehicle HVAC unit for passenger cabin climate control" |
 | Are the logs **structured event codes** (e.g. "EVT-001") or **free-form maintenance text** (e.g. "replaced bearing on unit 3")? | Sets `is_free_text` — affects the entire pipeline |
@@ -207,9 +223,8 @@ To go back past a lock: call `client.restart_session()` — this deletes all ser
 
 **What this does:** Uploads the log file to the server and stores the pipeline configuration. The server checks column names and counts rows. Nothing is classified yet — this is just setup.
 
-**Call:** `result = session.configure_labelling_pipeline(file_path, log_column, asset_column, max_systems, max_subsystems, asset_context, is_free_text, sheet_name=None, *, timeout=600.0)`
+**Call:** `result = session.configure_labelling_pipeline(...)`
 **Ref:** `references/session.md` → `### Step 1 — configure_labelling_pipeline`
-**Returns:** `row_count`, `downsample_required`, `available_columns`, `is_free_text`, `next_step`
 
 **What to check:** Look at `result.downsample_required`. If `True`, the dataset is too large for direct classification — Step 2 is needed. If `False`, skip to Step 3.
 
@@ -228,10 +243,8 @@ Then ask: "Does this look right? Correct column names, asset type, and free-text
 
 **What this does:** Reduces the dataset to a manageable size by taking a representative sample — like selecting a good cross-section of your log history rather than every single entry. The sample preserves the distribution across your asset types.
 
-**Call:** `result = session.downsample(sample_size, asset_column=None, vehicle_column=None, timestamp_column=None, *, file_path=None, sheet_name=None, timeout=600.0)`
+**Call:** `result = session.downsample(...)`
 **Ref:** `references/session.md` → `### Step 2 — downsample`
-**Returns:** `original_rows`, `sampled_rows`, `next_step`, `downsampled_path`
-**Note:** At least one of `asset_column`, `vehicle_column`, `timestamp_column` must be provided; `file_path` and `sheet_name` are keyword-only.
 
 More stratification columns → better-balanced sample. Add `timestamp_column` if you want the sample spread across time as well as assets.
 
@@ -246,30 +259,23 @@ Then ask: "Does this sample look like a representative selection of your log his
 
 **What this does:** Scans the log text and extracts the key terms that describe how your equipment behaves — words like "bearing", "temperature", "fault", "reset". These terms are what the AI uses in the next step to understand your system. Think of it as building a vocabulary from your data.
 
-**Call:** `result = session.extract_keywords(extraction_method="fast", *, linguistic_filter=True, timeout=1200.0)`
+**Call:** `result = session.extract_keywords(...)`
 **Ref:** `references/session.md` → `### Step 3 — extract_keywords`
-**Returns:** `keywords`, `keyword_pool`, `finalised_keyword_count`, `next_step`
 
-**Choosing the method:**
-- Fixed-log (structured codes): use `"fast"`
-- Free-text (maintenance notes): use `"deep"` — it handles abbreviations and domain terms better
-- If your domain uses heavy jargon not in a standard dictionary, set `linguistic_filter=False`
+This is the last chance to fix the vocabulary: Step 8 classifies from it, and it locks when Step 4 starts.
+
+**Choosing the method and checking the result:** see `references/validation.md` → "Keyword coverage check". It covers which `extraction_method` / `linguistic_filter` to try for free-text and fixed-log data, the coverage check to run, and the stemming caveat. Show the user any gaps.
 
 **STOP HERE — show the user:**
 - [ ] keyword cloud (`helpers.plot_keyword_cloud(...)`)
 - [ ] top keywords bar chart (`helpers.plot_top_keywords(...)`)
 - [ ] top keywords table (`helpers.get_top_keywords_table(...)`)
 
-**Call:** `helpers.plot_keyword_cloud(keywords)` — word cloud of extracted keywords
-**Ref:** `references/helpers.md` → `### helpers.plot_keyword_cloud`
-**Call:** `helpers.plot_top_keywords(source)` — Plotly bar chart, top keywords by frequency
-**Ref:** `references/helpers.md` → `### helpers.plot_top_keywords`
-**Call:** `helpers.get_top_keywords_table(source)` — returns DataFrame with `["Keyword", "Frequency"]`
-**Ref:** `references/helpers.md` → `### helpers.get_top_keywords_table`
+Helper arguments and outputs: `references/helpers.md`.
 
-Then ask: "Do these terms look like they describe how your equipment works? Are any important terms missing? Are there noise terms you'd want removed?"
+Then ask: "Do these terms look like they describe how your equipment works? Are any important terms missing?" Don't offer to remove noise terms: the pool can't be edited.
 
-If the vocabulary looks wrong, try switching `extraction_method` or `linguistic_filter` and re-running Step 3 (can be re-run until Step 4 starts).
+If the vocabulary looks wrong or coverage has gaps, change the settings and re-run Step 3 (repeatable until Step 4 starts). Compare the coverage of the two runs before moving on.
 
 ---
 
@@ -279,10 +285,9 @@ If the vocabulary looks wrong, try switching `extraction_method` or `linguistic_
 
 This is an AI call and takes 30 seconds to 3 minutes.
 
-**Call:** `result = session.generate_hierarchy(*, keywords=None, timeout=1200.0)`
+**Call:** `result = session.generate_hierarchy(...)`
 **Ref:** `references/session.md` → `### Step 4 — generate_hierarchy`
-**Returns:** `hierarchy`, `systems_count`, `subsystems_count`, `keywords_source`
-**Note:** `keywords=None` uses the pool from `extract_keywords`; `extract_keywords` must be completed first regardless.
+Prefer `keywords=None`, and **read the keyword list on every row, not just the names**. The lists decide where each log entry lands in Step 8. What to look for, and why an override doesn't stick: `references/validation.md` → "How keyword assignment works".
 
 Each row in the hierarchy has a **confidence rating** (high / medium / low) that reflects how strongly the keyword evidence supports the classification:
 - 🟢 High — strong keyword evidence
@@ -292,7 +297,8 @@ Each row in the hierarchy has a **confidence rating** (high / medium / low) that
 **STOP HERE — this is the main human judgement gate.**
 
 Show the user:
-- [ ] hierarchy tree colour-coded by confidence (`helpers.plot_hierarchy(result)` — sunburst: inner ring = systems, outer ring = subsystems, coloured by confidence)
+- [ ] hierarchy tree colour-coded by confidence (`helpers.plot_hierarchy(result)`; see `references/helpers.md`)
+- [ ] each subsystem's keyword list
 
 Then ask:
 - "Does this hierarchy match how you think about your equipment?"
@@ -310,35 +316,20 @@ Hierarchy can be regenerated until `update_hierarchy` or `generate_weights` star
 
 **What this does:** Lets you correct the AI's hierarchy — rename systems, add/remove subsystems, adjust confidence levels. This completely replaces the AI-generated version with your edited one.
 
+**You can't set keywords; the server re-assigns them after each update, so steer with subsystem names.** After every update, re-read the keyword lists and predict where each log entry will land, until the important entries have one clear home (`references/validation.md` → "How keyword assignment works"). Repeatable until Step 6.
+
 **Two ways to edit:**
 
-**Option A — CSV round-trip (recommended for larger hierarchies):** Call `helpers.hierarchy_to_csv(...)` to export, let the user edit in Excel or Numbers, then call `helpers.hierarchy_from_csv(...)` to import and `session.update_hierarchy(rows=rows)` to apply.
+**Option A — CSV round-trip (recommended for larger hierarchies):** `helpers.hierarchy_to_csv(...)` to export, let the user edit in Excel or Numbers, `helpers.hierarchy_from_csv(...)` to import.
 
-**Call:** `csv_path = helpers.hierarchy_to_csv(result, path)` — `result` accepts dict or file path; returns absolute CSV path
-**Ref:** `references/helpers.md` → `### helpers.hierarchy_to_csv`
-**Call:** `rows = helpers.hierarchy_from_csv(path)` — returns validated rows ready for `update_hierarchy`
-**Ref:** `references/helpers.md` → `### helpers.hierarchy_from_csv`
-**Call:** `result = session.update_hierarchy(rows, *, timeout=1200.0)`
-**Ref:** `references/session.md` → `### Step 5 — update_hierarchy`
-**Returns:** `hierarchy`, `systems_count`, `subsystems_count`, `next_step`
+**Option B — Edit directly in Python:** `helpers.make_hierarchy_rows(result)` to get editable rows, then edit the list.
 
-**Option B — Edit directly in Python:** Call `helpers.make_hierarchy_rows(result)` to convert to editable flat format, edit the rows list, then `session.update_hierarchy(rows=rows)`.
+Either way, apply with:
 
-**Call:** `rows = helpers.make_hierarchy_rows(result)` — accepts result dict only (not file path); returns editable deep copy
-**Ref:** `references/helpers.md` → `### helpers.make_hierarchy_rows`
-**Call:** `result = session.update_hierarchy(rows, *, timeout=1200.0)`
-**Ref:** `references/session.md` → `### Step 5 — update_hierarchy`
-**Returns:** `hierarchy`, `systems_count`, `subsystems_count`, `next_step`
-**Note:** Each row must have keys `system`, `system_confidence`, `subsystem`, `subsystem_confidence`; confidence values must be `"high"`, `"medium"`, or `"low"`.
+**Call:** `result = session.update_hierarchy(...)`
+**Ref:** `references/session.md` → `### Step 5 — update_hierarchy` (row format and validation rules); helpers in `references/helpers.md`.
 
-**Validation rules (enforced automatically):**
-- Every row needs all four keys: `system`, `system_confidence`, `subsystem`, `subsystem_confidence`
-- `system_confidence` must be the same value for all rows belonging to the same system
-- Confidence values must be `"high"`, `"medium"`, or `"low"`
-- No duplicate (system, subsystem) pairs
-- System and subsystem names must be non-blank strings
-
-After updating, view the result: `helpers.plot_hierarchy(result)` — sunburst chart coloured by confidence. Can be repeated as many times as needed before Step 6.
+After updating, view the result with `helpers.plot_hierarchy(result)`.
 
 **Note:** If a system you added does not appear when weights are generated (Step 6), it means the log data had no keyword evidence for it. That is a normal, data-driven outcome.
 
@@ -348,12 +339,11 @@ After updating, view the result: `helpers.plot_hierarchy(result)` — sunburst c
 
 **What this does:** Locks in the current hierarchy and assigns **criticality weights** to each system and subsystem. Weights determine how much each system contributes to the overall operational risk score — a higher weight means that system's activity drives the risk number more strongly.
 
-**Call:** `result = session.generate_weights(*, timeout=300.0)`
+**Call:** `result = session.generate_weights(...)`
 **Ref:** `references/session.md` → `### Step 6 — generate_weights`
-**Returns:** `weights`, `systems_count`, `next_step`
 
 **STOP HERE — show the user:**
-- [ ] weights chart (`helpers.plot_weights(result)` — two-panel bar chart: system weights left, subsystem weights right)
+- [ ] weights chart (`helpers.plot_weights(result)`; see `references/helpers.md`)
 
 Then ask: "Do these weights feel right? Is there a system that's more critical to your operations that should be weighted higher? Or one that matters less?"
 
@@ -367,31 +357,21 @@ Weights can be adjusted in Step 7. Can be regenerated until `run_classification`
 
 **Two ways to edit:**
 
-**Option A — CSV round-trip:** Call `helpers.weights_to_csv(...)` to export, let the user edit, then `helpers.weights_from_csv(...)` to import and `session.update_weights(...)` to apply.
+**Option A — CSV round-trip:** `helpers.weights_to_csv(...)` to export, let the user edit, `helpers.weights_from_csv(...)` to import.
 
-**Call:** `csv_path = helpers.weights_to_csv(result, path)` — exports flat CSV with `system_name`, `system_weight`, `subsystem_name`, `subsystem_weight`
-**Ref:** `references/helpers.md` → `### helpers.weights_to_csv`
-**Call:** `systems = helpers.weights_from_csv(path)` — returns systems list compatible with `update_weights(systems=...)`
-**Ref:** `references/helpers.md` → `### helpers.weights_from_csv`
-**Call:** `result = session.update_weights(systems, *, original_systems=None, timeout=1200.0)`
-**Ref:** `references/session.md` → `### Step 7 — update_weights`
-**Returns:** `weights`, `systems_count`, `next_step`
-**Note:** Pass `original_systems` (from `generate_weights` or a prior `update_weights`) to enable name-change protection.
+**Option B — Edit directly in Python:** `helpers.make_weight_update(result)`, then edit the list.
 
-**Option B — Edit directly in Python:** Call `helpers.make_weight_update(result)`, edit the list, then `session.update_weights(...)`.
+Either way, apply with:
 
-**Call:** `systems = helpers.make_weight_update(result)` — accepts result dict only; returns editable deep copy with keys `system_name`, `weight`, `subsystems`
-**Ref:** `references/helpers.md` → `### helpers.make_weight_update`
-**Call:** `result = session.update_weights(systems, *, original_systems=None, timeout=1200.0)`
-**Ref:** `references/session.md` → `### Step 7 — update_weights`
-**Returns:** `weights`, `systems_count`, `next_step`
+**Call:** `result = session.update_weights(...)`
+**Ref:** `references/session.md` → `### Step 7 — update_weights`; helpers in `references/helpers.md`.
 
 **Important rules when editing the CSV:**
 - `system_weight` must be the same value across every row of the same system — if you raise the system weight, update every row for that system
 - Do NOT rename `system_name` or `subsystem_name` columns or values
 - Do NOT change row order
 
-After updating, view the result: `helpers.plot_weights(result)` — two-panel bar chart. Can be repeated as many times as needed before Step 8.
+After updating, view the result with `helpers.plot_weights(result)`. Repeatable until Step 8.
 
 ---
 
@@ -401,9 +381,8 @@ After updating, view the result: `helpers.plot_weights(result)` — two-panel ba
 
 **Important:** The first call takes about 1 minute (builds the search index and finds the optimal threshold). Every subsequent call is instant because the index is cached.
 
-**Call:** `result = session.preview_classification(threshold=0.4, *, timeout=1800.0)`
+**Call:** `result = session.preview_classification(...)`
 **Ref:** `references/session.md` → `### Step 7b — preview_classification`
-**Returns:** `optimal_threshold`, `assets_covered`, `total_assets`, `logs_classified`, `total_logs`, `coverage_by_asset`, `classification_by_log`
 
 **Key things to check in the result:** `optimal_threshold`, `assets_covered`, `total_assets`, `logs_classified`, `total_logs`, `coverage_by_asset` (a per-asset breakdown), and `uncovered_assets`.
 
@@ -413,7 +392,7 @@ After updating, view the result: `helpers.plot_weights(result)` — two-panel ba
 - "These are the assets where no logs were matched: [list uncovered_assets]. Is that expected, or should those assets have been covered?"
 - "If coverage looks too low, try adjusting the threshold and re-running Step 7b — it can be repeated as many times as needed before Step 8. Note: Step 3 (keyword extraction) is locked once Step 4 has run, so the keyword vocabulary cannot be changed from here. If the keywords themselves need to change, the only way back is `client.restart_session()`, which deletes all session data and restarts from Step 1."
 
-**Note for fixed-log sessions:** The similarity threshold has no effect on actual classification (fixed codes are matched exactly, not by similarity). The coverage stats are still useful for a sanity check, but the threshold value doesn't change classification outcomes.
+**Note for fixed-log sessions:** The similarity threshold has no effect on actual classification (fixed codes are matched exactly, not by similarity). **The per-entry labels in `classification_by_log` can also differ from Step 8's.** Before Step 8, predict the final labels from the keyword lists and show that prediction next to the preview (`references/validation.md` → "Predicting and auditing classification").
 
 Can be re-run as many times as needed before Step 8.
 
@@ -427,24 +406,17 @@ Say: *"This next step will classify every log entry in your dataset and produce 
 
 **What this does:** Classifies every log entry against the hierarchy, builds the final model, downloads it as a zip file, then permanently deletes the server session.
 
-**Call:** `result = session.run_classification(dest_dir, similarity_threshold=None, *, timeout=3600.0)`
+**Call:** `result = session.run_classification(...)`
 **Ref:** `references/session.md` → `### Step 8 — run_classification`
-**Returns:** `zip_path`, `total_rows`, `similarity_threshold_used`, `threshold_source`
 
 **Recovery note:** The session is only deleted after a successful download. If the download fails, the session is still alive and you can retry by calling `run_classification()` again — it skips re-running classification and goes straight to re-downloading.
 
-**After this step — show the user:**
+**After this step — audit, then show the user:**
+- [ ] The classification audit: unclassified entries, ties, rows per system, failure-mode entries in the wrong system (`references/validation.md` → "Predicting and auditing classification")
 - [ ] Load `deduplicated_predictions.parquet` from the zip
 - [ ] stacked classification chart (`helpers.plot_classification_stacked(...)`)
 - [ ] classification by system (`helpers.plot_classification_by_system(...)`)
 - [ ] classification by subsystem (`helpers.plot_classification_by_subsystem(...)`)
-
-**Call:** `helpers.plot_classification_stacked(source)` — stacked bar: x=system, stacked by subsystem, y=log count
-**Ref:** `references/helpers.md` → `### helpers.plot_classification_stacked`
-**Call:** `helpers.plot_classification_by_system(source)` — bar chart of log count per system
-**Ref:** `references/helpers.md` → `### helpers.plot_classification_by_system`
-**Call:** `helpers.plot_classification_by_subsystem(source, top_n=20)` — horizontal bar, top N subsystems by log count
-**Ref:** `references/helpers.md` → `### helpers.plot_classification_by_subsystem`
 
 These charts show how logs were distributed across the hierarchy. Then ask: "Does this distribution look reasonable? Does the proportion of logs in each system match your expectation of where most activity happens?"
 
@@ -462,12 +434,10 @@ The risk score pipeline starts from the labelling model zip produced in Step 8. 
 
 Open a new session with `client.open_session(...)`, then call `session.import_model(zip_path)` to load the labelling model zip.
 
-**Call:** `session = client.open_session(api_key, config, artifact_dir=None)`
+**Call:** `session = client.open_session(...)`
 **Ref:** `references/client.md` → `## client.open_session`
-**Call:** `result = session.import_model(zip_path, *, timeout=600.0)`
+**Call:** `result = session.import_model(...)`
 **Ref:** `references/session.md` → `### import_model`
-**Returns:** `is_free_text`, `risk_training_restored`, `next_step`, `log_column`
-**Note:** Pass labelling zip to unlock Steps 9–12; pass complete model zip to set `risk_training_restored=True` and unlock Step 11 directly.
 
 Also accepts a `complete_model_ses-xxx.zip` from a prior `generate_risk_scores` run. Importing a complete model zip unlocks Step 11 directly — skips Steps 9–10 entirely.
 
@@ -482,7 +452,10 @@ Also accepts a `complete_model_ses-xxx.zip` from a prior `generate_risk_scores` 
 | Which column is the **timestamp/date**? | `TIMESTAMP_COLUMN` |
 | What **feature frequency**? Default `"auto"` — picks the finest time-bucket width the timestamps support (date-only data → `"1D"`). Ask only if they want a specific width: `"5min"`, `"15min"`, `"1h"`, `"2h"`, `"4h"`, `"6h"`, `"8h"`, `"12h"`, `"1D"` | `FEATURE_FREQUENCY` |
 | What **rolling window**? A duration, default `"7D"` (max `"30D"`, at least one bucket) — how much recent log history to aggregate per asset; use hours (e.g. `"36h"`) for sub-daily frequencies | `ROLLING_WINDOW` |
-| What **rolling feature type**? For free-text: `"sum"` or `"flag"` only. For fixed-log: also `"ewm"` or `"all"`. Default `"sum"`. | `ROLLING_FEATURE_TYPE` |
+| What **rolling feature type**? For free-text: `"sum"` or `"flag"` only. For fixed-log: also `"ewm"` or `"all"`. Default `"sum"`. Why to avoid `"flag"`: `references/validation.md` → "Threshold check". | `ROLLING_FEATURE_TYPE` |
+| What **calibration level**? Default `0.99` (top 1% of activity counts as elevated). Check the result after Step 10. | `QUANTILE_FOR_THRESHOLDS` |
+| What is the **date format**? (see `references/data-checks.md`) | `DATE_FORMAT` |
+| Which **file should be scored** in Step 12: the same history, or newer data? If newer, profile it too. | `GENERATION_FILE` |
 | Do they have **failure records**? (A file listing when each asset failed) | Determines `SUPERVISED` |
 
 **If supervised (they have failure records), also ask:**
@@ -493,6 +466,9 @@ Also accepts a `complete_model_ses-xxx.zip` from a prior `generate_risk_scores` 
 | Which column has the **failure date**? | `FAILURE_DATE_COLUMN` |
 | How long **before a failure** should logs be labelled as "pre-failure risk"? (duration, e.g. `"14D"` or `"36h"`) | `PREDICTION_HORIZON` |
 | How long **after a failure** should be excluded? (Recovery/settling period, e.g. `"7D"`) | `EXCLUSION_AFTER` |
+| **Which records count as failures?** e.g. all unplanned work orders, or only one failure mode | Defines the positive labels; prepare the file as in `references/data-checks.md` |
+
+If Step 0 found very few failures, raise it before choosing supervised mode (`references/data-checks.md` → "How each finding changes the setup").
 
 ---
 
@@ -533,10 +509,9 @@ To go back past a lock: call `client.restart_session()` — this deletes all ser
 
 **What this does:** Uploads the historical log file and stores the configuration for how risk features are calculated. The training file can be the same as the labelling file — it just needs the same column structure.
 
-**Call:** `result = session.configure_training(file_path, asset_id_column, timestamp_column, date_format="infer", rolling_window="7D", rolling_feature_type="sum", quantile_for_thresholds=0.99, sheet_name=None, supervised=False, failures_path=None, failure_date_column="machine_initialisation_date", prediction_horizon="14D", exclusion_after="7D", block_size="14D", feature_frequency="auto", *, timeout=600.0)`
+**Call:** `result = session.configure_training(...)`
 **Ref:** `references/session.md` → `### Step 9 — configure_training`
-**Returns:** `row_count`, `asset_count`, `is_free_text`, `supervised`, `next_step`, `feature_frequency`, `feature_frequency_source`, `timestamp_resolution`, `typical_event_gap`
-**Note:** `rolling_feature_type` `"ewm"` and `"all"` are fixed-log only; `failures_path` is required when `supervised=True`. **Tell the user which `feature_frequency` was picked and why** (e.g. "2h — timestamps are recorded to 5min and an asset's events are typically 1h24min apart"). An explicit frequency finer than the data's timestamps is rejected — suggest `"auto"` or a coarser width.
+**Tell the user which `feature_frequency` was picked and why** (e.g. "2h — timestamps are recorded to 5min and an asset's events are typically 1h24min apart"). If an explicit frequency is rejected, suggest `"auto"` or a coarser width. **Before Step 10, run the feature frequency check** (`references/validation.md` → "Feature frequency check"). If too few buckets contain logs, re-run Step 9 with a coarser width while it is still repeatable.
 
 Can be re-run until `train_risk_model` starts.
 
@@ -546,9 +521,8 @@ Can be re-run until `train_risk_model` starts.
 
 **What this does:** Runs the model training. For unsupervised mode, it fits a calibration threshold for each subsystem based on the historical distribution — the threshold defines what "elevated activity" looks like. For supervised mode, it additionally learns which subsystems were most predictive of failures and adjusts the weights accordingly.
 
-**Call:** `result = session.train_risk_model(*, timeout=3600.0)`
+**Call:** `result = session.train_risk_model(...)`
 **Ref:** `references/session.md` → `### Step 10 — train_risk_model`
-**Returns:** `subsystems_calibrated`, `supervised`, `feature_frequency`, `thresholds_path`, `training_fe_path`, `training_scores_path`
 
 **Free-text note:** The `similarity_threshold` baked into the labelling model zip is used automatically during training and generation — you do not need to pass it again.
 
@@ -564,28 +538,17 @@ Can be re-run until `train_risk_model` starts.
 | `trained_weights.json` | Supervised only | Learned subsystem weights |
 
 **STOP HERE — show the user:**
-- [ ] calibration thresholds chart (`helpers.plot_calibration_thresholds(thresholds_source, training_fe_source)` — overlaid bar: max, mean, threshold per subsystem)
+- [ ] calibration thresholds chart (`helpers.plot_calibration_thresholds(...)`)
+- [ ] the threshold check table: threshold, mean, max and share of buckets flagged per subsystem (`references/validation.md` → "Threshold check")
+- [ ] *(sparse logs)* the sparse-log check (`references/validation.md` → "Sparse-log check")
+- [ ] *(supervised)* the weights check: average precision as well as AUC, and any weights at 0 (`references/validation.md` → "Choosing weights"). This decides Step 11.
 
-Each bar shows: calibrated threshold vs mean and max of the training distribution for that subsystem.
-
-**Threshold sanity check:**
-- 🔴 **Threshold near the mean:** Too aggressive — this subsystem will almost always be flagged as elevated, even in normal operation. Consider raising `quantile_for_thresholds`.
-- 🔴 **Threshold near the maximum:** Unreachably high — this subsystem will rarely or never trigger. Consider lowering `quantile_for_thresholds`.
-- 🟢 **Threshold clearly above mean but below max:** Good calibration.
+Helper arguments and outputs: `references/helpers.md`.
 
 For feature distributions, feature-over-time, and full pipeline view, also show:
 - [ ] feature distributions (`helpers.plot_training_feature_distributions(...)`)
 - [ ] features over time (`helpers.plot_training_feature_over_time(...)`)
 - [ ] subsystem pipeline view (`helpers.plot_subsystem_feature_pipeline(...)`)
-
-**Call:** `helpers.plot_calibration_thresholds(thresholds_source, training_fe_source)` — overlaid bar: max, mean, threshold per subsystem
-**Ref:** `references/helpers.md` → `### helpers.plot_calibration_thresholds`
-**Call:** `helpers.plot_training_feature_distributions(training_fe_source, thresholds_source)` — histogram grid per subsystem with threshold line
-**Ref:** `references/helpers.md` → `### helpers.plot_training_feature_distributions`
-**Call:** `helpers.plot_training_feature_over_time(training_fe_source, thresholds_source, asset_id, system, subsystem)` — time series for one asset/subsystem
-**Ref:** `references/helpers.md` → `### helpers.plot_training_feature_over_time`
-**Call:** `helpers.plot_subsystem_feature_pipeline(training_fe_source, thresholds_source, asset_id, system, subsystem, is_free_text=True)` — 3-panel chart; pass `logs_mapping` when `is_free_text=False`
-**Ref:** `references/helpers.md` → `### helpers.plot_subsystem_feature_pipeline`
 
 **If supervised — additional visualisations:**
 - [ ] label timeline (`helpers.plot_label_timeline(...)`)
@@ -595,32 +558,12 @@ For feature distributions, feature-over-time, and full pipeline view, also show:
 - [ ] risk around failures (`helpers.plot_risk_around_failures(...)`)
 - [ ] failure risk stats (`helpers.plot_failure_risk_stats(...)`)
 
-**Call:** `helpers.plot_label_timeline(feature_source, failures_source)` — per-asset label zones (normal, pre-failure, excluded)
-**Ref:** `references/helpers.md` → `### helpers.plot_label_timeline`
-**Call:** `helpers.plot_label_distribution(feature_source, failures_source)` — positive vs negative row counts over time
-**Ref:** `references/helpers.md` → `### helpers.plot_label_distribution`
-**Call:** `helpers.plot_supervised_comparison(report_source)` — grouped bar: baseline vs supervised AUC-ROC and Avg Precision
-**Ref:** `references/helpers.md` → `### helpers.plot_supervised_comparison`
-**Call:** `helpers.plot_weight_comparison(expert_source, trained_source)` — expert vs trained weights at system or subsystem level
-**Ref:** `references/helpers.md` → `### helpers.plot_weight_comparison`
-**Call:** `helpers.plot_risk_around_failures(risk_source, failures_source)` — risk time series per failing asset with failure markers
-**Ref:** `references/helpers.md` → `### helpers.plot_risk_around_failures`
-**Call:** `helpers.plot_failure_risk_stats(risk_source, failures_source)` — box plot: pre-failure vs normal risk distribution
-**Ref:** `references/helpers.md` → `### helpers.plot_failure_risk_stats`
-
 **If fixed-log + supervised — detection performance analysis:**
 
 Note: `plot_detection_roc` returns the threshold value, which must be passed to the next two calls. Call them in sequence:
 - [ ] `helpers.plot_detection_roc(...)` — captures the detection threshold
 - [ ] `helpers.plot_failure_detection_summary(threshold)` — pass the threshold from the previous call
 - [ ] `helpers.plot_failure_detection_timeline(threshold)` — pass the threshold from the previous call
-
-**Call:** `threshold = helpers.plot_detection_roc(risk_source, failures_source)` — returns float; ROC curve + Youden's J chart
-**Ref:** `references/helpers.md` → `### helpers.plot_detection_roc`
-**Call:** `helpers.plot_failure_detection_summary(risk_source, failures_source, detection_threshold=threshold)` — per-failure audit table
-**Ref:** `references/helpers.md` → `### helpers.plot_failure_detection_summary`
-**Call:** `helpers.plot_failure_detection_timeline(risk_source, failures_source, detection_threshold=threshold)` — timeline coloured by detection outcome
-**Ref:** `references/helpers.md` → `### helpers.plot_failure_detection_timeline`
 
 ---
 
@@ -635,12 +578,10 @@ The `weights_source` parameter determines which weights are used to combine subs
 | `"labelling"` | Always valid — uses expert weights from the labelling phase |
 | `"supervised"` | Only valid after supervised training — uses weights learned from failure patterns |
 
-Rule: `weights_source = "supervised" if SUPERVISED else "labelling"`. Passing `"supervised"` after an unsupervised training run will return an API error.
+**Choose with the user, from the Step 10 weights check** (`references/validation.md` → "Choosing weights"). Don't pick `"supervised"` just because training was supervised. Passing `"supervised"` after an unsupervised training run will return an API error.
 
-**Call:** `result = session.configure_generation(file_path, date_format="infer", sheet_name=None, weights_source="labelling", *, timeout=600.0)`
+**Call:** `result = session.configure_generation(...)`
 **Ref:** `references/session.md` → `### Step 11 — configure_generation`
-**Returns:** `row_count`, `asset_count`, `weights_source`, `next_step`
-**Note:** `weights_source="supervised"` is only valid after `configure_training(supervised=True)` + `train_risk_model()`.
 
 Can be re-run until `generate_risk_scores` starts.
 
@@ -654,9 +595,8 @@ Say: *"This step will score every log entry and produce the final per-asset risk
 
 **What this does:** Scores every log entry against the trained model, generates risk scores for each asset for each time bucket (`feature_frequency` from training), downloads the complete model zip, extracts all artifacts, then permanently deletes the server session.
 
-**Call:** `result = session.generate_risk_scores(dest_dir, *, timeout=3600.0)`
+**Call:** `result = session.generate_risk_scores(...)`
 **Ref:** `references/session.md` → `### Step 12 — generate_risk_scores`
-**Returns:** `zip_path`, `assets_scored`, `date_range`, `parquet_path`
 
 **What is downloaded and extracted:**
 
@@ -679,59 +619,38 @@ Say: *"This step will score every log entry and produce the final per-asset risk
 **STOP HERE — generation complete. Show the user:**
 - [ ] `assets_scored` — how many assets received risk scores
 - [ ] `date_range` — the time period covered
+- [ ] How many time buckets were scored vs the calendar span — **quiet buckets get no score**; say so
 
-Then proceed to the visualisations below.
+**Validate before interpreting:**
+- [ ] *(sparse logs)* the sparse-log check (`references/validation.md` → "Sparse-log check")
+- [ ] failures inside the scored period, and alert bands proposed from the data (`references/validation.md` → "Checking alert bands against failures")
+
+Then proceed to the visualisations below. Helper arguments and outputs: `references/helpers.md`.
 
 **Fleet-level overview:** Load `risk_scores.parquet` then call:
 - [ ] `helpers.plot_asset_risk_ranking(...)`
 - [ ] `helpers.plot_risk_score_distribution(...)`
 - [ ] `helpers.list_risk_metrics(...)` — returns available column names, e.g. `["operational_risk", "drive_system_system_risk", ...]`
 
-**Call:** `helpers.plot_asset_risk_ranking(source)` — bar chart sorted highest-first, green-to-red gradient
-**Ref:** `references/helpers.md` → `### helpers.plot_asset_risk_ranking`
-**Call:** `helpers.plot_risk_score_distribution(source)` — histogram of risk scores across all records
-**Ref:** `references/helpers.md` → `### helpers.plot_risk_score_distribution`
-**Call:** `metrics = helpers.list_risk_metrics(source)` — returns `["operational_risk", ...]` for use with `plot_risk_heatmap`
-**Ref:** `references/helpers.md` → `### helpers.list_risk_metrics`
+**Fleet heatmap — assets over time:** `helpers.plot_risk_heatmap(...)`. For a sub-daily model over a long period, use a daily view (`resolution`).
 
-**Fleet heatmap — assets over time:** `helpers.plot_risk_heatmap(source, metric="operational_risk", resolution=None)` — rows=assets, cols=time buckets; `metric` accepts `"operational_risk"` or any `{system}_system_risk` column. For a sub-daily model over a long period, pass `resolution="1D"` for a readable daily view.
-
-**Single-day snapshot — all assets on one day:** `helpers.plot_daily_risk_snapshot(source, date)` — tile panel, one per asset (highest score that day); colour: blue (0–33), yellow (33–66), red (66–100); closest available date used if exact date not found. For sub-daily models, `date="YYYY-MM-DD HH:MM"` shows a single bucket.
+**Single-day snapshot — all assets on one day:** `helpers.plot_daily_risk_snapshot(...)`. Its colour bands are fixed at 33/66, so mention the bands you proposed from the data instead.
 
 **Single asset deep-dive — how risk evolved over time:**
 - [ ] `helpers.plot_asset_risk_over_time(...)` (raw or `weighted=True`)
 - [ ] `helpers.plot_system_contributions(...)` — stacked area chart showing each system's weighted contribution plus the overall risk line; bands widening before a known event signal early predictive warning
 - [ ] `helpers.plot_asset_system_over_time(...)`
 
-**Call:** `helpers.plot_asset_risk_over_time(source, asset_id, model_config=None, weighted=False)` — heatmap: risk types × dates for one asset; `model_config` required when `weighted=True`
-**Ref:** `references/helpers.md` → `### helpers.plot_asset_risk_over_time`
-**Call:** `helpers.plot_system_contributions(source, asset_id, model_config)` — stacked bar with operational risk line on top
-**Ref:** `references/helpers.md` → `### helpers.plot_system_contributions`
-**Call:** `helpers.plot_asset_system_over_time(source, asset_id, system)` — heatmap: system risk + subsystems × dates
-**Ref:** `references/helpers.md` → `### helpers.plot_asset_system_over_time`
-
-**Drill into a specific subsystem — what logs triggered it:** For fixed-log sessions: `helpers.plot_subsystem_log_activity(source, asset_id, system, subsystem, date)` — bar chart of log occurrences; pass `logs_mapping` and `is_free_text=False` for fixed-log mode. For free-text sessions: `df = helpers.get_logs_for_subsystem(source, asset_id, system, subsystem, date)` — returns DataFrame of actual log text; `source` is `classified_logs.parquet`.
+**Drill into a specific subsystem — what logs triggered it:** fixed-log sessions use `helpers.plot_subsystem_log_activity(...)`; free-text sessions use `helpers.get_logs_for_subsystem(...)` on `classified_logs.parquet`.
 
 **If supervised — check if the model predicted failures in the generation period:**
 - [ ] `helpers.plot_risk_around_failures(...)`
 - [ ] `helpers.plot_failure_risk_stats(...)`
 
-**Call:** `helpers.plot_risk_around_failures(risk_source, failures_source)` — multi-subplot time series per failing asset with failure markers
-**Ref:** `references/helpers.md` → `### helpers.plot_risk_around_failures`
-**Call:** `helpers.plot_failure_risk_stats(risk_source, failures_source)` — box plot: pre-failure vs normal risk distribution
-**Ref:** `references/helpers.md` → `### helpers.plot_failure_risk_stats`
-
 **If fixed-log + supervised — detection analysis on scored data (generation period):** Same chain as training period, in sequence:
 - [ ] `helpers.plot_detection_roc(...)` — captures the detection threshold
 - [ ] `helpers.plot_failure_detection_summary(threshold)` — pass the threshold from the previous call
 - [ ] `helpers.plot_failure_detection_timeline(threshold)` — pass the threshold from the previous call
-
-**Call:** `threshold = helpers.plot_detection_roc(risk_source, failures_source)` — returns float; ROC curve + Youden's J chart
-**Ref:** `references/helpers.md` → `### helpers.plot_detection_roc`
-**Call:** `helpers.plot_failure_detection_summary(risk_source, failures_source, detection_threshold=threshold)` — per-failure audit table
-**Ref:** `references/helpers.md` → `### helpers.plot_failure_detection_summary`
-**Call:** `helpers.plot_failure_detection_timeline(risk_source, failures_source, detection_threshold=threshold)` — timeline coloured by detection outcome
-**Ref:** `references/helpers.md` → `### helpers.plot_failure_detection_timeline`
 
 ---
 
@@ -744,7 +663,7 @@ Then proceed to the visualisations below.
 | `classified_logs.parquet` | No | No | Yes | Yes |
 | `get_logs_for_subsystem` | No | No | Yes | Yes |
 | `logs_by_system_subsystem.json` | Yes | Yes | No | No |
-| `weights_source` | labelling | supervised | labelling | supervised |
+| `weights_source` | labelling | supervised or labelling (choose from Step 10 evidence) | labelling | supervised or labelling (choose from Step 10 evidence) |
 | `trained_weights.json` | No | Yes | No | Yes |
 | Supervised vis after Step 10 | No | Yes | No | Yes |
 | Detection ROC/summary/timeline | No | Yes (both) | No | No |
@@ -765,3 +684,6 @@ Then proceed to the visualisations below.
 - [ ] `artifact_dir` folders exist and are writable before calling Steps 8 and 12
 - [ ] Labelling zip saved after Step 8 — needed to start the risk score pipeline
 - [ ] (Supervised) Failures CSV prepared with asset ID + failure date column
+- [ ] Step 0 profile done (`references/data-checks.md`); every upfront question asked
+- [ ] (Agent runs) `references/agent-execution.md` followed
+- [ ] The validation checks named at Steps 3, 5, 7b, 8, 10 and after 12 run (`references/validation.md`)

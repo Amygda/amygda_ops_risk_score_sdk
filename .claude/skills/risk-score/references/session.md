@@ -271,7 +271,7 @@ def update_hierarchy(
 
 Submits a refined hierarchy, overwriting the previous result. Can be called multiple times. Locked once `generate_weights` is called.
 
-Each dict in `rows` must have keys: `system`, `system_confidence`, `subsystem`, `subsystem_confidence`. Confidence values must be `"high"`, `"medium"`, or `"low"`.
+Each dict in `rows` must have keys: `system`, `system_confidence`, `subsystem`, `subsystem_confidence`. Confidence values must be `"high"`, `"medium"`, or `"low"`. Also enforced: `system_confidence` must be the same for every row of a system; no duplicate (system, subsystem) pairs; system and subsystem names must be non-blank strings.
 
 **Parameters**
 
