@@ -24,7 +24,7 @@ services:
 
   ops-risk-api:
     profiles: ["api", "full"]
-    image: sykhan88/ops-risk-api:latest
+    image: ghcr.io/amygda/ops-risk-api:latest
     container_name: ops-risk-api
     env_file: .env
     ports:
@@ -41,7 +41,7 @@ services:
 
   ops-risk-streamlit:
     profiles: ["streamlit", "full"]
-    image: sykhan88/ops-risk-streamlit:latest
+    image: ghcr.io/amygda/ops-risk-streamlit:latest
     container_name: ops-risk-streamlit
     env_file: .env
     ports:
