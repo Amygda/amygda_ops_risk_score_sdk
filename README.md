@@ -110,7 +110,7 @@ If you prefer to keep all data on your own machine or use your own LLM API key, 
 | **Intermediate storage** | Google Cloud Storage — europe-west2 (London, UK) |
 | **Database** | Google Cloud SQL (PostgreSQL) — europe-west2 (London, UK) |
 | **ML models** | Amygda's own models, hosted on GCP Cloud Run — europe-west2 |
-| **Large Language Model** | OpenAI API — gpt-5.2 — processed keywords only (see below) |
+| **Large Language Model** | OpenAI API — gpt-6.1-sol — processed keywords only (see below) |
 
 ### Data retention
 
