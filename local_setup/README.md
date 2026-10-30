@@ -16,7 +16,8 @@ Run the Ops Risk API on your own machine so all data stays within your infrastru
 
 | Requirement | Details |
 |-------------|---------|
-| Docker Desktop | 24.x or later, running |
+| Docker | Docker Desktop 24.x or later (macOS, Windows), or Docker Engine 24.x+ (Linux), running |
+| Platform | `linux/amd64` (Intel/AMD: most servers, Windows PCs, Intel Macs) or `linux/arm64` (Apple Silicon Macs, ARM servers). Docker pulls the right image automatically |
 | Free disk | ~5 GB (API image ≈ 3.6 GB on disk + your data) |
 | RAM | 8 GB free minimum; 12 GB recommended |
 | Free port | 8000 must be available |
@@ -70,6 +71,14 @@ OPENAI_API_KEY=sk-...             ← no quotes around the value
 Leave `STORAGE_ROOT`, `DATABASE_URL`, and the `/data/...` paths unchanged — they are container-internal paths and must not be edited.
 
 **3. Start the API:**
+
+> **Linux servers only — create the data folders first.** The containers run as user ID 1000. On Linux, Docker creates missing folders owned by root, and the container then can't write to them. Before the first start, run in this folder:
+>
+> ```bash
+> mkdir -p data trained_models && sudo chown 1000:1000 data trained_models
+> ```
+>
+> If you changed `LOCAL_DATA_DIR` or `TRAINED_MODELS_DIR` in `.env`, use those paths instead. Docker Desktop on macOS and Windows handles this automatically.
 
 ```bash
 docker compose --profile api up -d
