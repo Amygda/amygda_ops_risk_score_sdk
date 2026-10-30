@@ -59,7 +59,7 @@ Edit `.env` — fill in your LLM provider and key:
 
 ```dotenv
 LLM_PROVIDER=openai
-LLM_MODEL=gpt-4o
+LLM_MODEL=gpt-5.2-2025-12-11
 OPENAI_API_KEY=sk-...             ← no quotes around the value
 
 # Anthropic alternative:
@@ -337,5 +337,5 @@ docker logs ops-risk-api 2>&1 | grep -i error
 | Container exits immediately | Bad `.env` | Run `docker logs ops-risk-api` to see the error |
 | Port already in use | Another process on 8000 | Run `lsof -i :8000`; kill it or remap port in `docker-compose.yml` |
 | Need to re-seed after restart | `./data` was deleted | Always keep `./data` unless doing a full wipe |
-| `LLM bucket calls failed` | Wrong model name | Set `LLM_MODEL=gpt-4o` explicitly in `.env` |
+| `LLM bucket calls failed` | Wrong or unsupported model (e.g. `max_tokens is too large` in API logs) | Set `LLM_MODEL=gpt-5.2-2025-12-11` in `.env` |
 | Streamlit logs full of `ModuleNotFoundError: No module named 'torchvision'` | Outdated image | Run `docker compose --profile streamlit pull && docker compose --profile streamlit up -d` |
