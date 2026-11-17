@@ -49,6 +49,7 @@ Reference files (load on demand — each step below tells you which to load):
 - `references/data-checks.md` — Step 0: profiling the user's files before Step 1
 - `references/agent-execution.md` — running steps from scripts: sessions, progress, secrets, API-only scores
 - `references/validation.md` — checks after Steps 3, 5, 7b, 8, 10 and 12
+- `references/dashboard.md` — the results dashboard offered after Step 12
 
 The pipeline has two phases:
 
@@ -651,6 +652,12 @@ Then proceed to the visualisations below. Helper arguments and outputs: `referen
 - [ ] `helpers.plot_detection_roc(...)` — captures the detection threshold
 - [ ] `helpers.plot_failure_detection_summary(threshold)` — pass the threshold from the previous call
 - [ ] `helpers.plot_failure_detection_timeline(threshold)` — pass the threshold from the previous call
+
+---
+
+### Finally — Offer a Results Dashboard
+
+Once the exploration above is done (and, for supervised runs, alert bands have been agreed), ask the user whether they want a dashboard of the results: one self-contained HTML page with a fleet heatmap, an asset ranking, a drill-down into each asset and a model summary. If they say yes, build it exactly as `references/dashboard.md` describes. The first version is fixed so every user gets the same layout; change it only when asked. If the assets belong to larger machines, such as carriages of a train, follow "Parent and child assets" in that file.
 
 ---
 
