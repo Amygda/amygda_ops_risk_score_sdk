@@ -14,6 +14,63 @@ To upgrade to the latest version:
 pip install --upgrade git+https://github.com/amygda/amygda_ops_risk_score_sdk.git
 ```
 
+## Use it with your AI coding agent
+
+The SDK comes with an agent skill that walks you through the whole pipeline in conversation. Your agent asks the right questions up front, runs each SDK call, shows the charts with guidance on reading them, and warns you before any step that can't be undone. It covers all four journeys (fixed-log or free-text, supervised or unsupervised), continuous scoring and an optional results dashboard.
+
+The skill follows the open [Agent Skills](https://agentskills.io) format, so it works with any agent that supports skills, including Claude Code, OpenAI Codex, Cursor, GitHub Copilot and Gemini CLI.
+
+**Option 1: ask your agent to set it up.** Paste this into your agent from the folder you'll work in:
+
+> Install the Amygda ops risk score SDK and its agent skill by following the "Installing the agent skill" section of https://github.com/amygda/amygda_ops_risk_score_sdk
+
+**Option 2: do it yourself.** From the folder you'll work in:
+
+```bash
+pip install git+https://github.com/amygda/amygda_ops_risk_score_sdk.git
+amygda-risk-skill install
+```
+
+Then start a new session in your agent and say something like *"I want to generate risk scores for my equipment logs"*.
+
+### Installing the agent skill
+
+These steps are written so an AI agent can follow them as well as a person.
+
+1. Install or upgrade the SDK in the Python environment the user will work in (Python 3.10+):
+   ```bash
+   pip install --upgrade git+https://github.com/amygda/amygda_ops_risk_score_sdk.git
+   ```
+2. From the user's project folder, install the skill. Use the `--agent` value for the agent you are:
+   ```bash
+   amygda-risk-skill install --agent <claude|codex|cursor|copilot|gemini|other>
+   ```
+   Leave out `--agent` to install for all agents. Add `--global` to install in the user's home folder so every project can use it.
+3. Check it worked: `.claude/skills/risk-score/SKILL.md` (Claude Code) or `.agents/skills/risk-score/SKILL.md` (other agents) now exists.
+4. Tell the user to start a new session so the agent picks up the skill, then ask about risk scores to begin.
+
+| Agent | `--agent` | Where the skill goes |
+|---|---|---|
+| Claude Code | `claude` | `.claude/skills/risk-score/` |
+| OpenAI Codex, Cursor, GitHub Copilot, Gemini CLI | `codex`, `cursor`, `copilot`, `gemini` | `.agents/skills/risk-score/` (the shared folder these agents read) |
+| An agent without skill support | `other` | `.agents/skills/risk-score/`, plus a short pointer to it in `AGENTS.md` |
+
+Gemini CLI may need skills switched on in its settings. Cursor and Copilot also read `.claude/skills/`, so if you use one of those alone, `--agent cursor` or `--agent copilot` avoids a second copy.
+
+**Keeping it up to date.** The skill ships inside the SDK, so its version always matches. After upgrading the SDK, run `amygda-risk-skill install` again. `amygda-risk-skill uninstall` removes it.
+
+**Chat-only tools** that can't read files: paste `skills/risk-score/SKILL.md` from this repo as the system prompt or project instructions, and add the files in `skills/risk-score/references/` if the tool allows more than one:
+
+| File | Covers |
+|---|---|
+| `session.md` | Session methods for each pipeline step |
+| `client.md` | `OpsRiskClient` constructor and methods |
+| `helpers.md` | Plotting and analysis helpers, with how to read each one |
+| `data-checks.md` | Checks on the user's data before Step 1 |
+| `validation.md` | Checks to run at each stage, including alert bands against failures |
+| `agent-execution.md` | How an agent runs each step so progress shows and sessions survive |
+| `dashboard.md` | The results dashboard offered after Step 12 |
+
 ## Get an API key
 
 The Amygda API portal is coming soon! Once available, you will be able to log in at
@@ -44,34 +101,6 @@ result = session.configure_labelling_pipeline(
     is_free_text=False,
 )
 ```
-
-## AI coding assistant skill
-
-An agent skill is bundled at `.claude/skills/risk-score/`. It walks any user — technical or non-technical — through the full pipeline conversationally: asking the right upfront questions, executing each SDK call, showing visualisations with interpretation guidance, and flagging irreversible steps. Covers all four journeys (fixed/free-text × supervised/unsupervised) and continuous scoring.
-
-Non-Claude Code tools receive context as **static text injection only** — they cannot follow in-context instructions to load additional files. Where a tool supports multiple context files, add all seven files in `.claude/skills/risk-score/references/` alongside `SKILL.md` for full coverage:
-
-| File | Covers |
-|---|---|
-| `session.md` | Session methods for each pipeline step |
-| `client.md` | `OpsRiskClient` constructor and methods |
-| `helpers.md` | Plotting and analysis helpers, with how to read each one |
-| `data-checks.md` | Checks on the user's data before Step 1 |
-| `validation.md` | Checks to run at each stage, including alert bands against failures |
-| `agent-execution.md` | How an agent runs each step so progress shows and sessions survive |
-| `dashboard.md` | The results dashboard offered after Step 12 |
-
-| Tool | How to use it |
-|---|---|
-| **Claude Code** | `cp -r .claude/skills/risk-score/ ~/.claude/skills/risk-score/` — auto-triggers on "ops risk", "amygda", "equipment risk"; invoke directly with `/risk-score` |
-| **Cursor** | Create `.cursor/rules/risk-score.mdc` from `SKILL.md`; add all seven `references/*.md` files as additional MDC rules in `.cursor/rules/`, each with `alwaysApply: true` frontmatter |
-| **GitHub Copilot** | Single file: paste `SKILL.md` into `.github/copilot-instructions.md`. Multi-file (VS Code / JetBrains): add each as a separate `.github/instructions/*.instructions.md` with `applyTo: "**"` frontmatter |
-| **Windsurf / Codeium** | Add `SKILL.md` and all seven `references/*.md` files as separate Markdown files in `.windsurf/rules/` |
-| **OpenAI Codex (ChatGPT)** | Place `SKILL.md` content in `AGENTS.md` at the repo root; append `references/*.md` content as additional named sections in the same file |
-| **JetBrains AI Assistant** | Settings → Tools → AI Assistant → Rules: add `SKILL.md` and each `references/*.md` file as separate rules with "Always apply" activation |
-| **Amazon Q Developer** | Add `SKILL.md` as `.amazonq/rules/risk-score.md`; add all seven `references/*.md` files as additional files in `.amazonq/rules/` |
-| **Gemini Code Assist** | VS Code: paste `SKILL.md` into Gemini Code Assist rules (Settings → search "Gemini Code Assist: Rules"). Agent mode: place `SKILL.md` content in `GEMINI.md` at project root |
-| **Any other tool** | Paste `SKILL.md` as a system prompt or project-level context file; include `references/*.md` content inline or as additional context files if the tool supports them |
 
 ## Notebooks
 
