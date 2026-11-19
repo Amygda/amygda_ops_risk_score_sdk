@@ -161,6 +161,30 @@ Amygda retains no access to customer data after deletion.
 Permanent audit records (session ID, timestamp, completion status) are kept in
 the database with no customer data content.
 
+#### Deployed models
+
+A deployed model (`client.deploy_model`) lets you score new data repeatedly
+without a session. This is the only case where something is kept after a
+pipeline run, and you must accept it explicitly (`accept_storage=True`).
+
+- **What is stored:** the model's scoring bundle, built on your machine from
+  `complete_model_*.zip`. It holds system and subsystem names, weights,
+  calibration thresholds, and log codes (fixed-log) or keywords (free-text).
+  It holds **no asset IDs, timestamps or log rows**. Check exactly what will
+  be uploaded with `helpers.describe_bundle(helpers.build_scoring_bundle(zip))`.
+- **Where, and for how long:** Google Cloud Storage, europe-west2, encrypted
+  at rest, until you delete it (`client.delete_deployment`) or it goes unused
+  for 90 days.
+- **Logs you send for scoring are never stored.** They are read in memory,
+  scored, and discarded. Only the asset ID, timestamp and log columns are
+  sent; any other columns stay on your machine. Scores are returned to you
+  and not kept.
+- **Usage records:** each scoring call records counts only (rows, assets,
+  periods, size, duration), with no data content.
+
+If you can't accept any stored model, use the self-hosted scorer, which runs
+on your own network.
+
 ### What is sent to OpenAI
 
 The OpenAI API is used **only** during the `generate_hierarchy` and
