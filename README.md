@@ -182,8 +182,9 @@ pipeline run, and you must accept it explicitly (`accept_storage=True`).
 - **Usage records:** each scoring call records counts only (rows, assets,
   periods, size, duration), with no data content.
 
-If you can't accept any stored model, use the self-hosted scorer, which runs
-on your own network.
+If you can't accept any stored model, don't deploy: keep scoring through
+sessions (nothing is kept after a run). A self-hosted scorer that runs on your
+own network is coming soon.
 
 ### What is sent to OpenAI
 
