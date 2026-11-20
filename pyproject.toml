@@ -30,6 +30,7 @@ ide = [
 
 [project.scripts]
 amygda-risk-skill = "amygda_ops_risk_score.skill_installer:main"
+amygda-risk = "amygda_ops_risk_score.monitor.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -37,4 +38,4 @@ include = ["amygda_ops_risk_score*"]
 
 [tool.setuptools.package-data]
 # The agent skill ships with the package so its version matches the SDK.
-amygda_ops_risk_score = ["skill/**/*"]
+amygda_ops_risk_score = ["skill/**/*", "monitor/*.html"]
