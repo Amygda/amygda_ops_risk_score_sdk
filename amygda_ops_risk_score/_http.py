@@ -52,6 +52,13 @@ class HTTPClient:
             )
         return r.content
 
+    def post_raw(self, path: str, timeout=_UNSET, **kwargs) -> httpx.Response:
+        """POST expecting a binary response. Returns the response with headers."""
+        r = self._client.post(path, timeout=self._resolve(timeout), **kwargs)
+        if not r.is_success:
+            self._parse(r)  # raises APIError
+        return r
+
     def post(self, path: str, timeout=_UNSET, **kwargs) -> dict:
         r = self._client.post(path, timeout=self._resolve(timeout), **kwargs)
         return self._parse(r)

@@ -801,3 +801,102 @@ def validate_run_classification(similarity_threshold: Optional[float] = None) ->
         )
     if errors:
         _raise(errors)
+
+
+# ---------------------------------------------------------------------------
+# Deployed models
+# ---------------------------------------------------------------------------
+
+MAX_BUNDLE_MB = 50
+MAX_SCORE_UPLOAD_MB = 30
+SCORE_FILE_TYPES = (".csv", ".xlsx", ".xls", ".parquet")
+
+
+def validate_deploy_model(model: str, name: str, accept_storage) -> None:
+    """Checks before uploading a model for deployment."""
+    errors = []
+    if accept_storage is not True:
+        errors.append(
+            "accept_storage must be True. Deploying stores your model's scoring "
+            "bundle (system/subsystem names, weights, thresholds, and log codes or "
+            "keywords; no asset IDs, timestamps or log rows) on Amygda's servers "
+            "until you delete it or it is unused for 90 days. Read "
+            "client.deployment_storage_policy(), then pass accept_storage=True "
+            "only if you accept. Otherwise keep scoring through sessions "
+            "(a self-hosted scorer is coming soon)."
+        )
+    if not isinstance(name, str) or not name.strip():
+        errors.append("name is required, e.g. 'baggage-fleet-v1'.")
+    elif len(name.strip()) > 128:
+        errors.append("name must be 128 characters or fewer.")
+    if not isinstance(model, str) or not os.path.isfile(model):
+        errors.append(f"Model file not found: {model}")
+    elif not zipfile.is_zipfile(model):
+        errors.append(
+            f"{model} is not a zip file. Pass complete_model_<id>.zip or a bundle."
+        )
+    if errors:
+        _raise(errors)
+
+
+def validate_bundle_size(bundle_path: str) -> None:
+    size_mb = os.path.getsize(bundle_path) / (1024 * 1024)
+    if size_mb > MAX_BUNDLE_MB:
+        _raise(
+            [
+                f"The scoring bundle is {size_mb:.1f} MB; "
+                f"the limit is {MAX_BUNDLE_MB} MB."
+            ]
+        )
+
+
+def validate_deployment_id(deployment_id) -> None:
+    if not isinstance(deployment_id, str) or not deployment_id.startswith("dep-"):
+        _raise(["deployment_id must be a string like 'dep-1a2b3c4d5e6f7a8b'."])
+
+
+def validate_score_input(logs, score_from) -> None:
+    """Checks on the logs passed to score(); columns are checked after reading."""
+    errors = []
+    try:
+        import pandas as pd
+    except ImportError:  # pragma: no cover - pandas is a dependency
+        pd = None
+    if pd is not None and isinstance(logs, pd.DataFrame):
+        if logs.empty:
+            errors.append("logs DataFrame is empty.")
+    elif isinstance(logs, (str, os.PathLike)):
+        path = os.fspath(logs)
+        if not os.path.isfile(path):
+            errors.append(f"Logs file not found: {path}")
+        elif not path.lower().endswith(SCORE_FILE_TYPES):
+            types = ", ".join(SCORE_FILE_TYPES)
+            errors.append(f"Logs file must be one of {types}: {path}")
+    else:
+        errors.append(
+            "logs must be a file path (CSV, XLSX or parquet) or a pandas DataFrame."
+        )
+    if score_from is not None and pd is not None:
+        try:
+            pd.Timestamp(score_from)
+        except (ValueError, TypeError):
+            errors.append(
+                f"score_from '{score_from}' is not a valid timestamp, "
+                "e.g. '2026-11-18'."
+            )
+    if errors:
+        _raise(errors)
+
+
+def validate_score_columns(columns, required: dict) -> None:
+    """``required`` maps a role (e.g. 'asset ID') to the column the model expects."""
+    missing = [
+        f"{role} column '{col}'"
+        for role, col in required.items()
+        if col not in columns
+    ]
+    if missing:
+        _raise([
+            f"The logs are missing the {', '.join(missing)} used when the model was "
+            f"trained. Columns found: {list(columns)[:20]}"
+        ])

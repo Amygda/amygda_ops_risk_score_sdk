@@ -2,11 +2,58 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+import os
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
 
 from amygda_ops_risk_score._http import HTTPClient
 from amygda_ops_risk_score.config import SessionConfig
+from amygda_ops_risk_score.exceptions import ValidationError
 from amygda_ops_risk_score.session import Session
+
+
+@dataclass
+class DeploymentScores:
+    """Result of :meth:`OpsRiskClient.score`."""
+
+    scores: Any  # pandas.DataFrame, one row per asset and period
+    diagnostics: Dict[str, Any] = field(default_factory=dict)
+
+    def __repr__(self) -> str:
+        d = self.diagnostics
+        return (
+            f"DeploymentScores({len(self.scores)} rows, "
+            f"{d.get('assets_scored')} assets, "
+            f"{d.get('period_min')} to {d.get('period_max')}, "
+            f"unmatched_share={d.get('unmatched_share')})"
+        )
+
+
+def _read_logs_file(path: str):
+    import pandas as pd
+
+    low = path.lower()
+    if low.endswith(".parquet"):
+        return pd.read_parquet(path)
+    if low.endswith((".xlsx", ".xls")):
+        return pd.read_excel(path)
+    return pd.read_csv(path, low_memory=False)
+
+
+def _to_parquet(df) -> bytes:
+    """Parquet bytes for upload. Mixed-type text columns become text, keeping
+    missing values missing (the server drops rows without an asset ID or time)."""
+    import io
+
+    import pandas as pd
+
+    out = df.copy()
+    for col in out.columns:
+        if out[col].dtype == object:
+            out[col] = out[col].map(lambda x: None if pd.isna(x) else str(x))
+    buf = io.BytesIO()
+    out.to_parquet(buf, index=False)
+    return buf.getvalue()
 
 
 class OpsRiskClient:
@@ -39,7 +86,7 @@ class OpsRiskClient:
     # Minimum API version this SDK requires.
     # Bump this only when the SDK starts calling an endpoint that didn't exist before.
     # If the live API is older than this, wait_until_ready() raises CompatibilityError.
-    MIN_API_VERSION = "4.0.0"
+    MIN_API_VERSION = "4.1.0"
 
     def __init__(
         self,
@@ -189,6 +236,183 @@ class OpsRiskClient:
         """
         session.delete()
         return self.open_session(api_key=api_key, config=config)
+
+    # ------------------------------------------------------------------ #
+    # Deployed models: deploy once, then score new data repeatedly
+    # ------------------------------------------------------------------ #
+
+    @staticmethod
+    def _key_header(api_key: str) -> Dict[str, str]:
+        return {"X-API-Key": api_key}
+
+    def deployment_storage_policy(self) -> str:
+        """What deploying a model stores, and for how long. Show this to the
+        user before passing ``accept_storage=True`` to :meth:`deploy_model`."""
+        return self._http.get("/v1/deployments/policy")["policy"]
+
+    def deploy_model(
+        self,
+        api_key: str,
+        model: str,
+        name: str,
+        *,
+        accept_storage: bool,
+        timeout: float = 300.0,
+    ) -> Dict[str, Any]:
+        """
+        Deploy a trained model so new logs can be scored without a session.
+
+        The scoring bundle is built **on your machine** from the model zip:
+        settings, system/subsystem structure, weights, thresholds and log codes
+        (fixed-log) or keywords (free-text). Raw logs, failures and scores in
+        the zip are never uploaded. See :func:`helpers.build_scoring_bundle`.
+
+        Args:
+            api_key: Your API key from the Amygda portal.
+            model: ``complete_model_<id>.zip`` from ``generate_risk_scores``,
+                or a bundle already built with ``helpers.build_scoring_bundle``.
+            name: A name for the deployment, unique for your organisation.
+            accept_storage: Required, no default. ``True`` accepts that the
+                bundle is stored on Amygda's servers until you delete it or it
+                is unused for 90 days (:meth:`deployment_storage_policy`).
+                If you can't accept that, keep scoring through sessions
+                (a self-hosted scorer is coming soon).
+            timeout: Seconds to wait for the upload and checks.
+
+        Returns:
+            Deployment details: ``deployment_id``, the column names new logs
+            need, ``lookback`` (history to send before new logs), and more.
+        """
+        from amygda_ops_risk_score import _validators as v
+        from amygda_ops_risk_score.deployment import (
+            build_scoring_bundle,
+            is_scoring_bundle,
+        )
+
+        v.validate_deploy_model(model, name, accept_storage)
+        bundle_path, tmp_dir = model, None
+        if not is_scoring_bundle(model):
+            import tempfile
+
+            tmp_dir = tempfile.mkdtemp(prefix="amygda-bundle-")
+            bundle_path = os.path.join(tmp_dir, "bundle.zip")
+            build_scoring_bundle(model, bundle_path)
+        try:
+            v.validate_bundle_size(bundle_path)
+            with open(bundle_path, "rb") as fh:
+                return self._http.post(
+                    "/v1/deployments",
+                    headers=self._key_header(api_key),
+                    data={"name": name.strip(), "storage_accepted": "true"},
+                    files={"bundle": ("bundle.zip", fh, "application/zip")},
+                    timeout=timeout,
+                )
+        finally:
+            if tmp_dir:
+                import shutil
+
+                shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    def list_deployments(self, api_key: str) -> List[Dict[str, Any]]:
+        """List your organisation's deployments."""
+        resp = self._http.get("/v1/deployments", headers=self._key_header(api_key))
+        return resp["deployments"]
+
+    def get_deployment(self, api_key: str, deployment_id: str) -> Dict[str, Any]:
+        """One deployment's details, with ``last_scored_at`` and ``score_calls``."""
+        from amygda_ops_risk_score import _validators as v
+
+        v.validate_deployment_id(deployment_id)
+        return self._http.get(
+            f"/v1/deployments/{deployment_id}", headers=self._key_header(api_key)
+        )
+
+    def delete_deployment(self, api_key: str, deployment_id: str) -> Dict[str, Any]:
+        """Delete a deployment and its stored bundle immediately."""
+        from amygda_ops_risk_score import _validators as v
+
+        v.validate_deployment_id(deployment_id)
+        return self._http.delete(
+            f"/v1/deployments/{deployment_id}", headers=self._key_header(api_key)
+        )
+
+    def score(
+        self,
+        api_key: str,
+        deployment_id: str,
+        logs,
+        score_from=None,
+        date_format: Optional[str] = None,
+        timeout: float = 900.0,
+    ) -> "DeploymentScores":
+        """
+        Score logs with a deployed model.
+
+        Only the asset ID, timestamp and log columns the model was trained on
+        are sent; other columns stay on your machine. Nothing sent is stored.
+
+        To score new data correctly, include ``lookback`` worth of earlier logs
+        (see :meth:`get_deployment`) and set ``score_from`` to the start of the
+        new data. Periods before the one containing ``score_from`` are left
+        out of the result. A period the previous upload cut short is returned
+        again in full and should replace the earlier row.
+
+        Args:
+            api_key: Your API key.
+            deployment_id: From :meth:`deploy_model` or :meth:`list_deployments`.
+            logs: CSV, XLSX or parquet path, or a pandas DataFrame, in the
+                same column layout as the training data.
+            score_from: Optional start of the new data (e.g. ``'2026-11-18'``).
+            date_format: Override the timestamp format saved with the model.
+            timeout: Seconds to wait for scoring (server limit 15 minutes).
+
+        Returns:
+            :class:`DeploymentScores` with ``scores`` (one row per asset and
+            period) and ``diagnostics`` (rows received, unmatched share, ...).
+        """
+        import io
+        import json
+
+        import pandas as pd
+
+        from amygda_ops_risk_score import _validators as v
+
+        v.validate_deployment_id(deployment_id)
+        v.validate_score_input(logs, score_from)
+        dep = self.get_deployment(api_key, deployment_id)
+        required = {
+            "asset ID": dep["asset_id_column"],
+            "timestamp": dep["timestamp_column"],
+            "log": dep["log_column"],
+        }
+        if isinstance(logs, pd.DataFrame):
+            df = logs
+        else:
+            df = _read_logs_file(os.fspath(logs))
+        v.validate_score_columns(df.columns, required)
+
+        payload = _to_parquet(df[list(dict.fromkeys(required.values()))])
+        if len(payload) > v.MAX_SCORE_UPLOAD_MB * 1024 * 1024:
+            raise ValidationError(
+                f"The logs are {len(payload) / 1048576:.1f} MB as parquet; the limit "
+                f"is {v.MAX_SCORE_UPLOAD_MB} MB per call. Score shorter time ranges."
+            )
+        data: Dict[str, Any] = {"format": "parquet"}
+        if score_from is not None:
+            data["score_from"] = pd.Timestamp(score_from).isoformat()
+        if date_format:
+            data["date_format"] = date_format
+        resp = self._http.post_raw(
+            f"/v1/deployments/{deployment_id}/score",
+            headers=self._key_header(api_key),
+            data=data,
+            files={"file": ("logs.parquet", payload, "application/vnd.apache.parquet")},
+            timeout=timeout,
+        )
+        diagnostics = json.loads(resp.headers.get("X-Amygda-Diagnostics", "{}"))
+        return DeploymentScores(
+            scores=pd.read_parquet(io.BytesIO(resp.content)), diagnostics=diagnostics
+        )
 
     # ------------------------------------------------------------------ #
     # Infrastructure checks

@@ -11,6 +11,12 @@ import copy
 import json as _json
 from typing import Any, Dict, List, Optional, Union
 
+# Deployed models: build the scoring bundle locally (see deployment.py).
+from amygda_ops_risk_score.deployment import (  # noqa: F401
+    build_scoring_bundle,
+    describe_bundle,
+)
+
 # ---------------------------------------------------------------------------
 # Internal loader
 # ---------------------------------------------------------------------------

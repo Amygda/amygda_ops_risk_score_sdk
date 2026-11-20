@@ -1,7 +1,7 @@
 ---
 name: risk-score
 description: >
-  Guided agent intelligence for the Amygda Ops Risk Score SDK (v5.1.0).
+  Guided agent intelligence for the Amygda Ops Risk Score SDK (v5.2.0).
   This skill teaches an LLM agent how to walk any user — technical or
   non-technical — through the full end-to-end pipeline: asking the right
   upfront questions, narrating each step in plain language, showing helpers
