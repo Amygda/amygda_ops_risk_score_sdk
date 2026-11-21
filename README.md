@@ -147,14 +147,15 @@ export AMYGDA_API_KEY=your-api-key
 
 # once: deploy the model from Step 12 and create the monitor
 amygda-risk init fleet_monitor --model complete_model_<id>.zip --name fleet-v1 \
-    --accept-storage --history training_logs.csv
+    --history training_logs.csv
 
-# every day or week (or on a schedule): score new files
+# every day or week: score new files
 amygda-risk run fleet_monitor --input new_logs.csv    # or drop files in fleet_monitor/inbox/
+amygda-risk run fleet_monitor --scheduled             # from cron, launchd or Task Scheduler
 amygda-risk status fleet_monitor                      # dashboard: fleet_monitor/dashboard/index.html
 ```
 
-Deploying stores a small scoring bundle, never your log rows: see "Deployed models" below. From Python, use `client.deploy_model` and `client.score`, or `Monitor` from `amygda_ops_risk_score.monitor`. `03_deploy_and_monitor_guide.ipynb` walks through it, including scheduling with cron, launchd or Windows Task Scheduler.
+Each run waits for the hosted API if it's starting up. A run that fails is recorded with the reason, its files stay in `inbox/` for the next run, and the dashboard shows it. Deploying keeps a small scoring bundle on Amygda's servers, never your log rows: see "Deployed models" under Data retention below. From Python, use `client.deploy_model` and `client.score`, or `Monitor` from `amygda_ops_risk_score.monitor`. `03_deploy_and_monitor_guide.ipynb` walks through it, including scheduling with cron, launchd or Windows Task Scheduler.
 
 ## Running the API locally
 
@@ -187,9 +188,10 @@ the database with no customer data content.
 
 #### Deployed models
 
-A deployed model (`client.deploy_model`) lets you score new data repeatedly
-without a session. This is the only case where something is kept after a
-pipeline run, and you must accept it explicitly (`accept_storage=True`).
+A deployed model (`client.deploy_model` or `amygda-risk init`) lets you score
+new data repeatedly without a session. This is the only case where something
+is kept after a pipeline run. By deploying, you agree to it being kept as
+described here.
 
 - **What is stored:** the model's scoring bundle, built on your machine from
   `complete_model_*.zip`. It holds system and subsystem names, weights,
@@ -206,9 +208,10 @@ pipeline run, and you must accept it explicitly (`accept_storage=True`).
 - **Usage records:** each scoring call records counts only (rows, assets,
   periods, size, duration), with no data content.
 
-If you can't accept any stored model, don't deploy: keep scoring through
+If you'd rather no model was kept, don't deploy: keep scoring through
 sessions (nothing is kept after a run). A self-hosted scorer that runs on your
-own network is coming soon.
+own network is coming soon. `client.list_deployments` shows what is deployed,
+and `client.delete_deployment` removes a deployment and its bundle at once.
 
 ### What is sent to OpenAI
 
