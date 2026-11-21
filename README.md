@@ -16,7 +16,7 @@ pip install --upgrade git+https://github.com/amygda/amygda_ops_risk_score_sdk.gi
 
 ## Use it with your AI coding agent
 
-The SDK comes with an agent skill that walks you through the whole pipeline in conversation. Your agent asks the right questions up front, runs each SDK call, shows the charts with guidance on reading them, and warns you before any step that can't be undone. It covers all four journeys (fixed-log or free-text, supervised or unsupervised), continuous scoring and an optional results dashboard.
+The SDK comes with an agent skill that walks you through the whole pipeline in conversation. Your agent asks the right questions up front, runs each SDK call, shows the charts with guidance on reading them, and warns you before any step that can't be undone. It covers all four journeys (fixed-log or free-text, supervised or unsupervised), an optional results dashboard, and deploying a model to keep scoring new data.
 
 The skill follows the open [Agent Skills](https://agentskills.io) format, so it works with any agent that supports skills, including Claude Code, OpenAI Codex, Cursor, GitHub Copilot and Gemini CLI.
 
@@ -70,6 +70,7 @@ Gemini CLI may need skills switched on in its settings. Cursor and Copilot also 
 | `validation.md` | Checks to run at each stage, including alert bands against failures |
 | `agent-execution.md` | How an agent runs each step so progress shows and sessions survive |
 | `dashboard.md` | The results dashboard offered after Step 12 |
+| `deployment.md` | Deploying a model and setting up the monitor to keep scoring new data |
 
 ## Get an API key
 
@@ -110,7 +111,8 @@ The `how_to/` folder contains everything you need to get started:
 how_to/
 ├── guides/          # Full reference notebooks (detailed explanations)
 │   ├── 01_labelling_guide.ipynb
-│   └── 02_risk_score_guide.ipynb
+│   ├── 02_risk_score_guide.ipynb
+│   └── 03_deploy_and_monitor_guide.ipynb
 ├── examples/        # Lean executable notebooks + sample data
 │   ├── 01a_labelling_fixed_log.ipynb
 │   ├── 01b_labelling_free_text.ipynb
@@ -118,7 +120,9 @@ how_to/
 │   ├── 02b_risk_score_fixed_log_unsupervised.ipynb
 │   ├── 02c_risk_score_free_text_unsupervised.ipynb
 │   ├── 02d_risk_score_free_text_supervised.ipynb
-│   └── sample_data/     # Two synthetic datasets (see how_to/README.md)
+│   ├── 03a_deploy_and_monitor_fixed_log.ipynb
+│   ├── 03b_deploy_and_monitor_free_text.ipynb
+│   └── sample_data/     # Two synthetic datasets, plus weekly batches (see how_to/how_to.md)
 └── how_to.md            # Sample data guide
 ```
 
@@ -131,6 +135,24 @@ Two sequential pipelines:
 **Labelling** (steps 1–8): Upload log data → extract keywords → generate system/subsystem hierarchy → classify every log entry against the hierarchy.
 
 **Risk Score** (steps 9–12): Upload historical logs → train calibration thresholds → upload new logs → generate per-asset, per-period operational risk scores.
+
+## Keep scoring new data
+
+Once you're happy with a model, deploy it and score new logs whenever they arrive, with no session and no retraining. The `amygda-risk` command keeps a monitor folder on your machine with the history the model needs, every score so far, a record of each run and a dashboard:
+
+```bash
+export AMYGDA_API_KEY=your-api-key
+
+# once: deploy the model from Step 12 and create the monitor
+amygda-risk init fleet_monitor --model complete_model_<id>.zip --name fleet-v1 \
+    --accept-storage --history training_logs.csv
+
+# every day or week (or on a schedule): score new files
+amygda-risk run fleet_monitor --input new_logs.csv    # or drop files in fleet_monitor/inbox/
+amygda-risk status fleet_monitor                      # dashboard: fleet_monitor/dashboard/index.html
+```
+
+Deploying stores a small scoring bundle, never your log rows: see "Deployed models" below. From Python, use `client.deploy_model` and `client.score`, or `Monitor` from `amygda_ops_risk_score.monitor`. `03_deploy_and_monitor_guide.ipynb` walks through it, including scheduling with cron, launchd or Windows Task Scheduler.
 
 ## Running the API locally
 

@@ -5,6 +5,7 @@ how_to/
 ├── guides/          # Full reference notebooks (detailed explanations)
 │   ├── 01_labelling_guide.ipynb
 │   ├── 02_risk_score_guide.ipynb
+│   └── 03_deploy_and_monitor_guide.ipynb
 ├── examples/        # Lean executable notebooks + sample data
 │   ├── 01a_labelling_fixed_log.ipynb
 │   ├── 01b_labelling_free_text.ipynb
@@ -12,14 +13,19 @@ how_to/
 │   ├── 02b_risk_score_fixed_log_unsupervised.ipynb
 │   ├── 02c_risk_score_free_text_unsupervised.ipynb
 │   ├── 02d_risk_score_free_text_supervised.ipynb
+│   ├── 03a_deploy_and_monitor_fixed_log.ipynb
+│   ├── 03b_deploy_and_monitor_free_text.ipynb
 │   └── sample_data/
 │       ├── fixed_log_training.csv
 │       ├── fixed_log_generation.csv
 │       ├── fixed_log_failures.csv
 │       ├── free_text_training.csv
 │       ├── free_text_generation.csv
-│       └── free_text_failures.csv
-└── README.md
+│       ├── free_text_failures.csv
+│       └── batches/                 # the generation data split into weekly files
+│           ├── fixed_log/week_01.csv … week_13.csv
+│           └── free_text/week_01.csv … week_13.csv
+└── how_to.md
 ```
 
 **Start here:** Read the relevant guide notebook in `guides/` first, then run the matching example notebook in `examples/` against the sample data.
@@ -28,7 +34,7 @@ how_to/
 
 ## Dataset 1 — Airport Baggage Management System (fixed-log)
 
-**Used by:** `examples/01a_labelling_fixed_log.ipynb`, `examples/02a_risk_score_fixed_log_supervised.ipynb`, `examples/02b_risk_score_fixed_log_unsupervised.ipynb`
+**Used by:** `examples/01a_labelling_fixed_log.ipynb`, `examples/02a_risk_score_fixed_log_supervised.ipynb`, `examples/02b_risk_score_fixed_log_unsupervised.ipynb`, `examples/03a_deploy_and_monitor_fixed_log.ipynb`, `guides/03_deploy_and_monitor_guide.ipynb`
 
 This dataset represents fault event logs from 12 Airport baggage management stations at a busy international airport. Each row is a single fault event recorded against a station on a given date.
 
@@ -60,7 +66,7 @@ The 31 event codes cover operational systems that the labelling step will discov
 
 ## Dataset 2 — Rolling Stock HVAC Units (free-text)
 
-**Used by:** `examples/01b_labelling_free_text.ipynb`, `examples/02c_risk_score_free_text_unsupervised.ipynb`, `examples/02d_risk_score_free_text_supervised.ipynb`
+**Used by:** `examples/01b_labelling_free_text.ipynb`, `examples/02c_risk_score_free_text_unsupervised.ipynb`, `examples/02d_risk_score_free_text_supervised.ipynb`, `examples/03b_deploy_and_monitor_free_text.ipynb`
 
 This dataset represents natural-language maintenance notes logged by technicians servicing HVAC units fitted to passenger rolling stock. Each row is a single maintenance note recorded at depot or during a service visit.
 
@@ -89,6 +95,24 @@ The notes cover the following system domains. The actual system names or systems
 
 ---
 
+## Weekly batches (deploy and monitor)
+
+**Used by:** `guides/03_deploy_and_monitor_guide.ipynb`, `examples/03a_deploy_and_monitor_fixed_log.ipynb`, `examples/03b_deploy_and_monitor_free_text.ipynb`
+
+`sample_data/batches/` holds each generation file split into 13 weekly files, `week_01.csv` to `week_13.csv`, in the same columns. They stand in for the files a site would export each week, so the monitor can be fed one batch at a time.
+
+| | Fixed-log | Free-text |
+|---|---|---|
+| Rows per week | ~220–470 | ~55–140 |
+| Assets in every week | all 12 | all 8 |
+
+- Weeks start on Mondays (1 Jan 2024 is a Monday).
+- Week 6 ends at noon on Wednesday 14 February and week 7 starts there, so one batch ends part-way through a day. For a daily or 12-hourly model, that period is provisional until week 7 arrives.
+- Joined together, the 13 files are exactly the generation file.
+- The training file ends the day before week 1 starts, so it can be given to the monitor as history (`amygda-risk init --history`).
+
+---
+
 ## File summary
 
 | File | Rows | Period | Used for |
@@ -99,3 +123,5 @@ The notes cover the following system domains. The actual system names or systems
 | `sample_data/free_text_training.csv` | ~5,000 | Jan–Dec 2023 | Labelling + risk score training |
 | `sample_data/free_text_generation.csv` | ~1,100 | Jan–Mar 2024 | Risk score generation |
 | `sample_data/free_text_failures.csv` | 20 | 2023 + Feb–Mar 2024 | Supervised training + failure performance plots |
+| `sample_data/batches/fixed_log/week_*.csv` | 13 files | Jan–Mar 2024 | Deploy and monitor: weekly batches |
+| `sample_data/batches/free_text/week_*.csv` | 13 files | Jan–Mar 2024 | Deploy and monitor: weekly batches |

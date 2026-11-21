@@ -1,0 +1,99 @@
+asset_id,maintenance_log,date
+HVAC-07,"Head pressure significant elevated, condenser fan speed checked",2024-03-04 06:10:19
+HVAC-05,Noise complaint from supply diffuser — turbulence recorded,2024-03-04 06:17:19
+HVAC-08,"Liquid line sight glass showing bubbles, low refrigerant charge suspected",2024-03-04 12:57:54
+HVAC-06,"Fuse blown on control circuit, root cause recorded and investigated",2024-03-04 14:28:28
+HVAC-03,Compressor discharge temperature minor above normal operating range,2024-03-04 15:25:14
+HVAC-08,"Runtime hours counter elevated mismatched with physical log, corrected",2024-03-04 15:52:04
+HVAC-02,"DDC controller reboot noted, settings verified after restart",2024-03-04 18:12:13
+HVAC-07,"Wiring insulation intermittent deteriorated at junction box, rewired",2024-03-04 19:06:38
+HVAC-07,"DDC controller reboot reported, settings verified after restart",2024-03-04 19:21:04
+HVAC-07,"Overload relay tripped, motor current draw detected as elevated",2024-03-04 19:33:48
+HVAC-07,"Runtime hours counter persistent mismatched with physical log, corrected",2024-03-04 22:53:00
+HVAC-07,"Terminal block minor corrosion detected, connections cleaned and tightened",2024-03-05 00:51:10
+HVAC-03,"Motor run capacitor elevated degraded, replaced during inspection",2024-03-05 02:17:49
+HVAC-07,"Capacitor showing signs of significant aging, voltage readings below specification",2024-03-05 03:28:16
+HVAC-07,"Runtime hours counter persistent mismatched with physical log, corrected",2024-03-05 04:37:51
+HVAC-07,Noise complaint from supply diffuser — turbulence reported,2024-03-05 05:43:40
+HVAC-06,Electrical panel voltage fluctuation observed during peak load,2024-03-05 06:04:09
+HVAC-04,Noise complaint from supply diffuser — turbulence noted,2024-03-05 06:05:33
+HVAC-07,"Refrigerant charge low — technician noted low refrigerant level, top-up performed",2024-03-05 08:17:11
+HVAC-07,"Runtime hours counter persistent mismatched with physical log, corrected",2024-03-05 08:48:08
+HVAC-03,"Occupancy sensor not triggering correctly, wiring fault detected",2024-03-05 09:05:49
+HVAC-02,"Refrigerant pressure readings outside specification, system checked",2024-03-05 09:57:36
+HVAC-07,"Runtime hours counter persistent mismatched with physical log, corrected",2024-03-05 10:51:55
+HVAC-07,"Refrigerant charge low — technician noted low refrigerant level, top-up performed",2024-03-05 11:01:15
+HVAC-06,"Overload relay tripped, motor current draw recorded as elevated",2024-03-05 11:21:51
+HVAC-02,"Contactor contacts pitted and worn, replacement recorded and scheduled",2024-03-05 12:33:18
+HVAC-02,"Contactor contacts pitted and worn, replacement recorded and scheduled",2024-03-05 12:44:28
+HVAC-07,"Runtime hours counter persistent mismatched with physical log, corrected",2024-03-05 12:51:42
+HVAC-07,"Refrigerant charge low — technician noted low refrigerant level, top-up performed",2024-03-05 15:23:05
+HVAC-07,"Anti-freeze thermostat setpoint detected as incorrectly set, corrected",2024-03-05 15:26:20
+HVAC-07,"Refrigerant charge low — technician noted low refrigerant level, top-up performed",2024-03-05 17:09:33
+HVAC-07,"Runtime hours counter persistent mismatched with physical log, corrected",2024-03-05 17:21:36
+HVAC-08,"Compressor suction pressure minor lower than expected, possible refrigerant leak noted",2024-03-05 19:30:09
+HVAC-08,"Fan blade imbalance recorded, vibration levels measured and recorded",2024-03-05 19:41:48
+HVAC-06,"Refrigerant charge low — technician recorded low refrigerant level, top-up performed",2024-03-05 19:45:19
+HVAC-06,"Refrigerant charge low — technician recorded low refrigerant level, top-up performed",2024-03-05 19:49:55
+HVAC-06,"Refrigerant charge low — technician recorded low refrigerant level, top-up performed",2024-03-05 20:13:01
+HVAC-05,"Demand-controlled ventilation not responding to CO2 signal, detected",2024-03-05 21:40:23
+HVAC-07,"Refrigerant pressure readings outside specification, system checked",2024-03-05 21:57:51
+HVAC-06,"Static pressure reading elevated outside normal range, ductwork inspected",2024-03-05 23:37:36
+HVAC-03,"Overload relay tripped, motor current draw detected as elevated",2024-03-06 07:07:10
+HVAC-08,"Condenser coil heavily fouled with debris, cleaning noted as required",2024-03-06 07:36:53
+HVAC-08,"Setpoint drift reported on zone controller overnight, investigated",2024-03-06 08:21:30
+HVAC-03,"Wiring insulation significant deteriorated at junction box, rewired",2024-03-06 14:49:25
+HVAC-08,"Voltage imbalance minor across phases, supply quality checked",2024-03-06 15:02:36
+HVAC-07,"Condenser fan motor elevated noisy, bearing wear reported",2024-03-06 15:03:07
+HVAC-08,"Blower wheel fouled with debris, minor buildup detected and cleaned",2024-03-06 17:27:09
+HVAC-02,"Earth leakage observed on compressor motor circuit, insulation tested",2024-03-06 19:17:41
+HVAC-01,"Scheduling fault — unit failed to start at programmed time, recorded",2024-03-07 07:12:11
+HVAC-03,"Low-pressure cutout recorded repeatedly, refrigerant charge verified",2024-03-07 07:45:58
+HVAC-06,"Demand-controlled ventilation not responding to CO2 signal, reported",2024-03-07 09:02:23
+HVAC-01,"Condenser fan motor minor noisy, bearing wear noted",2024-03-07 09:20:44
+HVAC-08,Noise complaint from supply diffuser — turbulence recorded,2024-03-07 11:27:32
+HVAC-01,"Motor run capacitor persistent degraded, replaced during inspection",2024-03-07 13:44:43
+HVAC-04,"Zone temperature sensor significant out of calibration, recalibrated",2024-03-07 14:54:45
+HVAC-03,"Voltage imbalance minor across phases, supply quality checked",2024-03-07 15:17:00
+HVAC-04,"Evaporator coil frosting over, defrost cycle initiated",2024-03-07 18:00:04
+HVAC-05,"Condenser fan motor minor noisy, bearing wear reported",2024-03-07 20:34:14
+HVAC-02,"Control board fault code F59 detected, reset performed",2024-03-08 06:48:46
+HVAC-03,"Supply fan belt minor worn, replacement detected and scheduled",2024-03-08 07:35:56
+HVAC-05,Electrical panel voltage fluctuation reported during peak load,2024-03-08 08:16:07
+HVAC-07,"Supply air temperature elevated inconsistent, mixing box damper adjusted",2024-03-08 13:36:02
+HVAC-06,"Condenser fan motor persistent noisy, bearing wear reported",2024-03-08 16:56:53
+HVAC-03,"Evaporator coil frosting over, defrost cycle initiated",2024-03-08 19:15:08
+HVAC-02,"Compressor short-cycling detected, pressure switch inspected",2024-03-08 19:41:38
+HVAC-03,"Refrigerant charge low — technician observed low refrigerant level, top-up performed",2024-03-08 21:07:23
+HVAC-03,"Refrigerant charge low — technician observed low refrigerant level, top-up performed",2024-03-08 21:18:10
+HVAC-03,"Refrigerant charge low — technician observed low refrigerant level, top-up performed",2024-03-08 21:38:17
+HVAC-08,"Wiring insulation elevated deteriorated at junction box, rewired",2024-03-08 21:48:05
+HVAC-08,"Voltage imbalance significant across phases, supply quality checked",2024-03-09 06:53:40
+HVAC-07,"Capacitor showing signs of significant aging, voltage readings below specification",2024-03-09 07:07:09
+HVAC-05,"Setpoint drift noted on zone controller overnight, investigated",2024-03-09 07:48:36
+HVAC-05,"Liquid line sight glass showing bubbles, low refrigerant charge suspected",2024-03-09 08:20:59
+HVAC-05,"Liquid line sight glass showing bubbles, low refrigerant charge suspected",2024-03-09 08:50:19
+HVAC-02,"Control board fault code F43 detected, reset performed",2024-03-09 09:47:36
+HVAC-03,Control sequence fault detected during changeover between heating and cooling,2024-03-09 11:11:30
+HVAC-07,"Fuse blown on control circuit, root cause detected and investigated",2024-03-09 14:07:48
+HVAC-07,Compressor discharge temperature intermittent above normal operating range,2024-03-09 14:15:48
+HVAC-07,Compressor discharge temperature intermittent above normal operating range,2024-03-09 14:22:06
+HVAC-07,Compressor discharge temperature intermittent above normal operating range,2024-03-09 14:35:24
+HVAC-01,"Fuse blown on control circuit, root cause reported and investigated",2024-03-09 14:42:53
+HVAC-01,Refrigerant leak detector alarm recorded in plant room,2024-03-09 16:28:53
+HVAC-05,"Head pressure persistent elevated, condenser fan speed checked",2024-03-09 20:17:03
+HVAC-06,"Motor run capacitor persistent degraded, replaced during inspection",2024-03-10 00:49:15
+HVAC-06,"Fan blade imbalance observed, vibration levels measured and recorded",2024-03-10 06:30:34
+HVAC-06,"Suction line frost noted at expansion valve, TXV adjustment required",2024-03-10 06:33:48
+HVAC-03,"Refrigerant leak reported at service valve connection, repair scheduled",2024-03-10 08:01:41
+HVAC-04,"Compressor suction pressure elevated lower than expected, possible refrigerant leak reported",2024-03-10 08:03:33
+HVAC-08,Compressor discharge temperature persistent above normal operating range,2024-03-10 10:01:55
+HVAC-07,"Runtime hours counter persistent mismatched with physical log, corrected",2024-03-10 11:49:06
+HVAC-06,"BACnet network interruption reported, gateway settings reviewed",2024-03-10 12:28:57
+HVAC-02,"BMS communication timeout noted on unit, manual override applied",2024-03-10 14:00:39
+HVAC-07,"Wiring insulation intermittent deteriorated at junction box, rewired",2024-03-10 14:34:32
+HVAC-06,"Liquid line sight glass showing bubbles, low refrigerant charge suspected",2024-03-10 15:54:53
+HVAC-06,"Liquid line sight glass showing bubbles, low refrigerant charge suspected",2024-03-10 16:10:55
+HVAC-06,"Liquid line sight glass showing bubbles, low refrigerant charge suspected",2024-03-10 16:36:05
+HVAC-05,"Wiring insulation intermittent deteriorated at junction box, rewired",2024-03-10 17:12:35
+HVAC-01,"Condenser fan motor minor noisy, bearing wear detected",2024-03-10 19:28:20

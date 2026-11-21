@@ -1,0 +1,118 @@
+asset_id,maintenance_log,date
+HVAC-06,"Duct leakage noted at flex connector joints, sealed with mastic",2024-02-19 01:41:51
+HVAC-05,"Supply air temperature minor inconsistent, mixing box damper adjusted",2024-02-19 07:09:42
+HVAC-04,"Refrigerant charge low — technician observed low refrigerant level, top-up performed",2024-02-19 09:46:40
+HVAC-07,"Motor run capacitor minor degraded, replaced during inspection",2024-02-19 10:22:01
+HVAC-03,"High-pressure safety cutout triggered — unit shutdown, recorded",2024-02-19 10:44:58
+HVAC-03,"Smoke detector in AHU compartment activated, area inspected",2024-02-19 12:32:48
+HVAC-05,"High-pressure safety cutout triggered — unit shutdown, observed",2024-02-19 13:06:21
+HVAC-05,"Compressor short-cycling detected, pressure switch inspected",2024-02-19 13:30:59
+HVAC-05,"Compressor short-cycling recorded, pressure switch inspected",2024-02-19 14:09:11
+HVAC-05,"Compressor short-cycling recorded, pressure switch inspected",2024-02-19 14:22:23
+HVAC-03,"Setpoint drift observed on zone controller overnight, investigated",2024-02-19 17:35:53
+HVAC-03,"Motor run capacitor elevated degraded, replaced during inspection",2024-02-19 17:46:02
+HVAC-03,"Compressor short-cycling detected, pressure switch inspected",2024-02-19 17:55:01
+HVAC-03,"Voltage imbalance significant across phases, supply quality checked",2024-02-19 17:59:40
+HVAC-03,"Condensate drain overflowing, float switch noted and replaced",2024-02-19 18:27:45
+HVAC-03,"Return air temperature intermittent higher than setpoint, airflow restricted",2024-02-19 19:29:45
+HVAC-07,"Scheduling fault — unit failed to start at programmed time, reported",2024-02-19 20:44:25
+HVAC-03,"Return air temperature intermittent higher than setpoint, airflow restricted",2024-02-19 20:59:26
+HVAC-03,"Blower wheel fouled with debris, elevated buildup noted and cleaned",2024-02-19 21:25:12
+HVAC-03,"Return air temperature intermittent higher than setpoint, airflow restricted",2024-02-19 22:40:15
+HVAC-07,"BACnet network interruption noted, gateway settings reviewed",2024-02-19 22:46:47
+HVAC-03,"Control transformer output voltage minor low, unit inspected",2024-02-20 01:34:26
+HVAC-03,"Demand-controlled ventilation not responding to CO2 signal, detected",2024-02-20 02:05:15
+HVAC-03,"Demand-controlled ventilation not responding to CO2 signal, detected",2024-02-20 02:12:53
+HVAC-07,"Suction line frost reported at expansion valve, TXV adjustment required",2024-02-20 02:14:12
+HVAC-03,"Demand-controlled ventilation not responding to CO2 signal, detected",2024-02-20 02:27:21
+HVAC-03,"Control transformer output voltage minor low, unit inspected",2024-02-20 02:54:44
+HVAC-03,"Compressor short-cycling detected, pressure switch inspected",2024-02-20 03:22:33
+HVAC-01,"Motor run capacitor intermittent degraded, replaced during inspection",2024-02-20 05:29:19
+HVAC-05,Electrical panel voltage fluctuation observed during peak load,2024-02-20 06:46:10
+HVAC-02,"Alarms suppressed by contractor without authorisation, detected",2024-02-20 07:00:41
+HVAC-01,"Blower wheel fouled with debris, persistent buildup recorded and cleaned",2024-02-20 07:43:14
+HVAC-05,"Control board fault code F18 observed, reset performed",2024-02-20 07:45:17
+HVAC-03,"Return air temperature intermittent higher than setpoint, airflow restricted",2024-02-20 08:53:08
+HVAC-03,"Economiser damper elevated slow to respond, actuator observed and replaced",2024-02-20 09:53:30
+HVAC-03,"Compressor short-cycling detected, pressure switch inspected",2024-02-20 09:58:09
+HVAC-01,"Condenser coil heavily fouled with debris, cleaning detected as required",2024-02-20 10:07:17
+HVAC-08,"Vibration isolation mounts minor deteriorated, unit recorded as unstable",2024-02-20 10:07:24
+HVAC-08,"Vibration isolation mounts minor deteriorated, unit recorded as unstable",2024-02-20 10:24:30
+HVAC-03,"Control transformer output voltage minor low, unit inspected",2024-02-20 10:43:06
+HVAC-03,"Compressor short-cycling recorded, pressure switch inspected",2024-02-20 13:17:00
+HVAC-05,Compressor discharge temperature significant above normal operating range,2024-02-20 15:05:15
+HVAC-05,Compressor discharge temperature significant above normal operating range,2024-02-20 15:16:51
+HVAC-03,"Control transformer output voltage minor low, unit inspected",2024-02-20 15:29:52
+HVAC-07,Compressor discharge temperature persistent above normal operating range,2024-02-20 15:53:10
+HVAC-08,"Contactor contacts pitted and worn, replacement recorded and scheduled",2024-02-20 16:20:29
+HVAC-03,"Return air temperature intermittent higher than setpoint, airflow restricted",2024-02-20 16:52:35
+HVAC-03,"Control transformer output voltage minor low, unit inspected",2024-02-20 17:04:15
+HVAC-03,"Suction line frost recorded at expansion valve, TXV adjustment required",2024-02-20 17:07:13
+HVAC-07,"Contactor contacts pitted and worn, replacement detected and scheduled",2024-02-20 19:13:43
+HVAC-05,"High-pressure safety cutout triggered — unit shutdown, reported",2024-02-20 20:43:18
+HVAC-04,"Compressor suction pressure elevated lower than expected, possible refrigerant leak observed",2024-02-20 21:24:23
+HVAC-03,"Alarms suppressed by contractor without authorisation, noted",2024-02-21 02:24:55
+HVAC-03,"Demand-controlled ventilation not responding to CO2 signal, recorded",2024-02-21 04:41:49
+HVAC-07,"Duct leakage observed at flex connector joints, sealed with mastic",2024-02-21 04:43:50
+HVAC-06,Air filter pressure drop persistent above recommended threshold,2024-02-21 05:57:56
+HVAC-01,"Terminal block intermittent corrosion recorded, connections cleaned and tightened",2024-02-21 06:03:43
+HVAC-03,"Motor run capacitor elevated degraded, replaced during inspection",2024-02-21 09:15:46
+HVAC-02,Control sequence fault recorded during changeover between heating and cooling,2024-02-21 09:50:58
+HVAC-07,Control sequence fault reported during changeover between heating and cooling,2024-02-21 12:43:27
+HVAC-06,Noise complaint from supply diffuser — turbulence observed,2024-02-21 12:57:23
+HVAC-07,"Refrigerant leak detected at service valve connection, repair scheduled",2024-02-21 15:25:59
+HVAC-07,Manual reset required after high-limit thermostat trip,2024-02-21 16:04:53
+HVAC-01,"Condensate drain overflowing, float switch noted and replaced",2024-02-21 16:22:45
+HVAC-03,Compressor discharge temperature elevated above normal operating range,2024-02-21 17:45:43
+HVAC-06,"Alarms suppressed by contractor without authorisation, detected",2024-02-21 19:05:24
+HVAC-06,"Alarms suppressed by contractor without authorisation, detected",2024-02-21 19:21:33
+HVAC-04,"Wiring insulation significant deteriorated at junction box, rewired",2024-02-21 20:30:11
+HVAC-08,"Vibration isolation mounts elevated deteriorated, unit observed as unstable",2024-02-22 06:07:52
+HVAC-03,"Refrigerant charge low — technician reported low refrigerant level, top-up performed",2024-02-22 07:37:31
+HVAC-07,"Economiser damper persistent slow to respond, actuator observed and replaced",2024-02-22 10:16:43
+HVAC-07,"Control board fault code F17 observed, reset performed",2024-02-22 15:06:12
+HVAC-03,"BMS communication timeout reported on unit, manual override applied",2024-02-22 15:45:23
+HVAC-07,"Evaporator coil frosting over, defrost cycle initiated",2024-02-22 16:13:56
+HVAC-04,"Vibration isolation mounts persistent deteriorated, unit recorded as unstable",2024-02-22 17:16:56
+HVAC-08,"Return air temperature intermittent higher than setpoint, airflow restricted",2024-02-22 23:25:12
+HVAC-01,Refrigerant leak detector alarm observed in plant room,2024-02-23 02:07:23
+HVAC-07,"Duct leakage detected at flex connector joints, sealed with mastic",2024-02-23 11:13:50
+HVAC-01,"Economiser damper significant slow to respond, actuator reported and replaced",2024-02-23 11:59:28
+HVAC-07,"Supply fan belt minor worn, replacement noted and scheduled",2024-02-23 13:24:29
+HVAC-07,"Suction line frost recorded at expansion valve, TXV adjustment required",2024-02-23 13:59:17
+HVAC-08,"Contactor contacts pitted and worn, replacement reported and scheduled",2024-02-23 18:40:01
+HVAC-02,"Vibration isolation mounts persistent deteriorated, unit detected as unstable",2024-02-23 19:13:20
+HVAC-01,"Earth leakage detected on compressor motor circuit, insulation tested",2024-02-23 19:20:29
+HVAC-03,Thermostat setpoint not being maintained — sensor drift reported and suspected,2024-02-23 19:58:48
+HVAC-04,"Fan blade imbalance observed, vibration levels measured and recorded",2024-02-24 01:34:19
+HVAC-08,"Return air temperature intermittent higher than setpoint, airflow restricted",2024-02-24 10:14:52
+HVAC-06,"Blower wheel fouled with debris, significant buildup detected and cleaned",2024-02-24 12:27:11
+HVAC-06,"Blower wheel fouled with debris, significant buildup detected and cleaned",2024-02-24 12:34:14
+HVAC-03,"Fuse blown on control circuit, root cause recorded and investigated",2024-02-24 15:37:11
+HVAC-03,"BMS communication timeout recorded on unit, manual override applied",2024-02-24 15:56:42
+HVAC-06,"Terminal block persistent corrosion recorded, connections cleaned and tightened",2024-02-24 16:41:14
+HVAC-04,Thermostat setpoint not being maintained — sensor drift detected and suspected,2024-02-24 17:08:37
+HVAC-07,Thermostat setpoint not being maintained — sensor drift recorded and suspected,2024-02-24 18:44:42
+HVAC-07,Electrical panel voltage fluctuation reported during peak load,2024-02-24 19:26:21
+HVAC-08,Electrical panel voltage fluctuation noted during peak load,2024-02-24 20:01:51
+HVAC-07,"Anti-freeze thermostat setpoint detected as incorrectly set, corrected",2024-02-24 21:04:51
+HVAC-07,"Anti-freeze thermostat setpoint detected as incorrectly set, corrected",2024-02-24 21:07:59
+HVAC-07,"Anti-freeze thermostat setpoint detected as incorrectly set, corrected",2024-02-24 21:17:57
+HVAC-04,"Blower wheel fouled with debris, significant buildup recorded and cleaned",2024-02-24 22:18:43
+HVAC-07,"Condenser coil heavily fouled with debris, cleaning detected as required",2024-02-25 05:08:19
+HVAC-07,"Control transformer output voltage persistent low, unit inspected",2024-02-25 08:58:25
+HVAC-07,"Supply air temperature significant inconsistent, mixing box damper adjusted",2024-02-25 09:04:23
+HVAC-08,"Demand-controlled ventilation not responding to CO2 signal, recorded",2024-02-25 09:51:24
+HVAC-03,"Supply fan belt elevated worn, replacement detected and scheduled",2024-02-25 09:59:22
+HVAC-08,"Demand-controlled ventilation not responding to CO2 signal, recorded",2024-02-25 10:04:04
+HVAC-08,"Demand-controlled ventilation not responding to CO2 signal, recorded",2024-02-25 10:07:03
+HVAC-04,"Smoke detector in AHU compartment activated, area inspected",2024-02-25 11:51:10
+HVAC-04,"Smoke detector in AHU compartment activated, area inspected",2024-02-25 11:58:16
+HVAC-03,"Suction line frost observed at expansion valve, TXV adjustment required",2024-02-25 12:44:14
+HVAC-08,"Motor run capacitor intermittent degraded, replaced during inspection",2024-02-25 14:41:52
+HVAC-05,"DDC controller reboot recorded, settings verified after restart",2024-02-25 16:49:33
+HVAC-05,"DDC controller reboot recorded, settings verified after restart",2024-02-25 17:00:49
+HVAC-05,"DDC controller reboot recorded, settings verified after restart",2024-02-25 17:04:59
+HVAC-05,"Earth leakage observed on compressor motor circuit, insulation tested",2024-02-25 17:44:09
+HVAC-05,"Earth leakage observed on compressor motor circuit, insulation tested",2024-02-25 18:00:43
+HVAC-07,"Compressor short-cycling observed, pressure switch inspected",2024-02-25 18:05:05

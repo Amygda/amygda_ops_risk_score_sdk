@@ -1,0 +1,357 @@
+asset_id,event_code,date
+ASS-009,Filter replacement required,2024-03-25 00:32:55
+ASS-011,Light curtain interrupted,2024-03-25 01:31:40
+ASS-011,Light curtain interrupted,2024-03-25 01:37:11
+ASS-002,Photoelectric sensor fault,2024-03-25 05:55:34
+ASS-009,Weight sensor out of range,2024-03-25 07:52:14
+ASS-007,Barcode reader timeout,2024-03-25 08:25:12
+ASS-007,Barcode reader timeout,2024-03-25 09:18:16
+ASS-007,Barcode reader timeout,2024-03-25 09:20:23
+ASS-003,Photoelectric sensor fault,2024-03-25 09:23:42
+ASS-011,Motor phase imbalance alarm,2024-03-25 09:31:24
+ASS-011,Motor phase imbalance alarm,2024-03-25 09:39:57
+ASS-011,Motor phase imbalance alarm,2024-03-25 09:46:18
+ASS-011,RFID tag not detected,2024-03-25 09:48:09
+ASS-007,Barcode reader timeout,2024-03-25 09:55:28
+ASS-003,Filter replacement required,2024-03-25 11:56:56
+ASS-003,Filter replacement required,2024-03-25 12:04:58
+ASS-005,Motor overtemperature fault,2024-03-25 12:28:11
+ASS-005,Motor overtemperature fault,2024-03-25 12:40:05
+ASS-001,Drive inverter alarm,2024-03-25 12:43:35
+ASS-005,Motor overtemperature fault,2024-03-25 12:49:15
+ASS-001,Drive inverter alarm,2024-03-25 12:57:21
+ASS-002,Bearing vibration elevated,2024-03-25 14:05:33
+ASS-008,Belt slip detected,2024-03-25 15:26:13
+ASS-003,Emergency stop activated,2024-03-25 16:00:56
+ASS-003,Emergency stop activated,2024-03-25 16:06:59
+ASS-003,Emergency stop activated,2024-03-25 16:25:02
+ASS-010,SCADA connection lost,2024-03-25 18:37:45
+ASS-011,Light curtain interrupted,2024-03-25 19:08:04
+ASS-004,Vision sensor calibration error,2024-03-25 19:29:50
+ASS-010,Barcode reader timeout,2024-03-25 20:09:59
+ASS-005,Weight sensor out of range,2024-03-25 20:30:26
+ASS-005,Motor overtemperature fault,2024-03-25 21:48:40
+ASS-004,Photoelectric sensor fault,2024-03-26 01:06:35
+ASS-002,Vision sensor calibration error,2024-03-26 01:07:00
+ASS-004,Photoelectric sensor fault,2024-03-26 01:24:10
+ASS-007,PLC communication error,2024-03-26 02:28:14
+ASS-003,SCADA connection lost,2024-03-26 03:35:49
+ASS-007,Filter replacement required,2024-03-26 03:48:12
+ASS-003,SCADA connection lost,2024-03-26 03:49:50
+ASS-011,Parameter checksum mismatch,2024-03-26 05:23:23
+ASS-011,Parameter checksum mismatch,2024-03-26 05:33:21
+ASS-011,Parameter checksum mismatch,2024-03-26 05:35:33
+ASS-002,Network switch port failure,2024-03-26 06:15:47
+ASS-009,Barcode reader timeout,2024-03-26 06:20:10
+ASS-002,Network switch port failure,2024-03-26 06:27:45
+ASS-002,Network switch port failure,2024-03-26 06:40:59
+ASS-008,SCADA connection lost,2024-03-26 07:23:40
+ASS-003,Motor overtemperature fault,2024-03-26 08:19:28
+ASS-003,Motor overtemperature fault,2024-03-26 08:22:53
+ASS-004,Drive inverter alarm,2024-03-26 08:43:18
+ASS-004,Drive inverter alarm,2024-03-26 08:49:08
+ASS-002,Light curtain interrupted,2024-03-26 09:00:46
+ASS-012,Emergency stop activated,2024-03-26 09:17:35
+ASS-004,PLC communication error,2024-03-26 10:52:21
+ASS-011,Safety relay fault,2024-03-26 10:53:58
+ASS-011,Weight sensor out of range,2024-03-26 11:10:35
+ASS-011,Safety relay fault,2024-03-26 11:12:40
+ASS-011,Weight sensor out of range,2024-03-26 11:15:29
+ASS-004,Filter replacement required,2024-03-26 12:21:48
+ASS-002,Parameter checksum mismatch,2024-03-26 12:29:01
+ASS-005,Filter replacement required,2024-03-26 12:29:51
+ASS-003,Watchdog timer expired,2024-03-26 12:34:36
+ASS-002,Parameter checksum mismatch,2024-03-26 12:36:33
+ASS-006,Belt tracking deviation detected,2024-03-26 12:38:45
+ASS-006,Belt tracking deviation detected,2024-03-26 12:41:59
+ASS-006,Belt tracking deviation detected,2024-03-26 12:45:51
+ASS-002,Parameter checksum mismatch,2024-03-26 12:54:47
+ASS-005,Motor phase imbalance alarm,2024-03-26 13:08:16
+ASS-010,Drive inverter alarm,2024-03-26 13:10:11
+ASS-010,Drive inverter alarm,2024-03-26 13:12:36
+ASS-010,Drive inverter alarm,2024-03-26 13:42:31
+ASS-005,Photoelectric sensor fault,2024-03-26 13:46:08
+ASS-005,Photoelectric sensor fault,2024-03-26 13:52:58
+ASS-005,Photoelectric sensor fault,2024-03-26 14:05:41
+ASS-011,SCADA connection lost,2024-03-26 15:09:32
+ASS-006,Network switch port failure,2024-03-26 15:49:07
+ASS-003,Drive inverter alarm,2024-03-26 15:54:22
+ASS-005,Parameter checksum mismatch,2024-03-26 16:07:49
+ASS-002,Motor overtemperature fault,2024-03-26 16:39:34
+ASS-011,Filter replacement required,2024-03-26 16:49:14
+ASS-011,Filter replacement required,2024-03-26 16:55:34
+ASS-011,Filter replacement required,2024-03-26 17:05:20
+ASS-003,Gearbox oil level low,2024-03-26 18:20:21
+ASS-003,Gearbox oil level low,2024-03-26 18:24:53
+ASS-011,Oil level low,2024-03-26 19:48:39
+ASS-007,Network switch port failure,2024-03-26 20:38:20
+ASS-012,SCADA connection lost,2024-03-26 21:03:54
+ASS-003,Filter replacement required,2024-03-26 21:10:10
+ASS-012,Barcode reader timeout,2024-03-26 21:25:05
+ASS-005,Wear indicator triggered,2024-03-27 00:27:15
+ASS-007,SCADA connection lost,2024-03-27 00:28:54
+ASS-008,SCADA connection lost,2024-03-27 00:43:24
+ASS-011,Proximity sensor failure,2024-03-27 01:11:06
+ASS-007,Motor overtemperature fault,2024-03-27 01:12:56
+ASS-011,Proximity sensor failure,2024-03-27 01:25:21
+ASS-011,Proximity sensor failure,2024-03-27 01:31:48
+ASS-008,Bearing vibration elevated,2024-03-27 01:37:18
+ASS-012,Photoelectric sensor fault,2024-03-27 02:01:21
+ASS-004,Barcode reader timeout,2024-03-27 04:47:27
+ASS-007,Network switch port failure,2024-03-27 06:06:08
+ASS-007,Network switch port failure,2024-03-27 06:16:03
+ASS-005,Wear indicator triggered,2024-03-27 06:23:15
+ASS-001,Bearing vibration elevated,2024-03-27 06:31:59
+ASS-005,Motor overtemperature fault,2024-03-27 07:35:05
+ASS-005,Motor overtemperature fault,2024-03-27 07:44:42
+ASS-002,Oil level low,2024-03-27 07:54:26
+ASS-002,Oil level low,2024-03-27 08:02:53
+ASS-011,Inspection overdue,2024-03-27 09:25:31
+ASS-002,Photoelectric sensor fault,2024-03-27 09:35:16
+ASS-001,RFID tag not detected,2024-03-27 09:42:16
+ASS-004,Wear indicator triggered,2024-03-27 09:47:01
+ASS-004,Wear indicator triggered,2024-03-27 09:54:30
+ASS-003,Bearing vibration elevated,2024-03-27 10:09:17
+ASS-011,Overload protection triggered,2024-03-27 10:28:17
+ASS-011,Overload protection triggered,2024-03-27 10:33:37
+ASS-004,Belt tracking deviation detected,2024-03-27 10:40:22
+ASS-005,Motor overtemperature fault,2024-03-27 11:17:50
+ASS-005,Motor overtemperature fault,2024-03-27 11:33:11
+ASS-001,Scheduled lubrication due,2024-03-27 11:56:30
+ASS-010,Coupling vibration high,2024-03-27 12:00:03
+ASS-010,Coupling vibration high,2024-03-27 12:04:56
+ASS-001,Scheduled lubrication due,2024-03-27 12:16:10
+ASS-010,Coupling vibration high,2024-03-27 12:20:41
+ASS-001,Scheduled lubrication due,2024-03-27 12:24:12
+ASS-008,Coupling vibration high,2024-03-27 13:02:18
+ASS-002,Belt slip detected,2024-03-27 13:06:12
+ASS-002,Belt slip detected,2024-03-27 13:16:44
+ASS-002,Belt slip detected,2024-03-27 13:22:55
+ASS-007,Safety relay fault,2024-03-27 13:51:35
+ASS-006,Gearbox oil level low,2024-03-27 15:07:05
+ASS-006,Gearbox oil level low,2024-03-27 15:24:05
+ASS-009,Proximity sensor failure,2024-03-27 15:28:50
+ASS-006,Gearbox oil level low,2024-03-27 15:35:21
+ASS-009,Proximity sensor failure,2024-03-27 15:47:15
+ASS-007,Photoelectric sensor fault,2024-03-27 16:36:03
+ASS-008,Belt tracking deviation detected,2024-03-27 16:49:12
+ASS-007,Photoelectric sensor fault,2024-03-27 16:54:46
+ASS-007,Photoelectric sensor fault,2024-03-27 16:55:51
+ASS-007,Proximity sensor failure,2024-03-27 17:32:16
+ASS-007,Inspection overdue,2024-03-27 17:38:50
+ASS-007,Proximity sensor failure,2024-03-27 17:45:34
+ASS-007,Inspection overdue,2024-03-27 17:47:28
+ASS-007,Proximity sensor failure,2024-03-27 18:10:26
+ASS-001,Light curtain interrupted,2024-03-27 18:35:48
+ASS-007,Oil level low,2024-03-27 18:39:39
+ASS-001,Light curtain interrupted,2024-03-27 18:42:39
+ASS-007,Oil level low,2024-03-27 18:47:35
+ASS-011,Barcode reader timeout,2024-03-27 18:48:01
+ASS-011,Barcode reader timeout,2024-03-27 18:57:24
+ASS-009,Gearbox oil level low,2024-03-27 19:09:35
+ASS-007,Oil level low,2024-03-27 19:18:49
+ASS-009,Gearbox oil level low,2024-03-27 19:21:22
+ASS-011,Drive inverter alarm,2024-03-27 19:23:50
+ASS-011,Barcode reader timeout,2024-03-27 19:24:07
+ASS-011,Filter replacement required,2024-03-27 19:39:42
+ASS-011,Drive inverter alarm,2024-03-27 19:43:45
+ASS-011,Filter replacement required,2024-03-27 19:43:46
+ASS-011,Filter replacement required,2024-03-27 19:46:11
+ASS-011,Drive inverter alarm,2024-03-27 19:53:34
+ASS-001,Gearbox oil level low,2024-03-27 21:08:40
+ASS-001,Gearbox oil level low,2024-03-27 21:15:07
+ASS-003,Drive inverter alarm,2024-03-27 21:19:14
+ASS-001,Gearbox oil level low,2024-03-27 21:19:26
+ASS-008,Belt slip detected,2024-03-28 00:13:52
+ASS-009,Motor overtemperature fault,2024-03-28 01:37:23
+ASS-005,Photoelectric sensor fault,2024-03-28 01:51:23
+ASS-001,Weight sensor out of range,2024-03-28 01:52:53
+ASS-009,Motor overtemperature fault,2024-03-28 01:56:19
+ASS-001,Weight sensor out of range,2024-03-28 02:12:42
+ASS-001,Weight sensor out of range,2024-03-28 02:16:05
+ASS-001,Filter replacement required,2024-03-28 02:17:55
+ASS-010,Barcode reader timeout,2024-03-28 02:38:44
+ASS-009,Safety relay fault,2024-03-28 04:39:52
+ASS-007,SCADA connection lost,2024-03-28 04:52:04
+ASS-007,Photoelectric sensor fault,2024-03-28 07:18:31
+ASS-007,Photoelectric sensor fault,2024-03-28 07:33:27
+ASS-008,Barcode reader timeout,2024-03-28 10:15:23
+ASS-003,Motor overtemperature fault,2024-03-28 11:47:06
+ASS-003,Motor overtemperature fault,2024-03-28 11:54:52
+ASS-003,Motor overtemperature fault,2024-03-28 12:22:48
+ASS-008,Proximity sensor failure,2024-03-28 12:26:01
+ASS-004,Emergency stop activated,2024-03-28 12:42:23
+ASS-004,Emergency stop activated,2024-03-28 12:48:32
+ASS-010,RFID tag not detected,2024-03-28 15:08:05
+ASS-010,RFID tag not detected,2024-03-28 15:25:58
+ASS-005,Safety relay fault,2024-03-28 15:50:42
+ASS-005,Safety relay fault,2024-03-28 15:56:07
+ASS-001,RFID tag not detected,2024-03-28 15:56:09
+ASS-004,Filter replacement required,2024-03-28 16:10:30
+ASS-004,Inspection overdue,2024-03-28 16:13:26
+ASS-004,Filter replacement required,2024-03-28 16:23:17
+ASS-009,HMI touchscreen unresponsive,2024-03-28 17:21:32
+ASS-003,Belt slip detected,2024-03-28 17:22:05
+ASS-008,Photoelectric sensor fault,2024-03-28 17:26:13
+ASS-003,Belt slip detected,2024-03-28 17:36:47
+ASS-003,Belt slip detected,2024-03-28 17:36:57
+ASS-008,Photoelectric sensor fault,2024-03-28 17:37:13
+ASS-003,HMI touchscreen unresponsive,2024-03-28 17:39:33
+ASS-008,Photoelectric sensor fault,2024-03-28 17:45:36
+ASS-008,Photoelectric sensor fault,2024-03-28 17:47:03
+ASS-003,HMI touchscreen unresponsive,2024-03-28 17:56:51
+ASS-003,HMI touchscreen unresponsive,2024-03-28 18:14:23
+ASS-003,HMI touchscreen unresponsive,2024-03-28 18:25:51
+ASS-003,Proximity sensor failure,2024-03-28 18:31:55
+ASS-003,Proximity sensor failure,2024-03-28 18:34:00
+ASS-005,Filter replacement required,2024-03-28 19:05:24
+ASS-005,Filter replacement required,2024-03-28 19:16:28
+ASS-003,Proximity sensor failure,2024-03-28 19:21:40
+ASS-007,Scheduled lubrication due,2024-03-28 20:10:35
+ASS-007,Scheduled lubrication due,2024-03-28 20:26:10
+ASS-002,Zone collision warning,2024-03-28 20:28:25
+ASS-002,Inspection overdue,2024-03-28 20:52:45
+ASS-001,Emergency stop activated,2024-03-28 21:30:01
+ASS-001,Emergency stop activated,2024-03-28 21:42:12
+ASS-004,Belt tracking deviation detected,2024-03-28 21:49:46
+ASS-004,Belt tracking deviation detected,2024-03-28 22:01:56
+ASS-004,Belt tracking deviation detected,2024-03-28 22:07:32
+ASS-009,Belt tracking deviation detected,2024-03-28 22:44:58
+ASS-004,Watchdog timer expired,2024-03-28 22:50:12
+ASS-009,Belt tracking deviation detected,2024-03-28 23:00:33
+ASS-009,Belt tracking deviation detected,2024-03-28 23:25:28
+ASS-003,RFID tag not detected,2024-03-28 23:53:19
+ASS-008,Motor phase imbalance alarm,2024-03-29 00:40:21
+ASS-008,Motor phase imbalance alarm,2024-03-29 00:49:06
+ASS-011,SCADA connection lost,2024-03-29 06:50:32
+ASS-006,RFID tag not detected,2024-03-29 07:16:18
+ASS-006,RFID tag not detected,2024-03-29 07:23:04
+ASS-006,RFID tag not detected,2024-03-29 07:42:22
+ASS-006,RFID tag not detected,2024-03-29 07:49:57
+ASS-010,Drive inverter alarm,2024-03-29 07:58:35
+ASS-011,Weight sensor out of range,2024-03-29 07:59:28
+ASS-011,PLC communication error,2024-03-29 08:16:02
+ASS-011,Gearbox oil level low,2024-03-29 08:27:47
+ASS-011,Gearbox oil level low,2024-03-29 08:39:54
+ASS-005,Watchdog timer expired,2024-03-29 08:51:29
+ASS-005,Watchdog timer expired,2024-03-29 08:59:21
+ASS-005,Watchdog timer expired,2024-03-29 09:06:29
+ASS-007,Light curtain interrupted,2024-03-29 09:39:48
+ASS-007,Belt tracking deviation detected,2024-03-29 09:53:15
+ASS-007,Belt tracking deviation detected,2024-03-29 10:03:43
+ASS-007,Belt tracking deviation detected,2024-03-29 10:10:01
+ASS-009,Watchdog timer expired,2024-03-29 10:12:16
+ASS-009,Watchdog timer expired,2024-03-29 10:15:27
+ASS-007,Belt tracking deviation detected,2024-03-29 10:33:00
+ASS-001,Safety relay fault,2024-03-29 10:34:15
+ASS-012,Proximity sensor failure,2024-03-29 10:56:02
+ASS-008,Emergency stop activated,2024-03-29 11:49:44
+ASS-010,PLC communication error,2024-03-29 11:56:35
+ASS-010,PLC communication error,2024-03-29 12:14:56
+ASS-012,Vision sensor calibration error,2024-03-29 14:04:03
+ASS-002,Motor phase imbalance alarm,2024-03-29 14:25:41
+ASS-002,Motor phase imbalance alarm,2024-03-29 14:40:24
+ASS-003,Gearbox oil level low,2024-03-29 14:57:31
+ASS-011,Oil level low,2024-03-29 15:25:34
+ASS-011,Oil level low,2024-03-29 15:35:29
+ASS-011,Oil level low,2024-03-29 16:00:22
+ASS-007,Belt slip detected,2024-03-29 16:03:46
+ASS-005,Zone collision warning,2024-03-29 16:27:41
+ASS-005,Zone collision warning,2024-03-29 16:30:25
+ASS-005,Zone collision warning,2024-03-29 16:38:23
+ASS-009,Belt slip detected,2024-03-29 17:53:42
+ASS-011,Proximity sensor failure,2024-03-29 18:29:06
+ASS-012,Bearing vibration elevated,2024-03-29 18:52:30
+ASS-007,PLC communication error,2024-03-29 19:21:25
+ASS-004,Zone collision warning,2024-03-29 19:57:10
+ASS-004,Zone collision warning,2024-03-29 20:05:33
+ASS-010,Emergency stop activated,2024-03-29 20:33:15
+ASS-008,Vision sensor calibration error,2024-03-29 21:25:55
+ASS-008,Vision sensor calibration error,2024-03-29 21:33:02
+ASS-010,SCADA connection lost,2024-03-30 00:01:54
+ASS-012,Barcode reader timeout,2024-03-30 00:38:10
+ASS-012,Drive inverter alarm,2024-03-30 02:30:29
+ASS-012,Drive inverter alarm,2024-03-30 02:37:59
+ASS-008,Motor phase imbalance alarm,2024-03-30 02:57:24
+ASS-012,Drive inverter alarm,2024-03-30 03:00:43
+ASS-008,Motor phase imbalance alarm,2024-03-30 03:11:21
+ASS-008,Motor phase imbalance alarm,2024-03-30 03:30:16
+ASS-012,Vision sensor calibration error,2024-03-30 03:35:16
+ASS-004,Barcode reader timeout,2024-03-30 07:15:37
+ASS-011,Belt slip detected,2024-03-30 09:01:56
+ASS-011,Belt slip detected,2024-03-30 09:11:42
+ASS-006,Bearing vibration elevated,2024-03-30 10:09:06
+ASS-001,PLC communication error,2024-03-30 10:17:03
+ASS-010,Motor overtemperature fault,2024-03-30 10:20:05
+ASS-010,Motor overtemperature fault,2024-03-30 10:29:26
+ASS-011,Barcode reader timeout,2024-03-30 11:26:03
+ASS-011,Barcode reader timeout,2024-03-30 11:35:34
+ASS-002,Drive inverter alarm,2024-03-30 11:53:22
+ASS-012,Bearing vibration elevated,2024-03-30 12:08:50
+ASS-002,Drive inverter alarm,2024-03-30 12:31:52
+ASS-006,Barcode reader timeout,2024-03-30 12:54:54
+ASS-011,Network switch port failure,2024-03-30 14:41:43
+ASS-003,Light curtain interrupted,2024-03-30 14:59:32
+ASS-003,Belt tracking deviation detected,2024-03-30 15:53:21
+ASS-003,Belt tracking deviation detected,2024-03-30 16:01:49
+ASS-003,Belt tracking deviation detected,2024-03-30 16:09:02
+ASS-007,PLC communication error,2024-03-30 16:59:49
+ASS-001,Safety relay fault,2024-03-30 17:17:45
+ASS-009,PLC communication error,2024-03-30 17:20:48
+ASS-001,Safety relay fault,2024-03-30 17:37:00
+ASS-002,Weight sensor out of range,2024-03-30 17:50:45
+ASS-001,Safety relay fault,2024-03-30 17:54:49
+ASS-006,Filter replacement required,2024-03-30 18:40:23
+ASS-002,Network switch port failure,2024-03-30 20:51:30
+ASS-002,Motor overtemperature fault,2024-03-30 21:16:30
+ASS-012,Network switch port failure,2024-03-31 05:52:11
+ASS-012,Network switch port failure,2024-03-31 05:56:35
+ASS-001,PLC communication error,2024-03-31 06:23:05
+ASS-012,Weight sensor out of range,2024-03-31 06:51:48
+ASS-008,Drive inverter alarm,2024-03-31 07:09:19
+ASS-003,Network switch port failure,2024-03-31 07:47:39
+ASS-011,Photoelectric sensor fault,2024-03-31 08:02:44
+ASS-011,Photoelectric sensor fault,2024-03-31 08:18:56
+ASS-003,HMI touchscreen unresponsive,2024-03-31 09:56:58
+ASS-005,Coupling vibration high,2024-03-31 10:18:51
+ASS-008,SCADA connection lost,2024-03-31 11:18:11
+ASS-012,Parameter checksum mismatch,2024-03-31 12:03:55
+ASS-012,Parameter checksum mismatch,2024-03-31 12:10:36
+ASS-012,Parameter checksum mismatch,2024-03-31 12:31:29
+ASS-012,SCADA connection lost,2024-03-31 12:42:17
+ASS-003,Bearing vibration elevated,2024-03-31 12:50:20
+ASS-001,Scheduled lubrication due,2024-03-31 12:54:34
+ASS-005,Barcode reader timeout,2024-03-31 13:30:41
+ASS-004,Proximity sensor failure,2024-03-31 15:20:58
+ASS-010,Filter replacement required,2024-03-31 15:59:39
+ASS-010,Filter replacement required,2024-03-31 16:18:17
+ASS-012,Belt slip detected,2024-03-31 16:29:58
+ASS-012,Belt slip detected,2024-03-31 16:44:44
+ASS-001,Filter replacement required,2024-03-31 16:46:39
+ASS-012,Belt slip detected,2024-03-31 16:51:14
+ASS-005,Zone collision warning,2024-03-31 16:53:37
+ASS-006,RFID tag not detected,2024-03-31 16:54:52
+ASS-012,Bearing vibration elevated,2024-03-31 16:57:22
+ASS-006,RFID tag not detected,2024-03-31 17:03:05
+ASS-005,Zone collision warning,2024-03-31 17:04:30
+ASS-006,HMI touchscreen unresponsive,2024-03-31 17:09:20
+ASS-012,Bearing vibration elevated,2024-03-31 17:11:13
+ASS-006,HMI touchscreen unresponsive,2024-03-31 17:19:53
+ASS-011,Filter replacement required,2024-03-31 17:58:39
+ASS-007,Inspection overdue,2024-03-31 18:07:57
+ASS-010,Bearing vibration elevated,2024-03-31 18:12:00
+ASS-009,Coupling vibration high,2024-03-31 18:33:15
+ASS-002,Motor phase imbalance alarm,2024-03-31 19:19:25
+ASS-007,PLC communication error,2024-03-31 19:50:12
+ASS-007,HMI touchscreen unresponsive,2024-03-31 19:51:21
+ASS-007,PLC communication error,2024-03-31 19:59:10
+ASS-007,PLC communication error,2024-03-31 20:17:18
+ASS-005,Parameter checksum mismatch,2024-03-31 20:17:57
+ASS-005,Guard door open alarm,2024-03-31 21:03:30
+ASS-003,Oil level low,2024-03-31 21:07:23
+ASS-003,Bearing vibration elevated,2024-03-31 21:07:36
+ASS-003,Bearing vibration elevated,2024-03-31 21:26:30
+ASS-011,Coupling vibration high,2024-03-31 21:28:20
+ASS-003,Bearing vibration elevated,2024-03-31 21:28:30
+ASS-006,SCADA connection lost,2024-03-31 21:40:03
+ASS-012,Motor overtemperature fault,2024-03-31 23:04:52
