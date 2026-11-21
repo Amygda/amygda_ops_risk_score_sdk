@@ -22,13 +22,20 @@ how_to/
 │       ├── free_text_training.csv
 │       ├── free_text_generation.csv
 │       ├── free_text_failures.csv
-│       └── batches/                 # the generation data split into weekly files
-│           ├── fixed_log/week_01.csv … week_13.csv
-│           └── free_text/week_01.csv … week_13.csv
+│       ├── batches/                 # the generation data split into weekly files
+│       │   ├── fixed_log/week_01.csv … week_13.csv
+│       │   └── free_text/week_01.csv … week_13.csv
+│       └── models/                  # ready-made models, so you can start at any stage
+│           ├── fixed_log_labelling_model.zip
+│           ├── free_text_labelling_model.zip
+│           ├── fixed_log_complete_model.zip
+│           └── free_text_complete_model.zip
 └── how_to.md
 ```
 
 **Start here:** Read the relevant guide notebook in `guides/` first, then run the matching example notebook in `examples/` against the sample data.
+
+**Start at any stage.** Each stage needs the model the previous one made. If you haven't run it, the notebooks use the ready-made models in `sample_data/models/` instead (see "Ready-made models" below), so you can go straight to risk scoring, or to deploy and monitor.
 
 ---
 
@@ -110,6 +117,21 @@ The notes cover the following system domains. The actual system names or systems
 - Week 6 ends at noon on Wednesday 14 February and week 7 starts there, so one batch ends part-way through a day. For a daily or 12-hourly model, that period is provisional until week 7 arrives.
 - Joined together, the 13 files are exactly the generation file.
 - The training file ends the day before week 1 starts, so it can be given to the monitor as history (`amygda-risk init --history`).
+
+---
+
+## Ready-made models
+
+Trained on the sample data, so each stage can be tried without running the ones before it. The notebooks use your own model when you've made one, and these otherwise.
+
+| File | What it is | Used by (when you haven't made your own) |
+|---|---|---|
+| `models/fixed_log_labelling_model.zip` | Labelling model (Steps 1–8) for dataset 1 | `02a`, `02b`, `guides/02_risk_score_guide.ipynb` |
+| `models/free_text_labelling_model.zip` | Labelling model (Steps 1–8) for dataset 2 | `02c`, `02d` |
+| `models/fixed_log_complete_model.zip` | Complete model (Steps 1–12), unsupervised, as `02b` makes it: 7-day `sum` window, scored every 2 hours | `03a`, `guides/03_deploy_and_monitor_guide.ipynb` |
+| `models/free_text_complete_model.zip` | Complete model (Steps 1–12), unsupervised, as `02c` makes it: 7-day `sum` window, scored every 12 hours | `03b` |
+
+The labelling step uses an LLM, so a hierarchy you build yourself will have different system and subsystem names from these.
 
 ---
 

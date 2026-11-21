@@ -122,11 +122,13 @@ how_to/
 │   ├── 02d_risk_score_free_text_supervised.ipynb
 │   ├── 03a_deploy_and_monitor_fixed_log.ipynb
 │   ├── 03b_deploy_and_monitor_free_text.ipynb
-│   └── sample_data/     # Two synthetic datasets, plus weekly batches (see how_to/how_to.md)
+│   └── sample_data/     # Two synthetic datasets, weekly batches and ready-made models (see how_to/how_to.md)
 └── how_to.md            # Sample data guide
 ```
 
 **Start here:** Read the relevant guide notebook in `guides/` first, then run the matching example notebook in `examples/` against the sample data. See `how_to/how_to.md` for a full description of the two datasets.
+
+You can start at any stage: if you haven't run the previous one, the notebooks use ready-made models trained on the sample data (`how_to/examples/sample_data/models/`).
 
 ## Pipeline overview
 
