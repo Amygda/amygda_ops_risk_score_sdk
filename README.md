@@ -113,8 +113,7 @@ how_to/
 ├── guides/          # Full reference notebooks (detailed explanations)
 │   ├── 01_labelling_guide.ipynb
 │   ├── 02_risk_score_guide.ipynb
-│   ├── 03_deploy_and_monitor_guide.ipynb
-│   └── 04_fleet_app_guide.ipynb
+│   └── 03_fleet_app_guide.ipynb
 ├── examples/        # Lean executable notebooks + sample data
 │   ├── 01a_labelling_fixed_log.ipynb
 │   ├── 01b_labelling_free_text.ipynb
@@ -122,9 +121,8 @@ how_to/
 │   ├── 02b_risk_score_fixed_log_unsupervised.ipynb
 │   ├── 02c_risk_score_free_text_unsupervised.ipynb
 │   ├── 02d_risk_score_free_text_supervised.ipynb
-│   ├── 03a_deploy_and_monitor_fixed_log.ipynb
-│   ├── 03b_deploy_and_monitor_free_text.ipynb
-│   ├── 04a_fleet_app_fixed_log.ipynb
+│   ├── 03a_fleet_app_fixed_log.ipynb
+│   ├── 03b_fleet_app_free_text.ipynb
 │   └── sample_data/     # Two synthetic datasets, weekly batches and ready-made models (see how_to/how_to.md)
 └── how_to.md            # Sample data guide
 ```
@@ -174,7 +172,7 @@ Setting up scores nothing. The app opens waiting for data: add files on the page
 
 Deploying keeps a small scoring bundle on Amygda's servers, never your log rows: see "Deployed models" under Data retention below. From Python, use `client.deploy_model` and `client.score`, or `Monitor` from `amygda_ops_risk_score.monitor`.
 
-With the agent skill installed, ask your agent for a fleet monitoring app: it asks what the app is called, what you need to see, how it should look, what should raise an alert and how often to check, then sets all of this up. `03_deploy_and_monitor_guide.ipynb` shows the monitor's parts by hand, and `04_fleet_app_guide.ipynb` the app.
+With the agent skill installed, ask your agent for a fleet monitoring app: it asks what the app is called, what you need to see, how it should look, what should raise an alert and how often to check, then sets all of this up. `03_fleet_app_guide.ipynb` lists the commands in order, and the `03a` and `03b` examples run them on the sample data.
 
 ## Running the API locally
 

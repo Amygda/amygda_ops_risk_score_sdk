@@ -5,8 +5,7 @@ how_to/
 ├── guides/          # Full reference notebooks (detailed explanations)
 │   ├── 01_labelling_guide.ipynb
 │   ├── 02_risk_score_guide.ipynb
-│   ├── 03_deploy_and_monitor_guide.ipynb
-│   └── 04_fleet_app_guide.ipynb
+│   └── 03_fleet_app_guide.ipynb
 ├── examples/        # Lean executable notebooks + sample data
 │   ├── 01a_labelling_fixed_log.ipynb
 │   ├── 01b_labelling_free_text.ipynb
@@ -14,9 +13,8 @@ how_to/
 │   ├── 02b_risk_score_fixed_log_unsupervised.ipynb
 │   ├── 02c_risk_score_free_text_unsupervised.ipynb
 │   ├── 02d_risk_score_free_text_supervised.ipynb
-│   ├── 03a_deploy_and_monitor_fixed_log.ipynb
-│   ├── 03b_deploy_and_monitor_free_text.ipynb
-│   ├── 04a_fleet_app_fixed_log.ipynb
+│   ├── 03a_fleet_app_fixed_log.ipynb
+│   ├── 03b_fleet_app_free_text.ipynb
 │   └── sample_data/
 │       ├── fixed_log_training.csv
 │       ├── fixed_log_generation.csv
@@ -37,13 +35,13 @@ how_to/
 
 **Start here:** Read the relevant guide notebook in `guides/` first, then run the matching example notebook in `examples/` against the sample data.
 
-**Start at any stage.** Each stage needs the model the previous one made. If you haven't run it, the notebooks use the ready-made models in `sample_data/models/` instead (see "Ready-made models" below), so you can go straight to risk scoring, or to deploy and monitor.
+**Start at any stage.** Each stage needs the model the previous one made. If you haven't run it, the notebooks use the ready-made models in `sample_data/models/` instead (see "Ready-made models" below), so you can go straight to risk scoring, or to the fleet app.
 
 ---
 
 ## Dataset 1 — Airport Baggage Management System (fixed-log)
 
-**Used by:** `examples/01a_labelling_fixed_log.ipynb`, `examples/02a_risk_score_fixed_log_supervised.ipynb`, `examples/02b_risk_score_fixed_log_unsupervised.ipynb`, `examples/03a_deploy_and_monitor_fixed_log.ipynb`, `guides/03_deploy_and_monitor_guide.ipynb`
+**Used by:** `examples/01a_labelling_fixed_log.ipynb`, `examples/02a_risk_score_fixed_log_supervised.ipynb`, `examples/02b_risk_score_fixed_log_unsupervised.ipynb`, `examples/03a_fleet_app_fixed_log.ipynb`
 
 This dataset represents fault event logs from 12 Airport baggage management stations at a busy international airport. Each row is a single fault event recorded against a station on a given date.
 
@@ -75,7 +73,7 @@ The 31 event codes cover operational systems that the labelling step will discov
 
 ## Dataset 2 — Rolling Stock HVAC Units (free-text)
 
-**Used by:** `examples/01b_labelling_free_text.ipynb`, `examples/02c_risk_score_free_text_unsupervised.ipynb`, `examples/02d_risk_score_free_text_supervised.ipynb`, `examples/03b_deploy_and_monitor_free_text.ipynb`
+**Used by:** `examples/01b_labelling_free_text.ipynb`, `examples/02c_risk_score_free_text_unsupervised.ipynb`, `examples/02d_risk_score_free_text_supervised.ipynb`, `examples/03b_fleet_app_free_text.ipynb`
 
 This dataset represents natural-language maintenance notes logged by technicians servicing HVAC units fitted to passenger rolling stock. Each row is a single maintenance note recorded at depot or during a service visit.
 
@@ -104,11 +102,11 @@ The notes cover the following system domains. The actual system names or systems
 
 ---
 
-## Weekly batches (deploy and monitor)
+## Weekly batches (the fleet app)
 
-**Used by:** `guides/03_deploy_and_monitor_guide.ipynb`, `examples/03a_deploy_and_monitor_fixed_log.ipynb`, `examples/03b_deploy_and_monitor_free_text.ipynb`, `guides/04_fleet_app_guide.ipynb`, `examples/04a_fleet_app_fixed_log.ipynb`
+**Used by:** `examples/03a_fleet_app_fixed_log.ipynb`, `examples/03b_fleet_app_free_text.ipynb`
 
-`sample_data/batches/` holds each generation file split into 13 weekly files, `week_01.csv` to `week_13.csv`, in the same columns. They stand in for the files a site would export each week, so the monitor can be fed one batch at a time.
+`sample_data/batches/` holds each generation file split into 13 weekly files, `week_01.csv` to `week_13.csv`, in the same columns. They stand in for the files a site would export each week, so you can add them to the fleet app one at a time.
 
 | | Fixed-log | Free-text |
 |---|---|---|
@@ -130,7 +128,7 @@ Trained on the sample data, so each stage can be tried without running the ones 
 |---|---|---|
 | `models/fixed_log_labelling_model.zip` | Labelling model (Steps 1–8) for dataset 1 | `02a`, `02b`, `guides/02_risk_score_guide.ipynb` |
 | `models/free_text_labelling_model.zip` | Labelling model (Steps 1–8) for dataset 2 | `02c`, `02d` |
-| `models/fixed_log_complete_model.zip` | Complete model (Steps 1–12), unsupervised, as `02b` makes it: 7-day `sum` window, scored every 2 hours | `03a`, `04a`, `guides/03_deploy_and_monitor_guide.ipynb`, `guides/04_fleet_app_guide.ipynb` |
+| `models/fixed_log_complete_model.zip` | Complete model (Steps 1–12), unsupervised, as `02b` makes it: 7-day `sum` window, scored every 2 hours | `03a` |
 | `models/free_text_complete_model.zip` | Complete model (Steps 1–12), unsupervised, as `02c` makes it: 7-day `sum` window, scored every 12 hours | `03b` |
 
 The labelling step uses an LLM, so a hierarchy you build yourself will have different system and subsystem names from these.
@@ -147,5 +145,5 @@ The labelling step uses an LLM, so a hierarchy you build yourself will have diff
 | `sample_data/free_text_training.csv` | ~5,000 | Jan–Dec 2023 | Labelling + risk score training |
 | `sample_data/free_text_generation.csv` | ~1,100 | Jan–Mar 2024 | Risk score generation |
 | `sample_data/free_text_failures.csv` | 20 | 2023 + Feb–Mar 2024 | Supervised training + failure performance plots |
-| `sample_data/batches/fixed_log/week_*.csv` | 13 files | Jan–Mar 2024 | Deploy and monitor: weekly batches |
-| `sample_data/batches/free_text/week_*.csv` | 13 files | Jan–Mar 2024 | Deploy and monitor: weekly batches |
+| `sample_data/batches/fixed_log/week_*.csv` | 13 files | Jan–Mar 2024 | The fleet app: weekly batches |
+| `sample_data/batches/free_text/week_*.csv` | 13 files | Jan–Mar 2024 | The fleet app: weekly batches |
