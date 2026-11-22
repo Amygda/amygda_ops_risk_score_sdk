@@ -5,7 +5,8 @@ how_to/
 ├── guides/          # Full reference notebooks (detailed explanations)
 │   ├── 01_labelling_guide.ipynb
 │   ├── 02_risk_score_guide.ipynb
-│   └── 03_deploy_and_monitor_guide.ipynb
+│   ├── 03_deploy_and_monitor_guide.ipynb
+│   └── 04_fleet_app_guide.ipynb
 ├── examples/        # Lean executable notebooks + sample data
 │   ├── 01a_labelling_fixed_log.ipynb
 │   ├── 01b_labelling_free_text.ipynb
@@ -15,6 +16,7 @@ how_to/
 │   ├── 02d_risk_score_free_text_supervised.ipynb
 │   ├── 03a_deploy_and_monitor_fixed_log.ipynb
 │   ├── 03b_deploy_and_monitor_free_text.ipynb
+│   ├── 04a_fleet_app_fixed_log.ipynb
 │   └── sample_data/
 │       ├── fixed_log_training.csv
 │       ├── fixed_log_generation.csv
@@ -104,7 +106,7 @@ The notes cover the following system domains. The actual system names or systems
 
 ## Weekly batches (deploy and monitor)
 
-**Used by:** `guides/03_deploy_and_monitor_guide.ipynb`, `examples/03a_deploy_and_monitor_fixed_log.ipynb`, `examples/03b_deploy_and_monitor_free_text.ipynb`
+**Used by:** `guides/03_deploy_and_monitor_guide.ipynb`, `examples/03a_deploy_and_monitor_fixed_log.ipynb`, `examples/03b_deploy_and_monitor_free_text.ipynb`, `guides/04_fleet_app_guide.ipynb`, `examples/04a_fleet_app_fixed_log.ipynb`
 
 `sample_data/batches/` holds each generation file split into 13 weekly files, `week_01.csv` to `week_13.csv`, in the same columns. They stand in for the files a site would export each week, so the monitor can be fed one batch at a time.
 
@@ -128,7 +130,7 @@ Trained on the sample data, so each stage can be tried without running the ones 
 |---|---|---|
 | `models/fixed_log_labelling_model.zip` | Labelling model (Steps 1–8) for dataset 1 | `02a`, `02b`, `guides/02_risk_score_guide.ipynb` |
 | `models/free_text_labelling_model.zip` | Labelling model (Steps 1–8) for dataset 2 | `02c`, `02d` |
-| `models/fixed_log_complete_model.zip` | Complete model (Steps 1–12), unsupervised, as `02b` makes it: 7-day `sum` window, scored every 2 hours | `03a`, `guides/03_deploy_and_monitor_guide.ipynb` |
+| `models/fixed_log_complete_model.zip` | Complete model (Steps 1–12), unsupervised, as `02b` makes it: 7-day `sum` window, scored every 2 hours | `03a`, `04a`, `guides/03_deploy_and_monitor_guide.ipynb`, `guides/04_fleet_app_guide.ipynb` |
 | `models/free_text_complete_model.zip` | Complete model (Steps 1–12), unsupervised, as `02c` makes it: 7-day `sum` window, scored every 12 hours | `03b` |
 
 The labelling step uses an LLM, so a hierarchy you build yourself will have different system and subsystem names from these.
