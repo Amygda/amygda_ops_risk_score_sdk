@@ -70,7 +70,7 @@ Gemini CLI may need skills switched on in its settings. Cursor and Copilot also 
 | `validation.md` | Checks to run at each stage, including alert bands against failures |
 | `agent-execution.md` | How an agent runs each step so progress shows and sessions survive |
 | `dashboard.md` | The results dashboard offered after Step 12 |
-| `deployment.md` | Deploying a model and setting up the monitor to keep scoring new data |
+| `deployment.md` | The deployment half of the fleet app: deploying the model, the checks, and reading a run |
 | `app.md` | The fleet app: the questions that decide what it shows, its alerts and schedule, and how it is started and kept running |
 
 ## Get an API key
@@ -141,43 +141,40 @@ Two sequential pipelines:
 
 **Risk Score** (steps 9–12): Upload historical logs → train calibration thresholds → upload new logs → generate per-asset, per-period operational risk scores.
 
-## Keep scoring new data
+## Keep scoring new data: the fleet app
 
-Once you're happy with a model, deploy it and score new logs whenever they arrive, with no session and no retraining. The `amygda-risk` command keeps a monitor folder on your machine with the history the model needs, every score so far, a record of each run and a dashboard:
+Once you're happy with a model, deploy it and keep scoring new logs as they arrive, with no session and no retraining. The `amygda-risk` command sets up a small app on your own machine: a page you design, with buttons to add files, run now and set a schedule, and alerts when something you care about happens.
 
 ```bash
+# the API key: in the environment, or in a .env file beside the monitor folder
 export AMYGDA_API_KEY=your-api-key
 
-# once: deploy the model from Step 12 and create the monitor
+amygda-risk panels                                    # what the page can show
+amygda-risk design --spec my_app.json --model complete_model_<id>.zip --open
+                                                      # see your layout first; nothing is deployed
+
+# once: deploy the model from Step 12 and create the monitor folder
 amygda-risk init fleet_monitor --model complete_model_<id>.zip --name fleet-v1 \
     --history training_logs.csv
+amygda-risk design fleet_monitor --spec my_app.json   # tabs, panels, colours, logo, alert rules
 
-# every day or week: score new files
-amygda-risk run fleet_monitor --input new_logs.csv    # or drop files in fleet_monitor/inbox/
-amygda-risk run fleet_monitor --scheduled             # from cron, launchd or Task Scheduler
-amygda-risk status fleet_monitor                      # dashboard: fleet_monitor/dashboard/index.html
-```
-
-Each run waits for the hosted API if it's starting up. A run that fails is recorded with the reason, its files stay in `inbox/` for the next run, and the dashboard shows it. Deploying keeps a small scoring bundle on Amygda's servers, never your log rows: see "Deployed models" under Data retention below. From Python, use `client.deploy_model` and `client.score`, or `Monitor` from `amygda_ops_risk_score.monitor`. `03_deploy_and_monitor_guide.ipynb` walks through it, including scheduling with cron, launchd or Windows Task Scheduler.
-
-## The fleet app
-
-The monitor can also run as a small app on your own machine: a page you design, with buttons to add files, run now and set a schedule, and alerts when something you care about happens.
-
-```bash
-amygda-risk panels                                    # what the page can show
-amygda-risk design fleet_monitor --spec my_app.json   # choose tabs, panels, colours, logo, alert rules
 amygda-risk app fleet_monitor                         # open it at http://127.0.0.1:8050/
-amygda-risk service fleet_monitor --install           # keep it running: starts when you log in
+amygda-risk service fleet_monitor --name my-fleet --install   # start it whenever you log in
 ```
 
-- **You choose what it shows** in one small JSON file: the tabs, the panels on each, the figures at the top, light or dark, a brand colour and a logo. Nothing in it is code.
+Setting up scores nothing. The app opens waiting for data: add files on the page, or drop them in `fleet_monitor/inbox/`, and press **Run now** or leave them for the schedule.
+
+- **You choose what it shows** in one small JSON file: the title, the tabs, the panels on each, the figures at the top, light or dark, a brand colour and a logo. Nothing in it is code.
 - **Alerts** are rules checked after every run: an asset reaches watch or high, a score jumps, an asset goes quiet, a run fails, or too many new logs match nothing. You acknowledge them on the page. They are not sent anywhere.
-- **The schedule** (every few hours, daily or weekly) is set, paused and resumed on the page. It runs while the app is running; `amygda-risk service` registers the app with your system (launchd, systemd or Task Scheduler) so it stays up, and reads the API key from a `.env` file beside the monitor.
+- **The schedule** (every few hours, daily or weekly) is set, paused and resumed on the page. It runs while the app is running; `amygda-risk service` registers the app with your system so it starts when you log in, under a name you choose. There is nothing to add to cron or Task Scheduler.
+- **Every run is recorded**: what was read and scored, the dates the data covered, what changed for each asset, and any warnings. A run that fails is recorded with the reason, and its files stay in `inbox/` for the next run. Each run waits for the hosted API if it's starting up.
 - **Storage** is ordinary files, or one SQLite file you can query (`amygda-risk init --storage sqlite`, or `amygda-risk storage fleet_monitor --to sqlite` later).
+- **To take a monitor away**, `amygda-risk remove fleet_monitor` lists what it would do (stop the app, delete the deployment, delete the folder), and `--yes` does it.
 - The app listens on this machine only, has no login, and needs nothing installed beyond the SDK.
 
-With the agent skill installed, ask your agent for a fleet monitoring app: it asks what you need to see, how it should look, what should raise an alert and how often to run, then sets all of this up. `04_fleet_app_guide.ipynb` walks through it by hand.
+Deploying keeps a small scoring bundle on Amygda's servers, never your log rows: see "Deployed models" under Data retention below. From Python, use `client.deploy_model` and `client.score`, or `Monitor` from `amygda_ops_risk_score.monitor`.
+
+With the agent skill installed, ask your agent for a fleet monitoring app: it asks what the app is called, what you need to see, how it should look, what should raise an alert and how often to check, then sets all of this up. `03_deploy_and_monitor_guide.ipynb` shows the monitor's parts by hand, and `04_fleet_app_guide.ipynb` the app.
 
 ## Running the API locally
 
