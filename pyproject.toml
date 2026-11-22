@@ -38,4 +38,4 @@ include = ["amygda_ops_risk_score*"]
 
 [tool.setuptools.package-data]
 # The agent skill ships with the package so its version matches the SDK.
-amygda_ops_risk_score = ["skill/**/*", "monitor/*.html"]
+amygda_ops_risk_score = ["skill/**/*", "monitor/*.html", "app/*.js", "app/*.css"]
