@@ -31,7 +31,7 @@ pip install git+https://github.com/amygda/amygda_ops_risk_score_sdk.git
 amygda-risk-skill install
 ```
 
-Then start a new session in your agent and say something like *"I want to generate risk scores for my equipment logs"*.
+Then start a new session in your agent and say something like *"I want to generate risk scores for my equipment logs"*. No data of your own yet? `amygda-risk-skill examples` downloads sample data to try it on, and the agent can do this for you.
 
 ### Installing the agent skill
 
@@ -106,7 +106,13 @@ result = session.configure_labelling_pipeline(
 
 ## Notebooks
 
-The `how_to/` folder contains everything you need to get started:
+The `how_to/` folder contains everything you need to get started. It isn't installed with the SDK, so fetch a copy into the folder you'll work in:
+
+```bash
+amygda-risk-skill examples
+```
+
+This puts the guides, example notebooks and sample data in `amygda_how_to/`, matching your SDK version. Use `--path` to choose another folder. If you have cloned this repo, the same files are in `how_to/` already.
 
 ```
 how_to/
@@ -127,9 +133,9 @@ how_to/
 └── how_to.md            # Sample data guide
 ```
 
-**Start here:** Read the relevant guide notebook in `guides/` first, then run the matching example notebook in `examples/` against the sample data. See `how_to/how_to.md` for a full description of the two datasets.
+**Start here:** Read the relevant guide notebook in `guides/` first, then run the matching example notebook from the `examples/` folder against the sample data. See `how_to.md` for a full description of the two datasets.
 
-You can start at any stage: if you haven't run the previous one, the notebooks use ready-made models trained on the sample data (`how_to/examples/sample_data/models/`).
+You can start at any stage: if you haven't run the previous one, the notebooks use ready-made models trained on the sample data (`examples/sample_data/models/`).
 
 ## Pipeline overview
 

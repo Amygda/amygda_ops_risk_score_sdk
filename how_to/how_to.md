@@ -33,6 +33,8 @@ how_to/
 └── how_to.md
 ```
 
+**Getting these files:** `amygda-risk-skill examples` downloads this folder, as `amygda_how_to/`, into the folder you run it from. Run the example notebooks from inside `examples/`, since they find the sample data relative to it.
+
 **Start here:** Read the relevant guide notebook in `guides/` first, then run the matching example notebook in `examples/` against the sample data.
 
 **Start at any stage.** Each stage needs the model the previous one made. If you haven't run it, the notebooks use the ready-made models in `sample_data/models/` instead (see "Ready-made models" below), so you can go straight to risk scoring, or to the fleet app.
