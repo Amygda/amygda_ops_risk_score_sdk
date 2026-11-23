@@ -1,13 +1,13 @@
 ---
 name: risk-score
 description: >
-  Guided agent intelligence for the Amygda Ops Risk Score SDK (v5.3.0).
+  Guided agent intelligence for the Amygda Ops Risk Score SDK (v5.4.0).
   This skill teaches an LLM agent how to walk any user — technical or
   non-technical — through the full end-to-end pipeline: asking the right
   upfront questions, narrating each step in plain language, showing helpers
   with interpretive guidance, flagging irreversible steps, and handling
   session recovery. Covers all four user journeys (fixed/free-text ×
-  supervised/unsupervised), the results dashboard, deploying a model to
+  supervised/unsupervised), deploying a model to
   keep scoring new data with the amygda-risk monitor, and designing a fleet
   monitoring app (layout, alerts, schedule) from the user's answers.
   Trigger on: "risk score", "amygda", "ops risk", "equipment risk",
@@ -15,16 +15,16 @@ description: >
   "deploy model", "monitor", "score new data", "continuous scoring", "amygda-risk",
   "fleet app", "monitoring app", "alerts", "schedule runs".
 license: MIT
-compatibility: "SDK v5.3.0 — requires server API >= 4.1.0; Python >= 3.10"
+compatibility: "SDK v5.4.0 — requires server API >= 4.1.0; Python >= 3.10"
 metadata:
-  version: "5.3.0"
+  version: "5.4.0"
   author: "Amygda"
 ---
 
 # Amygda Ops Risk Score — Agent Guide
 
 **Repo:** https://github.com/Amygda/amygda_ops_risk_score_sdk  
-**SDK version:** 5.3.0 | **API minimum:** 4.1.0 | **Python:** ≥ 3.10
+**SDK version:** 5.4.0 | **API minimum:** 4.1.0 | **Python:** ≥ 3.10
 
 > **Breaking in 5.0.0:** `configure_training` and the failure helpers renamed `prediction_horizon_days` → `prediction_horizon`, `exclusion_days_after` → `exclusion_after`, `block_size_days` → `block_size` (helpers also `window_after_days` → `window_after`). Windows take durations (`"14D"`, `"36h"`; a bare number = days). New `feature_frequency` builds features per time bucket (`"auto"` default, `"5min"` … `"1D"`). Never generate code with the old names — they raise `TypeError`.
 
@@ -37,6 +37,8 @@ You are acting as an expert guide for the Amygda Ops Risk Score pipeline. Your j
 **Execute each pipeline step yourself using your tools — do not hand code blocks to the user to run.** You run the SDK code; the user sees the result and your interpretation of it. If you do not have code execution tools available, give the minimal code block and ask the user to paste back the output, then continue from there.
 
 **Guide the user step by step in conversation — do not produce files for them to run.** Everything you need is in the `references/` files — load them as instructed below. Do not use the word "notebook" in any user-facing response.
+
+**Start every conversation with "Where to Start" (below, after installation):** offer the sample data alongside the user's own, and let them choose which part to try. Skip only what the user has already answered, e.g. they said they don't want sample data or named the step they want.
 
 **Already have a trained model?** If the user brings a `complete_model_<id>.zip` and wants to deploy it, set up a monitor, or keep scoring new data with it, skip the pipeline and go straight to `references/deployment.md` ("Starting from an existing model zip"), then `references/app.md`.
 
@@ -57,8 +59,7 @@ Reference files (load on demand — each step below tells you which to load):
 - `references/data-checks.md` — Step 0: profiling the user's files before Step 1
 - `references/agent-execution.md` — running steps from scripts: sessions, progress, secrets, API-only scores
 - `references/validation.md` — checks after Steps 3, 5, 7b, 8, 10 and 12
-- `references/dashboard.md` — the results dashboard offered after Step 12
-- `references/app.md` — the fleet app, the one way to keep scoring new data: the questions that decide what it shows, its alerts and schedule, and the steps to deploy, start it and hand over. Offered after the dashboard, or straight away when the user brings a complete model zip
+- `references/app.md` — the fleet app, the one way to keep scoring new data: the questions that decide what it shows, its alerts and schedule, and the steps to deploy, start it and hand over. Offered after Step 12, or straight away when the user brings a complete model zip
 - `references/deployment.md` — the deployment half of the fleet app: deploying the model, the checks, and reading a run
 
 The pipeline has two phases:
@@ -84,6 +85,37 @@ Confirm the install worked before proceeding:
 ```python
 from amygda_ops_risk_score import OpsRiskClient, SessionConfig, helpers
 ```
+
+---
+
+## Where to Start — Ask First
+
+Before anything else, ask two questions. If your question tool offers choices, use it. Ask both even when the user has data of their own, unless they've already said they don't want sample data or which part they want to try.
+
+**1. Their data or the sample data?**
+
+*"Would you like to use your own maintenance logs, or try it first on sample data? The sample data is two made-up fleets: baggage conveyor stations that log short fault codes, and train air-conditioning units with technicians' written notes."*
+
+- **Own data:** ask for the file in the questions of the part they choose.
+- **Sample data:** run `amygda-risk-skill examples` in their folder. If `amygda_how_to/` already exists, use it rather than downloading again. Then ask which fleet: **conveyor stations (fixed-log)** or **air-conditioning units (free-text)**. Read `amygda_how_to/how_to.md` for the columns, date format and files of the one they pick. Say once that the data is made up, so the systems, names and scores are examples only.
+
+**2. Which part do they want to try?** Offer these three, in plain words:
+
+| Option | What happens | Needs (own data) | Uses (sample data, in `amygda_how_to/examples/sample_data/`) |
+|---|---|---|---|
+| **A. From the start** | Build the equipment hierarchy and label the logs (Steps 0–8), then risk scores (Steps 9–12), then the fleet app | A log file | `<fleet>_training.csv` (and `<fleet>_generation.csv` and `<fleet>_failures.csv` for Part 2) |
+| **B. Risk scores from a labelling model** | Skip labelling: import the labelling model and go from the Part 2 questions to Step 12, then the fleet app | A labelling model zip from Step 8, plus the log files | `models/<fleet>_labelling_model.zip`, `<fleet>_training.csv`, `<fleet>_generation.csv`; `<fleet>_failures.csv` if they choose supervised |
+| **C. Straight to the fleet app** | Skip both pipelines: deploy a finished model as the fleet app and feed it new data | A complete model zip from Step 12 | `models/<fleet>_complete_model.zip`; the weekly files in `batches/<fleet>/` to add in the app |
+
+Here `<fleet>` is `fixed_log` or `free_text`.
+
+How to run each one:
+
+- **A:** carry on with the Deployment Modes and Part 1 below, then Part 2 as normal.
+- **B:** choose the deployment mode, then go to Part 2 ("Pipeline Hand-off"): open a session, `session.import_model(<labelling zip>)`, and ask the Part 2 questions. For sample data, profile the training file as Step 0 describes before those questions. Supervised or unsupervised is still the user's choice: both sample fleets have a failures file.
+- **C:** go straight to the fleet app: `references/deployment.md` → "Starting from an existing model zip", then `references/app.md`. The app's questions include a preview of the page from the model (`amygda-risk design --model`), so there is no separate dashboard step. Deploying needs the API, so ask the deployment mode (below) before that step. For sample data, when the app is running, tell the user they can add the weekly files from `batches/<fleet>/` one at a time in the app to see runs and alerts build up.
+
+For B and C with sample data, the ready-made models were made on the sample data. Say that their systems and subsystems come from one labelling run, so a run of A would give different names.
 
 ---
 
@@ -665,15 +697,11 @@ Then proceed to the visualisations below. Helper arguments and outputs: `referen
 
 ---
 
-### Finally — Offer a Results Dashboard
+### Finally — Offer the Fleet App
 
-Once the exploration above is done (and, for supervised runs, alert bands have been agreed), ask the user whether they want a dashboard of the results: one self-contained HTML page with a fleet heatmap, an asset ranking, a drill-down into each asset and a model summary. If they say yes, build it with `helpers.build_dashboard(...)` as `references/dashboard.md` describes ("Building it"). The first version is fixed so every user gets the same layout; change it only when asked. If the assets belong to larger machines, such as carriages of a train, or a supervised run needs the failure-check tables, extend it by hand as that file describes.
+There is no separate results dashboard: don't build one with `helpers.build_dashboard` or by hand. The fleet app shows the results, and its preview (`amygda-risk design --model`) shows them before anything is deployed.
 
----
-
-### Then — Offer to Keep Scoring New Data
-
-Once the dashboard is done (or declined), ask whether the user wants to keep watching the fleet as new data arrives: *"Would you like to keep watching this fleet as new data arrives? I can set up a small app on this machine: you choose what it shows, it scores new files on a schedule, and it raises alerts. It takes a few questions."* If they say yes, follow `references/app.md`, which uses `references/deployment.md` for the deployment itself. The app is the only setup offered: don't offer "scheduled scoring only", a script or a cron job as an alternative.
+Once the exploration above is done (and, for supervised runs, alert bands have been agreed), ask whether the user wants to keep watching the fleet as new data arrives: *"Would you like to keep watching this fleet as new data arrives? I can set up a small app on this machine: you choose what it shows, it scores new files on a schedule, and it raises alerts. It takes a few questions."* If they say yes, follow `references/app.md`, which uses `references/deployment.md` for the deployment itself. The app is the only setup offered: don't offer "scheduled scoring only", a script or a cron job as an alternative.
 
 - Ask the three rounds of questions in `references/app.md`. First what the app shows: the panels, one group at a time from `amygda-risk panels --menu` (never several groups in one sentence), and only then who it is for, which decides the layout. Then the name and how it looks. Then alerts and schedule. Propose a layout and write the answers into a spec. Never write app code, and never ask about ports, servers or other technical details.
 - Use the name the user gives the app everywhere: the page title, the folder, the deployment and the start-up entry. Don't make up another from the data.
@@ -710,6 +738,7 @@ Once the dashboard is done (or declined), ask whether the user wants to keep wat
 
 ## Quick-Start Checklist
 
+- [ ] Asked: own data or sample data (`amygda-risk-skill examples`), and where to start (A from the start, B from a labelling model, C from a complete model)
 - [ ] API key obtained (email faizan@amygdalabs.com)
 - [ ] Python 3.10+ environment, SDK installed
 - [ ] Log CSV/XLSX has: log column, asset ID column, timestamp column

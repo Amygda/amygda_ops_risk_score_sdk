@@ -1,8 +1,7 @@
 """Dashboard as code: one self-contained HTML page built from risk scores.
 
 The page is laid out from an app spec (``monitor.spec``): which tabs, which
-panels on each and which header tiles. The default follows the skill's
-dashboard guide (``skill/risk-score/references/dashboard.md``): tabs for the
+panels on each and which header tiles. The default has tabs for the
 fleet (heatmap and ranking), asset detail (trend, systems, drivers) and the
 model (bands, weights, unused log codes, known gaps). With monitor runs it adds
 "Since the last run" to the fleet tab, a Runs tab (every run, its trigger,

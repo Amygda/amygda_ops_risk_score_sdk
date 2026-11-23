@@ -15,14 +15,19 @@ Usage (installed as the ``amygda-risk-skill`` command)::
     amygda-risk-skill install --agent claude   # one agent only
     amygda-risk-skill uninstall
     amygda-risk-skill where                    # show the bundled skill
+    amygda-risk-skill examples                 # guides, examples, sample data
 """
 
 from __future__ import annotations
 
 import argparse
+import io
 import shutil
 import sys
-from pathlib import Path
+import tarfile
+import urllib.error
+import urllib.request
+from pathlib import Path, PurePosixPath
 
 SKILL_NAME = "risk-score"
 MARKER_FILE = ".amygda-skill-version"
@@ -42,6 +47,13 @@ AGENT_TARGETS: dict[str, list[Path]] = {
     "gemini": [SHARED_DIR],
     "other": [SHARED_DIR],
 }
+
+
+# The guides, example notebooks and sample data live in the public SDK repo,
+# not in the package, so every install isn't 5 MB bigger.
+EXAMPLES_REPO = "https://codeload.github.com/Amygda/amygda_ops_risk_score_sdk"
+EXAMPLES_DIR = "amygda_how_to"
+_EXAMPLES_SRC = "how_to"
 
 
 def bundled_skill_dir() -> Path:
@@ -187,6 +199,84 @@ def uninstall(global_: bool = False, path: str | None = None) -> list[Path]:
     return removed
 
 
+def _download(url: str) -> bytes | None:
+    """Fetch ``url``. Returns None when it doesn't exist (HTTP 404)."""
+    try:
+        with urllib.request.urlopen(url, timeout=60) as resp:
+            return resp.read()
+    except urllib.error.HTTPError as exc:
+        if exc.code == 404:
+            return None
+        raise RuntimeError(f"Could not download the examples ({exc}).") from exc
+    except urllib.error.URLError as exc:
+        raise RuntimeError(
+            f"Could not download the examples ({exc.reason}). "
+            "Check your internet connection and try again."
+        ) from exc
+
+
+def _extract_how_to(archive: bytes, dest: Path) -> int:
+    """Write the archive's ``how_to/`` folder into ``dest``. Returns files written."""
+    count = 0
+    with tarfile.open(fileobj=io.BytesIO(archive), mode="r:gz") as tar:
+        for member in tar.getmembers():
+            parts = PurePosixPath(member.name).parts
+            # <repo>-<ref>/how_to/...: keep only regular files under how_to/.
+            if len(parts) < 3 or parts[1] != _EXAMPLES_SRC or not member.isfile():
+                continue
+            rel = parts[2:]
+            if any(p in ("", ".", "..") for p in rel):
+                continue
+            target = dest.joinpath(*rel)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            src = tar.extractfile(member)
+            if src is None:
+                continue
+            with src, open(target, "wb") as out:
+                shutil.copyfileobj(src, out)
+            count += 1
+    if count == 0:
+        raise RuntimeError("The download had no examples in it.")
+    return count
+
+
+def examples(path: str | None = None, force: bool = False) -> Path:
+    """Download the guides, example notebooks and sample data for this SDK.
+
+    They go into ``amygda_how_to/`` in the current folder, or ``path``. The
+    copy matches the installed SDK version when that version is published,
+    and is the latest otherwise.
+    """
+    dest = Path(path).expanduser().resolve() if path else Path.cwd() / EXAMPLES_DIR
+    if dest.exists() and any(dest.iterdir()):
+        if not force:
+            raise FileExistsError(
+                f"{dest} already exists. Use --force to replace it, or --path "
+                "to put the examples somewhere else."
+            )
+    version = _sdk_version()
+    archive = _download(f"{EXAMPLES_REPO}/tar.gz/refs/tags/v{version}")
+    source = f"SDK {version}"
+    if archive is None:
+        archive = _download(f"{EXAMPLES_REPO}/tar.gz/refs/heads/main")
+        source = "the latest SDK"
+        if archive is None:
+            raise RuntimeError("Could not find the examples to download.")
+    tmp = dest.with_name(dest.name + ".download")
+    if tmp.exists():
+        shutil.rmtree(tmp)
+    try:
+        count = _extract_how_to(archive, tmp)
+        if dest.exists():
+            shutil.rmtree(dest)
+        tmp.rename(dest)
+    finally:
+        if tmp.exists():
+            shutil.rmtree(tmp)
+    print(f"  {count} files from {source}: {dest}")
+    return dest
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="amygda-risk-skill",
@@ -228,6 +318,18 @@ def main(argv: list[str] | None = None) -> int:
 
     sub.add_parser("where", help="show the skill bundled with this SDK")
 
+    p_examples = sub.add_parser(
+        "examples",
+        help="download the guides, example notebooks and sample data",
+    )
+    p_examples.add_argument(
+        "--path",
+        help=f"folder to put them in (default: ./{EXAMPLES_DIR})",
+    )
+    p_examples.add_argument(
+        "--force", action="store_true", help="replace the folder if it exists"
+    )
+
     args = parser.parse_args(argv)
     try:
         if args.command == "install":
@@ -239,6 +341,13 @@ def main(argv: list[str] | None = None) -> int:
             )
         elif args.command == "uninstall":
             uninstall(args.global_, args.path)
+        elif args.command == "examples":
+            print("Amygda guides, examples and sample data")
+            dest = examples(args.path, args.force)
+            print(
+                f"\nDone. Open {dest / 'how_to.md'} for what is in there, then "
+                f"run the notebooks from {dest / 'examples'}."
+            )
         else:
             print(f"SDK {_sdk_version()}: {bundled_skill_dir()}")
     except (FileExistsError, ValueError, RuntimeError) as exc:

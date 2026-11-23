@@ -23,7 +23,7 @@ It uses `deployment.md` for deploying the model and for the checks. Read that fi
 
 ## When to offer it
 
-- **After Step 12 and the dashboard:** *"Would you like to keep watching this fleet as new data arrives? I can set up a small app on this machine: you choose what it shows, it scores new files on a schedule, and it raises alerts. It takes a few questions."*
+- **After Step 12:** *"Would you like to keep watching this fleet as new data arrives? I can set up a small app on this machine: you choose what it shows, it scores new files on a schedule, and it raises alerts. It takes a few questions."*
 - **When the user brings a `complete_model_<id>.zip`** and wants to monitor or keep scoring: do "Starting from an existing model zip" in `deployment.md`, then come here.
 - **When the user already has a monitor folder** and wants a different layout, alerts or a schedule: go to "The questions", then step 4 onwards.
 

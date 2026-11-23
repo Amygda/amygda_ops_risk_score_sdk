@@ -607,7 +607,7 @@ build_dashboard(scores, output_path, *, fleet_name, bands, feature_frequency="1D
                 weights_source=None, known_gaps=None, model_checks=None) -> Path
 ```
 
-Writes the standard results dashboard, one self-contained HTML page, from Step 12's `risk_scores.parquet` (or a monitor's scores). See `dashboard.md` → "Building it" for the call with each argument filled in, and for what it covers. `bands` is `{"watch": .., "high": .., "basis": "<one sentence>"}`; `failures` is a DataFrame whose first two columns are asset ID and failure date.
+Writes the fleet app's page, one self-contained HTML file, from risk scores. The monitor and `amygda-risk design --model` call it; as the agent, don't call it yourself and don't offer a separate dashboard (see `app.md`). `bands` is `{"watch": .., "high": .., "basis": "<one sentence>"}`; `failures` is a DataFrame whose first two columns are asset ID and failure date.
 
 ---
 

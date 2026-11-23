@@ -22,7 +22,7 @@ Use this for the deployment half of the fleet app (`app.md`): the model is **dep
 
 ## When to offer it
 
-- **After Step 12**, once the "After Step 12" checks and the dashboard are done, offer the fleet app (`app.md`, "When to offer it"). Offer it only for a run the user is happy with: the checks passed and the alert bands are agreed. If the run needs more work, say so and offer it later.
+- **After Step 12**, once the "After Step 12" checks are done, offer the fleet app (`app.md`, "When to offer it"). Offer it only for a run the user is happy with: the checks passed and the alert bands are agreed. If the run needs more work, say so and offer it later.
 - **When the user brings a `complete_model_<id>.zip`** and asks to deploy it, monitor with it or score new data: do the short path below, then `app.md`.
 
 ## Starting from an existing model zip
