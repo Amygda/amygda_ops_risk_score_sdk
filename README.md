@@ -16,7 +16,7 @@ pip install --upgrade git+https://github.com/amygda/amygda_ops_risk_score_sdk.gi
 
 ## Use it with your AI coding agent
 
-The SDK comes with an agent skill that walks you through the whole pipeline in conversation. Your agent asks the right questions up front, runs each SDK call, shows the charts with guidance on reading them, and warns you before any step that can't be undone. It covers all four journeys (fixed-log or free-text, supervised or unsupervised), an optional results dashboard, and deploying a model to keep scoring new data.
+The SDK comes with an agent skill that walks you through the whole pipeline in conversation. Your agent asks the right questions up front, runs each SDK call, shows the charts with guidance on reading them, and warns you before any step that can't be undone. It covers all four journeys (fixed-log or free-text, supervised or unsupervised), and deploying a model as a fleet app that keeps scoring new data.
 
 The skill follows the open [Agent Skills](https://agentskills.io) format, so it works with any agent that supports skills, including Claude Code, OpenAI Codex, Cursor, GitHub Copilot and Gemini CLI.
 
@@ -69,7 +69,6 @@ Gemini CLI may need skills switched on in its settings. Cursor and Copilot also 
 | `data-checks.md` | Checks on the user's data before Step 1 |
 | `validation.md` | Checks to run at each stage, including alert bands against failures |
 | `agent-execution.md` | How an agent runs each step so progress shows and sessions survive |
-| `dashboard.md` | The results dashboard offered after Step 12 |
 | `deployment.md` | The deployment half of the fleet app: deploying the model, the checks, and reading a run |
 | `app.md` | The fleet app: the questions that decide what it shows, its alerts and schedule, and how it is started and kept running |
 
