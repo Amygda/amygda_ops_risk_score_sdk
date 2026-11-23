@@ -1,0 +1,24 @@
+/* Controls the fleet app adds to the dashboard. Colours come from the page. */
+#app-bar{position:sticky;top:0;z-index:8;background:var(--bg);border-bottom:1px solid var(--line);margin:-8px 0 18px;padding:10px 0}
+#app-bar .line{display:flex;gap:10px 14px;align-items:center;flex-wrap:wrap}
+#app-bar .grow{flex:1 1 220px;min-width:0}
+#app-bar .status{font-weight:600}
+#app-bar .sub{color:var(--muted);font-size:13px}
+#app-bar .dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--ok);margin-right:7px;vertical-align:1px}
+#app-bar .dot.busy{background:var(--amber);animation:app-pulse 1s infinite alternate}
+#app-bar .dot.bad{background:var(--red)}
+@keyframes app-pulse{from{opacity:1}to{opacity:.3}}
+@media (prefers-reduced-motion:reduce){#app-bar .dot.busy{animation:none}}
+#app-bar button.btn{padding:6px 12px}
+#app-bar button.primary{background:var(--accent,var(--fg));border-color:var(--accent,var(--fg));color:var(--bg);font-weight:600}
+#app-bar .msg{font-size:13px;margin-top:8px}
+#app-bar .msg.err{color:var(--red);font-weight:600}
+#app-bar .files{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;font-size:13px;align-items:center}
+#app-bar .file{border:1px solid var(--line);border-radius:14px;padding:2px 4px 2px 10px;background:var(--card);white-space:nowrap}
+#app-bar .file button{font:inherit;border:0;background:none;color:var(--muted);cursor:pointer;padding:0 6px}
+#app-bar .panel{border:1px solid var(--line);border-radius:10px;background:var(--card);padding:12px 14px;margin-top:10px}
+#app-bar .panel .line{gap:8px 12px}
+#app-bar input[type=time]{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:3px 8px}
+#app-bar.drop{outline:2px dashed var(--muted);outline-offset:4px}
+.app-only{display:inline}
+.app-only-block{display:flex}

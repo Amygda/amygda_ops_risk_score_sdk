@@ -14,8 +14,13 @@ from typing import Any, Dict, List, Optional, Union
 # Deployed models: build the scoring bundle locally (see deployment.py).
 from amygda_ops_risk_score.deployment import (  # noqa: F401
     build_scoring_bundle,
+    check_deployment,
     describe_bundle,
+    unmapped_codes,
 )
+
+# The standard results dashboard (one HTML page), also used by the monitor.
+from amygda_ops_risk_score.monitor.dashboard import build_dashboard  # noqa: F401
 
 # ---------------------------------------------------------------------------
 # Internal loader

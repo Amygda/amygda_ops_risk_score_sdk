@@ -1,0 +1,1356 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{TITLE}}</title>
+<style>
+:root{
+  --bg:#ffffff; --card:#f7f7f5; --fg:#1b1d21; --muted:#646a73; --line:#dcdde0; --grid:#ececee;
+  --risk0:#ffffff; --risk20:#c9ccd1; --amber:#d99a06; --red:#d42a2a; --ok:#2f8a4f;
+  --sys1:#2f6fd0; --sys2:#8a4fc4; --sys3:#159a8c; --sys4:#d9741c; --sys5:#c23c86; --sys6:#5b8a2b;
+  --sys7:#7a6a1e; --sys8:#3d5a80;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121417; --card:#1b1e23; --fg:#eceef1; --muted:#9aa0a8; --line:#33373e; --grid:#272a30;
+    --risk0:#121417; --risk20:#4a4f57; --amber:#f0b429; --red:#f05252; --ok:#4cc27a;
+    --sys1:#6ea3f5; --sys2:#b58be8; --sys3:#3cc4b3; --sys4:#f39a4c; --sys5:#ec6fb0; --sys6:#8cc157;
+    --sys7:#d6c25a; --sys8:#8fb3e0;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121417; --card:#1b1e23; --fg:#eceef1; --muted:#9aa0a8; --line:#33373e; --grid:#272a30;
+  --risk0:#121417; --risk20:#4a4f57; --amber:#f0b429; --red:#f05252; --ok:#4cc27a;
+  --sys1:#6ea3f5; --sys2:#b58be8; --sys3:#3cc4b3; --sys4:#f39a4c; --sys5:#ec6fb0; --sys6:#8cc157;
+  --sys7:#d6c25a; --sys8:#8fb3e0;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;border-top:4px solid var(--accent,transparent);background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-numeric:tabular-nums}
+main{max-width:1180px;margin:0 auto;padding:24px 16px 40px}
+h1{font-size:26px;margin:0 0 8px;line-height:1.2}
+h2{font-size:19px;margin:34px 0 10px}
+h3{font-size:15px;margin:0 0 4px}
+p{margin:0 0 8px}
+.lede{font-size:16px;max-width:880px}
+.note{color:var(--muted);font-size:13px;margin:0 0 10px;max-width:880px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin:0 0 14px;min-width:0}
+.tiles{display:grid;grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:12px;margin-top:18px}
+@media (max-width:820px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:480px){.tiles{grid-template-columns:1fr}}
+.tile .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.tile .v{font-size:26px;font-weight:650;margin:2px 0}
+.tile .s{font-size:13px;color:var(--muted)}
+.stats{display:flex;flex-wrap:wrap;gap:6px 0;margin:6px 0 12px;padding:8px 2px;border:1px solid var(--line);border-radius:8px;background:var(--card);font-size:13px}
+.stat{padding:0 14px;border-right:1px solid var(--line);line-height:1.35}
+.stat:last-child{border-right:0}
+.stat .k{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em;margin-right:6px}
+.stat .v{font-weight:650;font-size:14px}
+.stat .s{color:var(--muted);display:block;font-size:12px}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th{font-weight:600;color:var(--muted);font-size:12px;position:sticky;top:0;background:var(--card)}
+th:first-child,td:first-child,td.l,th.l{text-align:left}
+td.wrap{white-space:normal;text-align:left;min-width:220px}
+th.sort{cursor:pointer;user-select:none}
+th.sort:hover,th.sort:focus-visible{color:var(--fg)}
+th.sort .arrow{display:inline-block;width:1em;text-align:center;opacity:.35;font-size:10px}
+th.sort.on .arrow{opacity:1;color:var(--fg)}
+tr.flt th{padding:2px 4px 6px;border-bottom:1px solid var(--line)}
+tr.flt input{font:inherit;font-size:12px;font-weight:400;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:2px 5px;width:100%;min-width:3.5em;max-width:14em;box-sizing:border-box}
+tr.flt .dates{display:flex;flex-direction:column;gap:2px}
+tr.flt input[type=date]{min-width:8.5em;color-scheme:light dark}
+tbody tr.nomatch td{color:var(--muted);text-align:left;font-style:italic}
+tbody.click tr{cursor:pointer}
+tbody.click tr:hover{outline:1px solid var(--muted)}
+tr.sel td{font-weight:650}
+.tag{display:inline-block;font-size:11px;font-weight:600;border-radius:4px;padding:0 5px;margin-left:6px;color:#fff}
+.tag.high{background:var(--red)} .tag.watch{background:var(--amber);color:#1b1d21} .tag.prov{background:var(--muted)}
+.bar{display:inline-block;height:9px;border-radius:2px;vertical-align:middle;margin-left:6px;background:var(--muted)}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:0 0 10px}
+button.btn{font:inherit;font-size:13px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:4px 10px;cursor:pointer}
+button.btn:disabled{opacity:.45;cursor:default}
+.brush .selection{fill:var(--muted);fill-opacity:.25;stroke:var(--muted)}
+select{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:4px 8px;max-width:100%}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted);margin:4px 0 6px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-2px;margin-right:5px}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+@media (max-width:900px){.grid2{grid-template-columns:minmax(0,1fr)}}
+svg{display:block;max-width:100%}
+svg text{fill:var(--fg);font-size:11px}
+.axis path,.axis line{stroke:var(--line)} .axis text{fill:var(--muted)}
+#tip{position:fixed;pointer-events:none;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.18);display:none;z-index:9;max-width:380px}
+#tip table{font-size:11px} #tip td{padding:1px 5px;border:0}
+ul.list{margin:0;padding-left:20px} ul.list li{margin:0 0 6px}
+.warn{color:var(--amber);font-weight:600}
+footer{margin-top:30px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-top:10px}
+.hidden{display:none}
+.app-only,.app-only-block{display:none}
+.rule{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:5px 0;font-size:14px}
+.rule input[type=number]{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:3px 6px;width:5.5em}
+.rule.off{color:var(--muted)}
+.tabs button.settings{margin-left:auto}
+.board{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;margin-top:10px}
+.col{flex:1 1 230px;max-width:340px;min-width:220px;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:8px;transition:box-shadow .12s,border-color .12s}
+.col.off{opacity:.55}
+.col.over{border-color:var(--accent,var(--fg));box-shadow:0 0 0 2px var(--accent,var(--muted))}
+.col.before{box-shadow:-4px 0 0 0 var(--accent,var(--fg))}
+.col.after{box-shadow:4px 0 0 0 var(--accent,var(--fg))}
+.col-head{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.col-head input[type=text]{font:inherit;font-size:14px;font-weight:650;color:var(--fg);background:transparent;border:1px solid transparent;border-radius:6px;padding:3px 6px;min-width:0;flex:1}
+.col-head input[type=text]:hover,.col-head input[type=text]:focus{border-color:var(--line);background:var(--card)}
+.grip{cursor:grab;color:var(--muted);font-size:15px;line-height:1;padding:2px 3px;user-select:none}
+.grip:active{cursor:grabbing}
+.x{font:inherit;border:0;background:none;color:var(--muted);cursor:pointer;padding:0 4px;font-size:15px}
+.x:hover{color:var(--red)}
+.slots{min-height:38px;display:flex;flex-direction:column;gap:5px}
+.slots:empty::after{content:"Drop a panel here";color:var(--muted);font-size:12px;border:1px dashed var(--line);border-radius:8px;padding:9px;text-align:center}
+.chip{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:8px;background:var(--card);padding:6px 8px;font-size:13px;cursor:grab;position:relative}
+.chip:active{cursor:grabbing}
+.chip.off .nm{color:var(--muted);text-decoration:line-through}
+.chip .nm{flex:1;min-width:0}
+.chip.dragging,.col.dragging{opacity:.35}
+.chip.before::before,.chip.after::after{content:"";position:absolute;left:0;right:0;height:3px;border-radius:2px;background:var(--accent,var(--fg))}
+.chip.before::before{top:-5px}
+.chip.after::after{bottom:-5px}
+.chip:focus-visible{outline:2px solid var(--accent,var(--fg));outline-offset:1px}
+.tray{margin-top:14px;border:1px dashed var(--line);border-radius:10px;padding:10px}
+.tray.over{border-color:var(--accent,var(--fg));border-style:solid}
+.tray h4{margin:0 0 2px;font-size:13px}
+.tray .slots{flex-direction:row;flex-wrap:wrap;margin-top:8px}
+.tray .slots:empty::after{content:"Every panel is on a tab. Drag one here to take it off the page.";flex:1}
+.newtab{flex:0 0 150px;min-height:74px;display:flex;align-items:center;justify-content:center;text-align:center;border:1px dashed var(--line);border-radius:10px;color:var(--muted);font-size:13px;cursor:pointer;padding:8px;background:none;font-family:inherit}
+.newtab:hover,.newtab.over{border-color:var(--accent,var(--fg));color:var(--fg);border-style:solid}
+.ed-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:4px 16px;font-size:13px;margin-top:6px}
+.tag.info{background:var(--muted)}
+tr.closed td{color:var(--muted)}
+a{color:var(--sys1)}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:26px 0 4px;overflow-x:auto}
+.tabs button{font:inherit;font-size:14px;font-weight:600;color:var(--muted);background:none;border:0;border-bottom:3px solid transparent;padding:8px 14px;cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent,var(--fg))}
+.brand{margin:0 0 8px}
+.brand h1{margin:0}
+.titlebar{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+#theme-toggle{white-space:nowrap;flex:none;margin-top:3px}
+.brand img{display:block;max-height:48px;max-width:220px;margin:0 0 16px}
+.tabs button .cnt{display:inline-block;font-size:11px;background:var(--red);color:#fff;border-radius:8px;padding:0 6px;margin-left:6px}
+.alert{border:1px solid var(--red);border-left-width:5px;border-radius:8px;padding:10px 14px;margin:16px 0 0;background:var(--card)}
+.alert b{color:var(--red)}
+.st{display:inline-block;font-size:12px;font-weight:600;border-radius:4px;padding:0 6px}
+.st.ok{color:var(--ok)} .st.failed{color:#fff;background:var(--red)} .st.none{color:var(--muted)}
+tr.failed td{background:color-mix(in srgb, var(--red) 9%, transparent)}
+.facts{display:flex;flex-wrap:wrap;gap:6px 8px;margin:12px 0 0;font-size:13px}
+.fact{border:1px solid var(--line);border-radius:14px;padding:2px 11px;background:var(--card);white-space:nowrap}
+.fact span{color:var(--muted)}
+.fact i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+.fact[data-tip]{cursor:help}
+button.info{font:inherit;font-size:11px;font-weight:700;font-style:italic;font-family:Georgia,serif;line-height:16px;width:18px;height:18px;padding:0;margin-left:8px;border-radius:50%;border:1px solid var(--line);background:var(--bg);color:var(--muted);cursor:help;vertical-align:2px}
+button.info:hover,button.info:focus-visible{color:var(--fg);border-color:var(--muted)}
+th[data-tip]{cursor:help;text-decoration:underline dotted;text-underline-offset:3px}
+.pending{border-style:dashed}
+.pending p{color:var(--muted);font-size:13px;margin:0;max-width:880px}
+.tab>h2{margin-top:18px}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+</head>
+<body>
+<main>
+<section id="overview">
+  <div class="brand"><img id="logo" class="hidden" alt=""><div class="titlebar"><h1 id="title"></h1><button class="btn" id="theme-toggle" type="button"></button></div></div>
+  <p class="lede" id="takeaway"></p>
+  <div class="facts" id="facts"></div>
+  <div class="tiles" id="tiles"></div>
+  <div class="alert hidden" id="alert" role="alert"></div>
+</section>
+
+<nav class="tabs" role="tablist" id="tabs"></nav>
+<div id="tab-host"></div>
+
+<!-- Every panel in the catalogue. The app spec (in ds-meta) says which are
+     shown and on which tab; the rest are removed when the page loads. -->
+<div id="panel-store" class="hidden">
+  <div data-panel="asset_controls" id="asset-controls">
+    <h2 id="asset-title">Asset detail</h2>
+    <div class="row"><label>Asset <select id="asset-select"></select></label>
+      <label>Resolution <select id="res-select"></select></label>
+      <button class="btn" id="zoom-reset" type="button">Show all dates</button>
+      <span class="note" id="zoom-note" style="margin:0"></span></div>
+  </div>
+
+  <div class="card" data-panel="since_last_run">
+    <h3>Since the last run</h3>
+    <p class="lede" id="changes-lede" style="font-size:15px"></p>
+    <p class="note" id="changes-note"></p>
+    <div class="scroll"><table id="changes"></table></div>
+  </div>
+  <div class="card" data-panel="heatmap">
+    <h3>Risk by asset and day</h3>
+    <p class="note" id="heat-note"></p>
+    <div id="heat-legend"></div>
+    <div id="heatmap"></div>
+  </div>
+  <div class="card" data-panel="ranking">
+    <h3>Ranking</h3>
+    <p class="note" id="rank-note"></p>
+    <div class="scroll"><table id="ranking"></table></div>
+  </div>
+  <div class="card" data-panel="fleet_systems">
+    <h3>Risk by asset and system</h3>
+    <p class="note" id="fs-note"></p>
+    <div class="scroll"><table id="fleet-systems"></table></div>
+  </div>
+
+  <div class="card" data-panel="asset_trend">
+    <h3>Operational risk over time</h3>
+    <p class="note" id="trend-note"></p>
+    <div id="trend"></div>
+  </div>
+  <div class="card" data-panel="asset_systems">
+    <h3>Risk by system</h3>
+    <p class="note" id="systems-note"></p>
+    <div id="systems"></div>
+  </div>
+  <div class="card" data-panel="asset_drivers">
+    <h3 id="drivers-title">What drove the selected period</h3>
+    <p class="note">Each bar is one subsystem's risk in the selected period, highest first, coloured by system. 100 means activity at or above the subsystem's calibrated threshold.</p>
+    <div id="drivers"></div>
+  </div>
+
+  <div class="card" data-panel="asset_logs">
+    <h3 id="logs-title">Logs behind the score</h3>
+    <p class="note" id="logs-note"></p>
+    <div id="logs-chart"></div>
+    <div class="row" style="margin:12px 0 6px;gap:10px;flex-wrap:wrap"><label>List the logs from <select id="logs-span"></select></label><span class="note" id="logs-count" style="margin:0"></span></div>
+    <div class="scroll" style="max-height:420px;overflow-y:auto"><table id="logs"></table></div>
+  </div>
+
+  <div class="card" data-panel="bands">
+    <h3>Alert bands</h3>
+    <p class="note">Every chart and table on this page uses these cut-offs.</p>
+    <div class="scroll"><table id="bands"></table></div>
+  </div>
+  <div class="card" data-panel="weights">
+    <h3>What the score is made of</h3>
+    <p class="note" id="weights-note"></p>
+    <div id="weights"></div>
+  </div>
+  <div class="card" data-panel="unmapped_codes">
+    <h3>Log codes the model doesn't use</h3>
+    <p class="note" id="unmapped-note"></p>
+    <div class="scroll"><table id="unmapped"></table></div>
+  </div>
+  <div class="card" data-panel="known_gaps">
+    <h3>Known gaps</h3>
+    <ul class="list" id="gaps"></ul>
+  </div>
+
+  <div class="card" data-panel="alerts">
+    <h3>Alerts</h3>
+    <p class="note" id="alerts-note"></p>
+    <div class="row" style="margin:6px 0 8px"><p class="lede" id="alerts-lede" style="font-size:15px;margin:0"></p>
+      <span class="app-only"><button class="btn" id="ack-all" type="button" data-ack="all">Acknowledge all</button></span></div>
+    <div class="scroll"><table id="alerts"></table></div>
+  </div>
+
+  <div class="card" data-builtin="alert-settings">
+    <h3>Alert settings</h3>
+    <p class="note" id="rules-note" style="display:block"></p>
+    <div id="rules"></div>
+    <div class="row" style="margin-top:10px;gap:10px"><button class="btn" id="rules-save" type="button" data-save-rules="1">Save alert settings</button><span class="note" id="rules-msg" role="status" style="margin:0"></span></div>
+  </div>
+  <div class="card" data-builtin="layout-settings">
+    <h3>Tabs and panels</h3>
+    <p class="note" style="display:block">Arrange the page. Tick or untick a tab or a panel to show or hide it. Drag a tab by its handle to change the order of the tabs. Drag a panel up or down, onto another tab, or back to "Not on the page". Drag a panel from "Not on the page" onto a tab to add it. Nothing changes until you press Save layout. The panels about one asset always stay together on one tab.</p>
+    <div id="layout-editor"></div>
+    <div class="row" style="margin-top:12px;gap:10px"><button class="btn" id="layout-save" type="button">Save layout</button><button class="btn" id="layout-undo" type="button">Undo changes</button><span class="note" id="layout-msg" role="status" style="margin:0"></span></div>
+  </div>
+
+  <div data-panel="run_health">
+    <div class="stats" id="health-tiles"></div>
+  </div>
+  <div class="card" data-panel="run_warnings">
+    <h3>Warnings in the last run</h3>
+    <p class="note">A rise in logs matching no subsystem, or many new assets, can mean the data has changed since the model was trained.</p>
+    <ul class="list" id="health-warnings"></ul>
+  </div>
+  <div class="card" data-panel="run_table">
+    <h3>Every run</h3>
+    <p class="note" id="runs-note"></p>
+    <div class="scroll"><table id="runs"></table></div>
+  </div>
+</div>
+<footer id="footer"></footer>
+</main>
+<div id="tip"></div>
+
+<!--DATA-->
+
+<script>
+(function(){
+"use strict";
+const $ = id => document.getElementById(id);
+const block = id => { const el = $(id); const t = el ? el.textContent.trim() : ""; return t ? d3.csvParse(t) : []; };
+const meta = JSON.parse($("ds-meta").textContent);
+const SPEC = meta.spec, PREVIEW = !!meta.preview;
+// In the app the page gets a Settings tab; a saved file is read-only.
+const IN_APP = !!window.AMYGDA_APP;
+// Look: light or dark, a brand colour and a logo. Amber and red are never
+// changed: they mean watch and high.
+// The button by the title switches between them; the choice is kept in this
+// browser and comes before the layout's own setting.
+const THEME_KEY = "amygda-theme";
+let savedTheme = null;
+try { savedTheme = localStorage.getItem(THEME_KEY); } catch (e) { /* storage blocked */ }
+if (savedTheme === "light" || savedTheme === "dark") document.documentElement.dataset.theme = savedTheme;
+else if (SPEC.theme.mode !== "auto") document.documentElement.dataset.theme = SPEC.theme.mode;
+const isDark = () => { const t = document.documentElement.dataset.theme; return t ? t === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches; };
+function themeButton() {
+  const b = $("theme-toggle"), dark = isDark();
+  b.textContent = dark ? "☀ Light mode" : "☾ Dark mode";
+  b.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
+  b.onclick = () => {
+    const next = isDark() ? "light" : "dark";
+    document.documentElement.dataset.theme = next;
+    try { localStorage.setItem(THEME_KEY, next); } catch (e) { /* storage blocked */ }
+    themeButton(); renderAll();
+  };
+}
+if (SPEC.theme.accent) document.documentElement.style.setProperty("--accent", SPEC.theme.accent);
+if (meta.logo) { $("logo").src = meta.logo; $("logo").classList.remove("hidden"); }
+const SYSTEMS = meta.systems;
+const DAILY = meta.frequency_seconds >= 86400;
+const FREQ_MS = meta.frequency_seconds * 1000;
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const nice = s => String(s).replace(/_/g, " ");
+const f1 = d3.format(".1f"), pct = d3.format(".0%"), pct1 = d3.format(".1%"), int = d3.format(",");
+const parseT = s => new Date(s.length <= 10 ? s + "T00:00:00" : s);
+const dayKey = d3.timeFormat("%Y-%m-%d");
+const fmtDay = d3.timeFormat("%b %-d, %Y"), fmtShort = d3.timeFormat("%b %-d");
+const fmtT = DAILY ? fmtDay : d3.timeFormat("%b %-d %H:%M");
+const listJoin = a => a.length <= 1 ? a.join("") : a.slice(0, -1).join(", ") + " and " + a[a.length - 1];
+
+// ---------- data ----------
+const scores = block("ds-scores").map(r => {
+  const o = {asset: r.asset_id, k: r.t, t: parseT(r.t), v: +r.risk, prov: r.provisional === "1", sys: {}};
+  o.day = dayKey(o.t);
+  SYSTEMS.forEach(s => o.sys[s] = r[s] === "" || r[s] === undefined ? null : +r[s]);
+  return o;
+}).sort((a, b) => a.t - b.t);
+const subIdx = d3.group(block("ds-subsys"), r => r.asset_id, r => r.t);
+const failures = block("ds-failures").map(r => ({asset: r.asset_id, day: r.failure_date.slice(0, 10), t: parseT(r.failure_date.slice(0, 10))}));
+const bandRows = block("ds-bands");
+const bands = Object.fromEntries(bandRows.map(r => [r.band, {cut: +r.cutoff, basis: r.basis}]));
+const WATCH = bands.watch.cut, HIGH = bands.high.cut;
+const weights = block("ds-weights");
+const runs = block("ds-runs");
+const changes = block("ds-changes");
+const alerts = JSON.parse((($("ds-alerts") || {}).textContent || "[]").trim() || "[]");
+const openAlerts = alerts.filter(a => a.status === "open");
+// Logs: every log's text once, then rows of [asset, time, log, count].
+const LOGS = JSON.parse((($("ds-logs") || {}).textContent || "{}").trim() || "{}");
+const logsBy = new Map();
+(LOGS.rows || []).forEach(r => { const a = LOGS.assets[r[0]]; if (!logsBy.has(a)) logsBy.set(a, []); logsBy.get(a).push({k: r[1], t: parseT(r[1]), li: r[2], n: r[3]}); });
+const WINDOW_MS = (meta.window_seconds || 0) * 1000;
+const bandOf = v => v >= HIGH ? "high" : v >= WATCH ? "watch" : null;
+const tag = b => b ? `<span class="tag ${b}">${b === "high" ? "High" : "Watch"}</span>` : "";
+
+const byAsset = d3.group(scores, d => d.asset);
+const assetsAll = [...byAsset.keys()];
+const tMin = d3.min(scores, d => d.t), tMax = d3.max(scores, d => d.t);
+const days = d3.timeDay.range(d3.timeDay.floor(tMin), d3.timeDay.offset(d3.timeDay.floor(tMax), 1));
+const dayKeys = days.map(dayKey);
+const firstDay = dayKeys[0], lastDay = dayKeys[dayKeys.length - 1];
+// daily view for the heatmap: highest value per asset per day
+const dayMax = new Map(assetsAll.map(a => [a, d3.rollup(byAsset.get(a), v => ({v: d3.max(v, d => d.v), prov: v.some(d => d.prov), k: v.reduce((x, y) => y.v > x.v ? y : x).k}), d => d.day)]));
+const failBy = d3.group(failures, f => f.asset);
+
+// ---------- summaries ----------
+const sum = new Map(assetsAll.map(a => {
+  const rows = byAsset.get(a), vals = rows.map(d => d.v), sorted = vals.slice().sort(d3.ascending);
+  const peak = rows.reduce((x, y) => (y.v > x.v ? y : x), rows[0]);
+  const fl = failBy.get(a) || [];
+  return [a, {
+    id: a, n: vals.length, mean: d3.mean(vals), p90: d3.quantile(sorted, 0.9), peak: peak.v, peakK: peak.k, peakT: peak.t,
+    nPeakTies: rows.filter(d => d.v === peak.v).length,
+    nWatch: vals.filter(v => v >= WATCH).length, nHigh: vals.filter(v => v >= HIGH).length,
+    latest: rows[rows.length - 1],
+    failBefore: fl.filter(f => f.day < firstDay).length, failIn: fl.filter(f => f.day >= firstDay && f.day <= lastDay).length
+  }];
+}));
+const RANK = {mean: s => s.mean, p90: s => s.p90, peak: s => s.peak, latest: s => s.latest.v}[SPEC.rank_by];
+const RANK_LABEL = meta.rank_label;
+const assets = assetsAll.slice().sort((a, b) => RANK(sum.get(b)) - RANK(sum.get(a)) || sum.get(b).mean - sum.get(a).mean);
+const highAssets = assets.filter(a => sum.get(a).nHigh > 0);
+const overall = scores.reduce((x, y) => (y.v > x.v ? y : x), scores[0]);
+const nTies = scores.filter(d => d.v === overall.v).length;
+const median = d3.median(scores, d => d.v);
+const nWatch = scores.filter(d => d.v >= WATCH).length, nHigh = scores.filter(d => d.v >= HIGH).length;
+const unit = DAILY ? "asset-day" : "asset-period";
+
+const sameMonth = tMin.getMonth() === tMax.getMonth() && tMin.getFullYear() === tMax.getFullYear();
+const qOf = d => Math.floor(d.getMonth() / 3);
+const fullQ = tMin.getMonth() % 3 === 0 && tMin.getDate() <= 3 && qOf(tMin) === qOf(tMax) && tMax.getMonth() % 3 === 2 && tMax.getDate() >= 28 && tMin.getFullYear() === tMax.getFullYear();
+const period = sameMonth ? d3.timeFormat("%b %Y")(tMin) : fullQ ? `Q${qOf(tMin) + 1} ${tMin.getFullYear()}` : `${d3.timeFormat("%b")(tMin)}–${d3.timeFormat("%b %Y")(tMax)}`;
+const rangeText = `${fmtShort(tMin)}–${fmtDay(tMax)}`;
+
+// ---------- colours ----------
+let C = {};
+function readColours() {
+  const cs = getComputedStyle(document.documentElement), g = n => cs.getPropertyValue(n).trim();
+  C = {bg: g("--bg"), fg: g("--fg"), muted: g("--muted"), ok: g("--ok"), line: g("--line"), grid: g("--grid"), r0: g("--risk0"), r20: g("--risk20"), amber: g("--amber"), red: g("--red"), sys: {}};
+  SYSTEMS.forEach((s, i) => C.sys[s] = g(`--sys${(i % 8) + 1}`));
+  C.risk = d3.scaleLinear().domain([0, Math.min(20, WATCH * 0.6), WATCH, HIGH]).range([C.r0, C.r20, C.amber, C.red]).clamp(true);
+}
+
+// ---------- tooltip ----------
+const tip = $("tip");
+function showTip(ev, html) {
+  tip.innerHTML = html; tip.style.display = "block";
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = ev.clientX + 12, y = ev.clientY + 12;
+  if (x + w > window.innerWidth - 8) x = ev.clientX - w - 12;
+  if (y + h > window.innerHeight - 8) y = ev.clientY - h - 12;
+  tip.style.left = Math.max(4, x) + "px"; tip.style.top = Math.max(4, y) + "px";
+}
+const hideTip = () => tip.style.display = "none";
+// Explanations: the info mark next to a panel title, and any element with a
+// data-tip (column headers, the key settings). Hover, focus or tap.
+const tipText = el => el.dataset.note ? (el._note ? el._note.textContent : "") : el.dataset.tip;
+const tipFor = el => { const r = el.getBoundingClientRect(); showTip({clientX: r.left, clientY: r.bottom - 6}, esc(tipText(el))); };
+const tipTarget = ev => ev.target.closest ? ev.target.closest("button.info, [data-tip]") : null;
+document.addEventListener("mouseover", ev => { const el = tipTarget(ev); if (el) tipFor(el); });
+document.addEventListener("mouseout", ev => { if (tipTarget(ev)) hideTip(); });
+document.addEventListener("focusin", ev => { const el = tipTarget(ev); if (el) tipFor(el); });
+document.addEventListener("focusout", ev => { if (tipTarget(ev)) hideTip(); });
+document.addEventListener("click", ev => { const el = tipTarget(ev); if (el && el.matches("button.info")) tipFor(el); });
+const th = (label, tipTxt, cls) => `<th${cls ? ` class="${cls}"` : ""}${tipTxt ? ` data-tip="${esc(tipTxt)}"` : ""}>${label}</th>`;
+
+// ---------- state ----------
+const state = {asset: assets[0], k: sum.get(assets[0]).peakK, res: "auto", zoom: null, logSpan: WINDOW_MS ? "window" : "period"};
+function setSelection(a, k) {
+  state.asset = a;
+  state.k = k || sum.get(a).peakK;
+  const t = parseT(state.k);
+  if (state.zoom && (t < state.zoom[0] || t > state.zoom[1])) state.zoom = null;
+}
+function select(a, k) { setSelection(a, k); renderCurrent(); }
+const openAsset = (a, k) => { setSelection(a, k); if (ASSET_TAB) showTab(ASSET_TAB); else renderCurrent(); };
+
+// ---------- layout ----------
+// The app spec says which panels go on which tab. A panel whose data isn't
+// there yet (no run so far, say) is left out, or shown as a placeholder when
+// the page is a preview of the layout.
+const NEEDS = {
+  since_last_run: () => runs.some(r => r.status === "ok"),
+  alerts: () => runs.length > 0 || alerts.length > 0,
+  run_health: () => runs.length > 0, run_warnings: () => runs.length > 0, run_table: () => runs.length > 0,
+  weights: () => weights.length > 0,
+  asset_logs: () => (LOGS.rows || []).length > 0,
+  unmapped_codes: () => { const u = (meta.model_checks || {}).unmapped_codes; return !!(u && u.top && u.top.length); }
+};
+const WAITING = {runs: "Appears after the monitor's first run.", model: "Appears when the model has this information.", logs: "Appears once the monitor has kept some logs, after its next run."};
+const placed = new Map(), tabIds = [], tabTitle = {}, SETTINGS = "app-settings";
+let current = null;
+(function buildLayout() {
+  const store = $("panel-store"), host = $("tab-host"), nav = $("tabs");
+  SPEC.tabs.forEach(tab => {
+    if (tab.hidden) return;                      // switched off in Settings
+    const sec = document.createElement("section");
+    sec.className = "tab hidden"; sec.id = "tab-" + tab.id;
+    let grid = null;
+    tab.panels.forEach(p => {
+      if (p.hidden) return;
+      const el = store.querySelector(`[data-panel="${p.type}"]`);
+      const ok = !NEEDS[p.type] || NEEDS[p.type]();
+      if (!el || (!ok && !PREVIEW)) return;
+      const info = meta.panels[p.type];
+      if (!ok) {
+        el.className = "card pending";
+        el.innerHTML = `<h3>${esc(p.title || info.title)}</h3><p>${esc(info.shows)} ${WAITING[info.needs] || ""}</p>`;
+      } else {
+        const h = el.querySelector("h3"), note = el.querySelector("p.note");
+        if (p.title && h) h.textContent = p.title;
+        // The explanation moves behind an info mark next to the title. Its
+        // text is read when shown, since each draw rewrites it.
+        if (note && SPEC.notes !== "inline") {
+          note.classList.add("hidden");
+          if (h && SPEC.notes === "tooltip") {
+            const b = document.createElement("button");
+            b.className = "info"; b.type = "button"; b.textContent = "i";
+            b.setAttribute("aria-label", "About this panel");
+            b.dataset.note = "1";
+            h.after(b); h.style.display = "inline-block";
+            b._note = note;
+          }
+        }
+      }
+      if (p.type.startsWith("asset_") && !sec.querySelector("#asset-controls")) { sec.appendChild(store.querySelector("#asset-controls")); grid = null; }
+      if (p.width === "half") {
+        if (!grid || grid.children.length >= 2) { grid = document.createElement("div"); grid.className = "grid2"; sec.appendChild(grid); }
+        grid.appendChild(el);
+      } else { grid = null; sec.appendChild(el); }
+      placed.set(p.type, {tab: tab.id, ok, o: p.options, title: p.title});
+    });
+    if (!sec.children.length) return;
+    host.appendChild(sec); tabIds.push(tab.id); tabTitle[tab.id] = tab.title;
+    const b = document.createElement("button");
+    b.setAttribute("role", "tab"); b.dataset.tab = tab.id; b.textContent = tab.title;
+    b.onclick = () => showTab(tab.id, true);
+    nav.appendChild(b);
+  });
+  if (IN_APP) {
+    // Settings: not part of the layout, always last, only in the app.
+    const sec = document.createElement("section");
+    sec.className = "tab hidden"; sec.id = "tab-" + SETTINGS;
+    store.querySelectorAll("[data-builtin]").forEach(el => sec.appendChild(el));
+    host.appendChild(sec); tabIds.push(SETTINGS); tabTitle[SETTINGS] = "Settings";
+    const b = document.createElement("button");
+    b.setAttribute("role", "tab"); b.dataset.tab = SETTINGS; b.className = "settings"; b.textContent = "⚙ Settings";
+    b.onclick = () => showTab(SETTINGS, true);
+    nav.appendChild(b);
+  }
+  store.remove();
+  if (tabIds.length < 2) nav.classList.add("hidden");
+  if (!tabIds.length) host.innerHTML = '<p class="note">None of the chosen panels has data to show yet.</p>';
+})();
+// on: the panel is on the tab now open (a hidden tab has no width to draw in,
+// so a tab is drawn when it opens).
+const on = t => { const p = placed.get(t); return !!p && p.ok && p.tab === current; };
+const popt = (t, name) => { const p = placed.get(t); return p ? p.o[name] : undefined; };
+const tabOf = (...types) => { for (const t of types) { const p = placed.get(t); if (p && p.ok) return p.tab; } return null; };
+const ASSET_TAB = tabOf("asset_trend", "asset_systems", "asset_drivers", "asset_logs");
+const RUN_TAB = tabOf("run_table", "run_warnings", "run_health");
+const ALERT_TAB = tabOf("alerts");
+const openHint = what => ASSET_TAB ? ` Click ${what} in ${tabTitle[ASSET_TAB]}.` : "";
+function showTab(name, keepScroll) {
+  if (!tabIds.length) return;
+  if (!tabIds.includes(name)) name = tabIds.includes(SPEC.default_tab) ? SPEC.default_tab : tabIds[0];
+  current = name;
+  tabIds.forEach(t => $("tab-" + t).classList.toggle("hidden", t !== name));
+  document.querySelectorAll("#tabs button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === name)));
+  try { history.replaceState(null, "", "#" + name); } catch (e) { /* file:// in some browsers */ }
+  renderCurrent();
+  if (!keepScroll) $("tabs").scrollIntoView({behavior: "smooth", block: "start"});
+}
+
+// ---------- header ----------
+function renderHeader() {
+  const title = `${meta.title || meta.fleet_name + " risk"}, ${period}`;
+  $("title").textContent = title; document.title = title;
+  let s;
+  if (highAssets.length) {
+    const top = highAssets.slice().sort((a, b) => sum.get(b).nHigh - sum.get(a).nHigh);
+    const names = top.length > 3 ? `${listJoin(top.slice(0, 3))} and ${top.length - 3} others` : listJoin(top);
+    const others = assets.filter(a => sum.get(a).nHigh === 0);
+    s = `${names} reached the high band (${HIGH}+) on ${int(nHigh)} ${unit}s in ${period}`;
+    s += others.length ? `, while no other asset peaked above ${f1(d3.max(others, a => sum.get(a).peak))}.` : ".";
+  } else {
+    s = `No asset reached the high band (${HIGH}+) in ${period}; the highest was ${f1(overall.v)} on ${overall.asset}.`;
+  }
+  const inFails = failures.filter(f => f.day >= firstDay && f.day <= lastDay && byAsset.has(f.asset));
+  if (inFails.length) {
+    const fa = [...new Set(inFails.map(f => f.asset))];
+    s += ` Failures were recorded on ${listJoin(fa)}${fa.every(a => sum.get(a).nHigh > 0) ? (fa.length > 1 ? ", each of which also reached high" : ", which also reached high") : ""}.`;
+  }
+  const prov = scores.filter(d => d.prov).length;
+  if (prov) s += ` The latest ${prov > 1 ? "periods are" : "period is"} provisional until more data arrives.`;
+  $("takeaway").textContent = s;
+  $("takeaway").classList.toggle("hidden", !SPEC.header.takeaway);
+  const basis = bands.watch.basis ? ` ${bands.watch.basis}` : "";
+  const facts = [
+    {dot: C.amber, k: "Watch", v: `${WATCH}+`, tip: `A score of ${WATCH} or more is at watch.${basis}`},
+    {dot: C.red, k: "High", v: `${HIGH}+`, tip: `A score of ${HIGH} or more is high.${basis}`},
+    {k: "Modelling frequency", v: meta.frequency_label, tip: `The model gives each asset one score every ${meta.frequency_label}, for periods that have logs.`},
+    {k: "Data", v: rangeText, tip: `${int(scores.length)} scores for ${assets.length} assets in the dates shown.`},
+    {k: "Model", v: `${meta.journey}, ${meta.weights_source === "supervised" ? "learned" : "expert"} weights`, tip: meta.journey === "free-text" ? "Logs are free text, matched to subsystems by meaning." : "Logs are fixed codes, each mapped to a subsystem."}
+  ];
+  $("facts").classList.toggle("hidden", !SPEC.header.facts);
+  $("facts").innerHTML = facts.map(f => `<span class="fact" tabindex="0" data-tip="${esc(f.tip)}">${f.dot ? `<i style="background:${f.dot}"></i>` : ""}<span>${esc(f.k)}</span> <b>${esc(f.v)}</b></span>`).join("");
+  const latestIn = cut => assets.filter(a => sum.get(a).latest.v >= cut);
+  const some = l => listJoin(l.slice(0, 6)) + (l.length > 6 ? ` +${l.length - 6}` : "");
+  const lastRun = runs[runs.length - 1], okRuns = runs.filter(r => r.status === "ok"), lastOk = okRuns[okRuns.length - 1];
+  const provN = scores.filter(d => d.prov).length;
+  const T = {
+    assets_high: () => ({k: "Assets that reached high", v: `${highAssets.length} of ${assets.length}`, s: highAssets.length ? some(highAssets) : "none"}),
+    assets_high_now: () => { const l = latestIn(HIGH); return {k: "High now", v: `${l.length} of ${assets.length}`, s: l.length ? some(l) : "no asset's latest score is high"}; },
+    assets_watch_now: () => { const l = latestIn(WATCH); return {k: "Watch or high now", v: `${l.length} of ${assets.length}`, s: l.length ? some(l) : "no asset's latest score is at watch"}; },
+    median: () => ({k: "Fleet median risk", v: f1(median), s: `per ${unit}, ${rangeText}`}),
+    highest: () => ({k: "Highest risk", v: f1(overall.v), s: `${overall.asset}, ${fmtT(overall.t)}${nTies > 1 ? ` (first of ${nTies})` : ""}`}),
+    at_watch: () => ({k: `${DAILY ? "Asset-days" : "Periods"} at watch`, v: int(nWatch), s: `${int(nHigh)} of them high, of ${int(scores.length)} scored`}),
+    assets_scored: () => ({k: "Assets scored", v: int(assets.length), s: `${int(scores.length)} ${unit}s, ${rangeText}`}),
+    last_run: () => lastRun ? {k: "Last run", v: lastRun.status === "failed" ? "Failed" : lastRun.status === "ok" ? "Scored" : "Nothing new", s: `${trig(lastRun)}, ${fmtWhen(lastRun.started_at || lastRun.finished_at)}`} : {k: "Last run", v: "–", s: "no run yet"},
+    unmatched: () => lastOk && lastOk.unmatched_share !== "" ? {k: "Logs with no match", v: pct1(+lastOk.unmatched_share), s: lastOk.unmatched_basis === "window" ? "of all logs scored in the last run, history included" : "of the new logs in the last successful run"} : {k: "Logs with no match", v: "–", s: "known after a run"},
+    open_alerts: () => { const n = openAlerts.length, hi = openAlerts.filter(a => a.severity === "high").length; return {k: "Open alerts", v: int(n), s: n ? (hi ? `${hi} high, ${n - hi} other` : "none of them high") : runs.length ? "nothing waiting" : "checked after each run"}; },
+    provisional: () => ({k: "Provisional", v: int(provN), s: `${provN === 1 ? "period" : "periods"} still waiting for data`})
+  };
+  const tiles = SPEC.header.tiles.map(t => T[t]());
+  $("tiles").style.setProperty("--n", Math.max(1, tiles.length));
+  $("tiles").classList.toggle("hidden", !tiles.length);
+  $("tiles").innerHTML = tiles.map(t => `<div class="card tile"><div class="k">${t.k}</div><div class="v">${t.v}</div><div class="s">${esc(t.s)}</div></div>`).join("");
+}
+
+// ---------- runs ----------
+const fmtWhen = s => s ? d3.timeFormat("%b %-d, %Y %H:%M")(new Date(s)) : "–";
+const fmtLog = d3.timeFormat("%b %-d, %Y %H:%M");
+const dataRange = r => { if (!r.data_from) return "–"; const a = fmtLog(new Date(r.data_from.replace(" ", "T"))), b = fmtLog(new Date(r.data_to.replace(" ", "T"))); return a === b ? esc(a) : `${esc(a)} – ${esc(b)}`; };
+const trig = r => r.trigger === "scheduled" ? "Scheduled" : r.trigger === "manual" ? "Manual" : "–";
+const statusTag = r => r.status === "ok" ? '<span class="st ok">Scored</span>' : r.status === "failed" ? '<span class="st failed">Failed</span>' : r.status === "no_new_data" ? '<span class="st none">Nothing new</span>' : esc(r.status);
+const failedRuns = runs.filter(r => r.status === "failed");
+function renderAlert() {
+  const lastRun = runs[runs.length - 1];
+  if (!lastRun || lastRun.status !== "failed") return;
+  const okRuns = runs.filter(r => r.status === "ok"), lastOk = okRuns[okRuns.length - 1];
+  let n = 0; for (let i = runs.length - 1; i >= 0 && runs[i].status === "failed"; i--) n++;
+  $("alert").innerHTML = `<b>The last run failed</b> (${esc(trig(lastRun).toLowerCase())}, ${esc(fmtWhen(lastRun.started_at || lastRun.finished_at))})${n > 1 ? `, as did the ${n - 1} before it` : ""}. ${esc(lastRun.reason || "")} ` +
+    `${lastOk ? `The scores below are from the last successful run, ${esc(fmtWhen(lastOk.finished_at))}.` : "No run has succeeded yet."}${RUN_TAB ? ` <a href="#${RUN_TAB}" id="alert-link">See runs</a>` : ""}`;
+  $("alert").classList.remove("hidden");
+  if (RUN_TAB) $("alert-link").onclick = ev => { ev.preventDefault(); showTab(RUN_TAB); };
+}
+function renderBadge() {
+  const badge = (tab, n, word) => {
+    const b = tab && document.querySelector(`#tabs button[data-tab="${tab}"]`);
+    if (b && n) b.insertAdjacentHTML("beforeend", `<span class="cnt" data-for="${word}">${n} ${word}</span>`);
+  };
+  document.querySelectorAll("#tabs .cnt").forEach(c => c.remove());
+  badge(ALERT_TAB, openAlerts.length, "open");
+  badge(RUN_TAB, failedRuns.length, "failed");
+}
+
+// ---------- tables: sort and filter ----------
+// Every table gets a header that sorts on a click and a row of filter boxes.
+// What was chosen is remembered per table, so it survives the table being
+// drawn again. A cell's data-v, when it has one, is what it sorts by (a date
+// or a number behind formatted text).
+const tableState = new Map();
+const cellNum = s => { const c = String(s).replace(/[,%+▲▼\s]/g, "").replace("−", "-"); return /^-?\d*\.?\d+/.test(c) ? parseFloat(c) : NaN; };
+const cellBlank = s => s === "" || s === "–" || s === "new";
+// A cell's date as a local day, "2024-02-05", from the date it sorts by.
+const cellDay = v => { if (!/^\d{4}-\d{2}-\d{2}/.test(v || "")) return ""; const d = new Date(v.length <= 10 ? v + "T00:00:00" : v.replace(" ", "T")); return isNaN(d) ? "" : d3.timeFormat("%Y-%m-%d")(d); };
+function tableTools(id) {
+  const table = $(id);
+  if (!table || !table.tHead || !table.tBodies[0]) return;
+  const st = tableState.get(id) || {col: null, dir: 1, f: []};
+  tableState.set(id, st);
+  const head = table.tHead.rows[0], body = table.tBodies[0], cells = [...head.cells];
+  const rows = [...body.rows];
+  rows.forEach((tr, i) => { tr.dataset.i = i; });
+  const sortVal = (tr, i) => { const td = tr.cells[i]; return !td ? "" : td.dataset.v !== undefined ? td.dataset.v : td.textContent.trim(); };
+  const dated = cells.map((c, i) => { const v = rows.map(tr => sortVal(tr, i)).filter(x => !cellBlank(x)); return v.length > 0 && v.every(x => cellDay(x)); });
+  const numeric = cells.map((c, i) => { if (dated[i]) return false; const v = rows.map(tr => sortVal(tr, i)).filter(x => !cellBlank(x)); return v.length > 0 && v.every(x => !isNaN(cellNum(x))); });
+  const apply = () => {
+    const live = [...body.rows].filter(tr => !tr.classList.contains("nomatch"));
+    if (st.col !== null && st.col < cells.length) {
+      const i = st.col, n = numeric[i];
+      live.sort((a, b) => {
+        const x = sortVal(a, i), y = sortVal(b, i), bx = cellBlank(x), by = cellBlank(y);
+        if (bx || by) return bx === by ? a.dataset.i - b.dataset.i : bx ? 1 : -1;   // blanks last, either way
+        return st.dir * (n ? cellNum(x) - cellNum(y) : x.localeCompare(y, undefined, {numeric: true, sensitivity: "base"})) || a.dataset.i - b.dataset.i;
+      });
+    } else live.sort((a, b) => a.dataset.i - b.dataset.i);
+    let shown = 0;
+    live.forEach(tr => {
+      const ok = st.f.every((q, i) => {
+        if (q && typeof q === "object") {
+          // A date column: keep rows whose day, or range of days, falls in
+          // the days chosen. Either end can be left open.
+          if (!q.from && !q.to) return true;
+          const td = tr.cells[i], a = td ? cellDay(td.dataset.v) : "", b = td ? cellDay(td.dataset.v2) || a : "";
+          return !!a && (!q.to || a <= q.to) && (!q.from || b >= q.from);
+        }
+        q = (q || "").trim(); if (!q) return true;
+        const text = tr.cells[i] ? tr.cells[i].textContent.trim() : "";
+        const m = numeric[i] && q.match(/^(>=|<=|>|<|=)\s*(-?\d*\.?\d+)$/);
+        if (m) { const v = cellNum(text), t = +m[2]; return !isNaN(v) && (m[1] === ">" ? v > t : m[1] === "<" ? v < t : m[1] === ">=" ? v >= t : m[1] === "<=" ? v <= t : v === t); }
+        return text.toLowerCase().includes(q.toLowerCase());
+      });
+      tr.hidden = !ok; if (ok) shown++;
+      body.appendChild(tr);
+    });
+    let none = body.querySelector("tr.nomatch");
+    if (!shown && live.length) {
+      if (!none) { none = body.insertRow(); none.className = "nomatch"; none.insertCell().colSpan = cells.length; }
+      none.cells[0].textContent = "No rows match the filters."; body.appendChild(none);
+    } else if (none) none.remove();
+    cells.forEach((c, i) => { c.classList.toggle("on", st.col === i); const a = c.querySelector(".arrow"); if (a) a.textContent = st.col === i ? (st.dir > 0 ? "▲" : "▼") : "↕"; c.setAttribute("aria-sort", st.col === i ? (st.dir > 0 ? "ascending" : "descending") : "none"); });
+  };
+  cells.forEach((c, i) => {
+    if (!c.textContent.trim()) return;                       // a column of buttons
+    c.classList.add("sort"); c.tabIndex = 0;
+    c.insertAdjacentHTML("beforeend", '<span class="arrow" aria-hidden="true"></span>');
+    // Numbers start highest first, words A to Z; a third click puts the
+    // table back as it was drawn.
+    const go = () => { const first = numeric[i] ? -1 : 1; if (st.col !== i) { st.col = i; st.dir = first; } else if (st.dir === first) st.dir = -first; else st.col = null; apply(); };
+    c.addEventListener("click", go);
+    c.addEventListener("keydown", ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); go(); } });
+  });
+  if (rows.length > 3) {
+    const fr = table.tHead.insertRow(); fr.className = "flt";
+    cells.forEach((c, i) => {
+      const cell = document.createElement("th"); fr.appendChild(cell);
+      if (!c.textContent.trim()) return;
+      const name = c.textContent.replace(/[↕▲▼]/g, "").trim();
+      if (dated[i]) {
+        // Two day pickers: from and to.
+        const q = st.f[i] && typeof st.f[i] === "object" ? st.f[i] : (st.f[i] = {from: "", to: ""});
+        const days = rows.map(tr => [cellDay(tr.cells[i].dataset.v), cellDay(tr.cells[i].dataset.v2)]).flat().filter(Boolean).sort();
+        const wrap = document.createElement("div"); wrap.className = "dates";
+        ["from", "to"].forEach(end => {
+          const inp = document.createElement("input");
+          inp.type = "date"; inp.value = q[end]; inp.min = days[0] || ""; inp.max = days[days.length - 1] || "";
+          inp.title = end === "from" ? "From this day" : "Up to this day";
+          inp.setAttribute("aria-label", `${name}: ${end === "from" ? "from this day" : "up to this day"}`);
+          inp.addEventListener("input", () => { q[end] = inp.value; apply(); });
+          wrap.appendChild(inp);
+        });
+        cell.appendChild(wrap);
+        return;
+      }
+      if (st.f[i] && typeof st.f[i] === "object") st.f[i] = "";
+      const inp = document.createElement("input");
+      inp.type = "search"; inp.value = st.f[i] || ""; inp.placeholder = numeric[i] ? "e.g. >30" : "filter";
+      inp.setAttribute("aria-label", `Filter ${name}`);
+      inp.addEventListener("input", () => { st.f[i] = inp.value; apply(); });
+      inp.addEventListener("click", ev => ev.stopPropagation());
+      cell.appendChild(inp);
+    });
+  } else st.f = [];
+  apply();
+}
+
+// ---------- alerts ----------
+function renderAlerts() {
+  const rules = meta.alert_rules || [];
+  const or = a => a.length <= 1 ? a.join("") : a.slice(0, -1).join("; ") + "; or " + a[a.length - 1];
+  $("alerts-note").textContent = rules.length
+    ? `An alert is raised after a run when ${or(rules)}. It stays open until it is acknowledged. If the same thing happens again while it is open, the alert is updated, not repeated ("Seen" counts the runs). Alerts about a failed run, a quiet asset or unmatched logs clear by themselves when a later run shows the problem has ended.${ASSET_TAB ? ` Click an alert about an asset to open it in ${tabTitle[ASSET_TAB]} at the time it points to.` : ""}`
+    : "No alert rules are set, so no new alerts are raised.";
+  if (IN_APP) $("alerts-note").textContent += " What raises an alert is chosen on the Settings tab.";
+  const n = openAlerts.length;
+  $("alerts-lede").textContent = n ? `${n} open alert${n > 1 ? "s" : ""}.` : rules.length ? "No open alerts." : "Alerts are turned off.";
+  $("ack-all").classList.toggle("hidden", n < 2);
+  const newest = (a, b) => String(b.last_seen_at || b.raised_at).localeCompare(String(a.last_seen_at || a.raised_at));
+  let list = openAlerts.slice().sort(newest);
+  if (popt("alerts", "include_closed")) list = list.concat(alerts.filter(a => a.status !== "open").sort(newest));
+  const limit = popt("alerts", "limit") || 50, total = list.length;
+  list = list.slice(0, limit);
+  if (!list.length) { $("alerts").innerHTML = ""; return; }
+  const level = a => a.severity === "high" ? '<span class="tag high" style="margin:0">High</span>' : a.severity === "watch" ? '<span class="tag watch" style="margin:0">Watch</span>' : '<span class="tag info" style="margin:0">Note</span>';
+  const status = a => a.status === "open" ? "<b>Open</b>" : `${a.status === "cleared" ? "Cleared" : "Acknowledged"} ${esc(fmtWhen(a.closed_at))}`;
+  const head = `<thead><tr>${th("Level", "High, watch or a note, from the rule that raised it.", "l")}${th("When", "When it happened in the data. For a failed run or unmatched logs, when the run was.", "l")}<th class="l">What happened</th>${th("Seen", "How many runs have found it while it was open.")}${th("Status", "Open until acknowledged. Cleared means a later run showed the problem had ended.", "l")}<th></th></tr></thead>`;
+  const body = list.map(a => `<tr class="${a.status === "open" ? "" : "closed"}" data-a="${esc(a.asset_id || "")}" data-at="${esc(a.at || "")}" title="Raised ${esc(fmtWhen(a.raised_at))}"><td class="l">${level(a)}</td><td class="l" style="white-space:nowrap" data-v="${esc(String(a.at || a.raised_at).slice(0, 16))}">${esc(fmtWhen(a.at || a.raised_at))}</td><td class="wrap">${esc(a.message)}</td><td>${int(a.times || 1)}</td><td class="l">${status(a)}</td>` +
+    `<td>${a.status === "open" ? `<span class="app-only"><button class="btn" type="button" data-ack="${esc(a.id)}">Acknowledge</button></span>` : ""}</td></tr>`).join("");
+  $("alerts").innerHTML = head + `<tbody>${body}</tbody>` + (total > list.length ? `<caption style="caption-side:bottom;text-align:left;color:var(--muted);font-size:12px;padding-top:6px">Showing ${list.length} of ${total}.</caption>` : "");
+  $("alerts").querySelectorAll("tbody tr").forEach(tr => {
+    const a = tr.dataset.a;
+    if (!a || !byAsset.has(a) || !ASSET_TAB) return;
+    tr.style.cursor = "pointer";
+    tr.onclick = ev => { if (!ev.target.closest("button")) openAsset(a, periodAt(a, tr.dataset.at)); };
+  });
+  tableTools("alerts");
+}
+// The asset's scored period at a time, or the last one before it.
+function periodAt(a, at) {
+  if (!at) return null;
+  const t = parseT(at), rows = byAsset.get(a) || [];
+  let best = null;
+  rows.forEach(d => { if (d.t <= t && (!best || d.t > best.t)) best = d; });
+  return best ? best.k : null;
+}
+// What raises an alert, one line per kind of rule. In the app the values can
+// be changed and saved; in a saved page they are shown as they are.
+function renderRules() {
+  const lines = meta.alert_settings || [];
+  $("rules-note").textContent = "What raises an alert. Changes apply from the next run; alerts already raised stay as they are.";
+  $("rules").innerHTML = lines.map(r => {
+    const value = r.choices
+      ? `<select data-value${IN_APP && r.on ? "" : " disabled"}>${r.choices.map(c => `<option value="${esc(c.value)}"${c.value === r.value ? " selected" : ""}>${esc(c.label)}</option>`).join("")}</select>`
+      : `<input type="number" data-value${IN_APP && r.on ? "" : " disabled"} min="${r.min}" max="${r.max}" step="any" value="${esc(r.value)}">`;
+    return `<label class="rule${r.on ? "" : " off"}" data-rule="${esc(r.type)}" data-setting="${esc(r.setting)}"><input type="checkbox" data-on${IN_APP ? "" : " disabled"}${r.on ? " checked" : ""}> <span>${esc(r.before)}</span> ${value} <span>${esc(r.after)}</span></label>`;
+  }).join("");
+}
+// ---------- settings: tabs and panels ----------
+// A board the reader arranges by hand: a column per tab, a chip per panel.
+// Tick boxes show or hide; dragging reorders tabs and panels, moves a panel
+// between tabs, or takes it on and off the page. It is a working copy:
+// nothing is saved until Save layout, and the app then loads the page again.
+let draft = null, drag = null;
+const panelName = {}, panelShows = {}, panelOrder = [];
+(meta.menu || []).forEach(g => g.panels.forEach(p => { panelName[p.type] = p.name; panelShows[p.type] = p.shows; panelOrder.push(p.type); }));
+function renderLayoutEditor() {
+  if (!draft) draft = {tabs: SPEC.tabs.map(t => ({title: t.title, hidden: !!t.hidden, panels: t.panels.map(p => ({...p}))})), tiles: SPEC.header.tiles.slice()};
+  const say = (text, bad) => { const m = $("layout-msg"); m.textContent = text || ""; m.style.color = bad ? "var(--red)" : ""; };
+  const redraw = () => { say(""); renderLayoutEditor(); };
+  const isAsset = type => type.startsWith("asset_");
+  // The panels about one asset share its selector, so they move together.
+  const gather = ti => draft.tabs.forEach((t, i) => { if (i === ti) return; const mine = t.panels.filter(p => isAsset(p.type)); t.panels = t.panels.filter(p => !isAsset(p.type)); draft.tabs[ti].panels.push(...mine); });
+  // Take a panel from where it is (a tab, or the tray when ti is -1).
+  const lift = (ti, type) => { if (ti < 0) return {type}; const list = draft.tabs[ti].panels, i = list.findIndex(p => p.type === type); return list.splice(i, 1)[0]; };
+  const place = (panel, ti, at) => { const list = draft.tabs[ti].panels; list.splice(at === undefined ? list.length : at, 0, panel); if (isAsset(panel.type)) gather(ti); };
+  const used = new Set(draft.tabs.flatMap(t => t.panels.map(p => p.type)));
+  const tray = panelOrder.filter(type => !used.has(type));
+  const chip = (p, ti) => `<div class="chip${p.hidden ? " off" : ""}" draggable="true" tabindex="0" data-chip="${esc(p.type)}" data-ti="${ti}" title="${esc(panelShows[p.type] || "")}">
+    <span class="grip" aria-hidden="true">⠿</span>${ti >= 0 ? `<input type="checkbox" data-show${p.hidden ? "" : " checked"} aria-label="Show ${esc(panelName[p.type] || p.type)}">` : ""}<span class="nm">${esc(p.title || panelName[p.type] || p.type)}</span></div>`;
+  let h = `<div class="board">` + draft.tabs.map((t, ti) => `<div class="col${t.hidden ? " off" : ""}" data-col="${ti}">
+      <div class="col-head"><span class="grip" draggable="true" data-tabgrip="${ti}" title="Drag to change the order of the tabs" aria-label="Drag to reorder this tab">⠿</span>
+        <input type="checkbox" data-tabshow${t.hidden ? "" : " checked"} aria-label="Show this tab"><input type="text" data-tabtitle value="${esc(t.title)}" maxlength="40" aria-label="Tab name">
+        <button class="x" type="button" data-tabdel title="Delete this tab; its panels go back to Not on the page" aria-label="Delete tab">✕</button></div>
+      <div class="slots" data-slots="${ti}">${t.panels.map(p => chip(p, ti)).join("")}</div></div>`).join("") +
+    (draft.tabs.length < 8 ? `<button class="newtab" type="button" data-newtab>+ New tab<br>or drop a panel here</button>` : "") + `</div>`;
+  h += `<div class="tray" data-tray><h4>Not on the page</h4><span class="note" style="display:block;margin:0">Drag one onto a tab to add it.</span><div class="slots" data-slots="-1">${tray.map(type => chip({type}, -1)).join("")}</div></div>`;
+  h += `<h4 style="margin:18px 0 2px">Figures at the top</h4><p class="note" style="display:block;margin:0">Up to 6, shown in the order ticked.</p><div class="ed-tiles">${Object.entries(meta.tiles || {}).map(([k, text]) => `<label><input type="checkbox" data-tile="${esc(k)}"${draft.tiles.includes(k) ? " checked" : ""}${!draft.tiles.includes(k) && draft.tiles.length >= 6 ? " disabled" : ""}> ${esc(text)}</label>`).join("")}</div>`;
+  const ed = $("layout-editor");
+  ed.innerHTML = h;
+  const clear = () => ed.querySelectorAll(".before,.after,.over").forEach(el => el.classList.remove("before", "after", "over"));
+  const mark = (el, cls) => { if (!el.classList.contains(cls)) { clear(); el.classList.add(cls); } };
+
+  // ticks, names, delete
+  ed.querySelectorAll("[data-tile]").forEach(c => c.onchange = () => { draft.tiles = c.checked ? draft.tiles.concat([c.dataset.tile]) : draft.tiles.filter(x => x !== c.dataset.tile); redraw(); });
+  ed.querySelectorAll("[data-col]").forEach(col => {
+    const ti = +col.dataset.col, t = draft.tabs[ti];
+    col.querySelector("[data-tabshow]").onchange = ev => { t.hidden = !ev.target.checked; redraw(); };
+    col.querySelector("[data-tabtitle]").oninput = ev => { t.title = ev.target.value; };
+    col.querySelector("[data-tabdel]").onclick = () => { draft.tabs.splice(ti, 1); redraw(); };
+  });
+  ed.querySelectorAll("[data-show]").forEach(c => { const el = c.closest("[data-chip]"); c.onchange = () => { draft.tabs[+el.dataset.ti].panels.find(p => p.type === el.dataset.chip).hidden = !c.checked; redraw(); }; c.onclick = ev => ev.stopPropagation(); });
+  const addTab = panel => { draft.tabs.push({title: `Tab ${draft.tabs.length + 1}`, hidden: false, panels: []}); if (panel) place(panel, draft.tabs.length - 1); redraw(); };
+  const nt = ed.querySelector("[data-newtab]");
+  if (nt) nt.onclick = () => addTab();
+
+  // dragging a panel
+  ed.querySelectorAll("[data-chip]").forEach(el => {
+    el.addEventListener("dragstart", ev => { drag = {kind: "panel", type: el.dataset.chip, ti: +el.dataset.ti}; el.classList.add("dragging"); if (ev.dataTransfer) { ev.dataTransfer.effectAllowed = "move"; ev.dataTransfer.setData("text/plain", el.dataset.chip); } ev.stopPropagation(); });
+    el.addEventListener("dragend", () => { drag = null; clear(); el.classList.remove("dragging"); });
+    // onto another chip: before or after it, by which half the pointer is in
+    el.addEventListener("dragover", ev => { if (!drag || drag.kind !== "panel" || +el.dataset.ti < 0 || el.dataset.chip === drag.type) return; ev.preventDefault(); ev.stopPropagation(); const r = el.getBoundingClientRect(); mark(el, ev.clientY < r.top + r.height / 2 ? "before" : "after"); });
+    el.addEventListener("drop", ev => {
+      if (!drag || drag.kind !== "panel" || +el.dataset.ti < 0 || el.dataset.chip === drag.type) return;
+      ev.preventDefault(); ev.stopPropagation();
+      const after = el.classList.contains("after"), ti = +el.dataset.ti, panel = lift(drag.ti, drag.type);
+      const at = draft.tabs[ti].panels.findIndex(p => p.type === el.dataset.chip) + (after ? 1 : 0);
+      place(panel, ti, at); drag = null; redraw();
+    });
+    // keyboard: arrows move a focused panel within its tab or to the next one
+    el.addEventListener("keydown", ev => {
+      const ti = +el.dataset.ti, type = el.dataset.chip; if (ti < 0 || ev.target !== el) return;
+      const list = draft.tabs[ti].panels, i = list.findIndex(p => p.type === type);
+      let to = null;
+      if (ev.key === "ArrowUp" && i > 0) { list.splice(i - 1, 0, list.splice(i, 1)[0]); to = ti; }
+      else if (ev.key === "ArrowDown" && i < list.length - 1) { list.splice(i + 1, 0, list.splice(i, 1)[0]); to = ti; }
+      else if (ev.key === "ArrowLeft" && ti > 0) { place(lift(ti, type), ti - 1); to = ti - 1; }
+      else if (ev.key === "ArrowRight" && ti < draft.tabs.length - 1) { place(lift(ti, type), ti + 1); to = ti + 1; }
+      else if (ev.key === "Delete" || ev.key === "Backspace") { lift(ti, type); to = -1; }
+      else return;
+      ev.preventDefault(); redraw();
+      const again = $("layout-editor").querySelector(`[data-chip="${type}"]`); if (again) again.focus();
+    });
+  });
+  // onto a tab (its empty space): to the end of it. Also where tabs are dropped.
+  ed.querySelectorAll("[data-col]").forEach(col => {
+    const ti = +col.dataset.col;
+    col.addEventListener("dragover", ev => {
+      if (!drag) return;
+      if (drag.kind === "panel") { ev.preventDefault(); mark(col, "over"); }
+      else if (drag.ti !== ti) { ev.preventDefault(); const r = col.getBoundingClientRect(); mark(col, ev.clientX < r.left + r.width / 2 ? "before" : "after"); }
+    });
+    col.addEventListener("drop", ev => {
+      if (!drag) return;
+      ev.preventDefault();
+      if (drag.kind === "panel") place(lift(drag.ti, drag.type), ti);
+      else if (drag.ti !== ti) { const after = col.classList.contains("after"), moved = draft.tabs.splice(drag.ti, 1)[0]; let at = ti - (drag.ti < ti ? 1 : 0) + (after ? 1 : 0); draft.tabs.splice(at, 0, moved); }
+      drag = null; redraw();
+    });
+  });
+  // dragging a tab, by its handle
+  ed.querySelectorAll("[data-tabgrip]").forEach(g => {
+    const col = g.closest("[data-col]");
+    g.addEventListener("dragstart", ev => { drag = {kind: "tab", ti: +g.dataset.tabgrip}; col.classList.add("dragging"); if (ev.dataTransfer) { ev.dataTransfer.effectAllowed = "move"; ev.dataTransfer.setData("text/plain", "tab"); try { ev.dataTransfer.setDragImage(col, 20, 16); } catch (e) { /* not everywhere */ } } });
+    g.addEventListener("dragend", () => { drag = null; clear(); col.classList.remove("dragging"); });
+  });
+  // off the page, or onto a new tab
+  const zone = (el, drop) => { if (!el) return; el.addEventListener("dragover", ev => { if (drag && drag.kind === "panel") { ev.preventDefault(); mark(el, "over"); } }); el.addEventListener("drop", ev => { if (!drag || drag.kind !== "panel") return; ev.preventDefault(); const d = drag; drag = null; drop(d); }); };
+  zone(ed.querySelector("[data-tray]"), d => { if (d.ti >= 0) lift(d.ti, d.type); redraw(); });
+  zone(nt, d => addTab(lift(d.ti, d.type)));
+
+  $("layout-undo").onclick = () => { draft = null; redraw(); };
+  $("layout-save").onclick = () => {
+    const tabs = draft.tabs.filter(t => t.panels.length).map(t => ({title: t.title.trim(), hidden: !!t.hidden, panels: t.panels.map(p => ({...p, hidden: !!p.hidden}))}));
+    if (!tabs.some(t => !t.hidden && t.panels.some(p => !p.hidden))) return say("Keep at least one tab ticked, with a ticked panel on it.", true);
+    $("layout-save").disabled = true; say("Saving…");
+    fetch("/api/layout", {method: "POST", headers: {"X-Amygda-App": "1"}, body: JSON.stringify({tabs, tiles: draft.tiles})})
+      .then(r => r.json().then(d => ({ok: r.ok, d})))
+      .then(({ok, d}) => { if (!ok) throw new Error(d.error || "The layout could not be saved."); say("Saved. Loading the new layout…"); location.reload(); })
+      .catch(e => { $("layout-save").disabled = false; say(e.message, true); });
+  };
+}
+function renderRuns() {
+  if (!runs.length) return;
+  const lastRun = runs[runs.length - 1];
+  const okRuns = runs.filter(r => r.status === "ok"), lastOk = okRuns[okRuns.length - 1];
+  const um = lastOk && lastOk.unmatched_share !== "" ? +lastOk.unmatched_share : null;
+  const prov = scores.filter(d => d.prov).length;
+  const ht = [
+    {k: "Last run", v: lastRun.status === "failed" ? "Failed" : lastRun.status === "ok" ? "Scored" : "Nothing new", s: `${trig(lastRun)}, ${fmtWhen(lastRun.started_at || lastRun.finished_at)}`},
+    {k: "Runs", v: int(runs.length), s: `${int(okRuns.length)} scored, ${int(failedRuns.length)} failed, ${int(runs.filter(r => r.trigger === "scheduled").length)} scheduled`},
+    {k: "Logs with no match", v: um === null ? "–" : pct1(um), s: lastOk && lastOk.unmatched_basis === "window" ? "of all logs scored in the last successful run, history included" : "of the new logs in the last successful run"},
+    {k: "Provisional", v: int(prov), s: `${prov === 1 ? "period" : "periods"} still waiting for data`}
+  ];
+  if (on("run_health")) $("health-tiles").innerHTML = ht.map(t => `<div class="stat"><span class="k">${t.k}</span><span class="v">${t.v}</span><span class="s">${esc(t.s)}</span></div>`).join("");
+  const src = lastRun.status === "failed" ? lastRun : (lastOk || lastRun);
+  const warns = src.status === "failed" ? [src.reason] : (src.warnings || "").split(" || ").filter(Boolean);
+  if (on("run_warnings")) $("health-warnings").innerHTML = warns.length ? warns.map(w => `<li class="warn">${esc(w)}</li>`).join("") : `<li>No warnings in the last run.</li>`;
+  if (!on("run_table")) return;
+  const limit = popt("run_table", "limit"), shown = limit ? runs.slice(-limit) : runs;
+  $("runs-note").textContent = `${shown.length < runs.length ? `The newest ${shown.length} of ${runs.length} runs, newest first.` : "Newest first."} "Trigger" is how the run was started: by the app's schedule or by hand. "Data" is the time range of the new logs the run scored. A failed run changes nothing: its files stay in the inbox for the next run. "No match" is the share of the new logs that matched no subsystem${runs.some(r => r.unmatched_basis === "window") ? " (runs against an API older than 4.2.0 count history too)" : ""}.`;
+  const rh = `<thead><tr><th>Started</th>${th("Trigger", "How the run was started: from the schedule, or by hand.", "l")}<th class="l">Status</th><th>Took</th>${th("Data", "The time range of the new logs this run scored: the first and last log.", "l")}${th("New logs", "Rows not scored before.")}${th("Already seen", "Rows dropped because an earlier run had scored them.")}${th("Skipped", "Rows older than the history kept, or with a date that couldn't be read.")}${th("Periods", "Scores added or re-scored.")}<th>Assets</th>${th("New assets", "Assets the monitor had not seen before this run.")}${th("No match", "Share of the new logs that matched no subsystem, so added nothing to a score.")}<th class="l">Warnings or reason</th></tr></thead>`;
+  const took = r => { if (!r.started_at || !r.finished_at) return "–"; const s = (new Date(r.finished_at) - new Date(r.started_at)) / 1000; return s < 90 ? `${Math.max(0, Math.round(s))} s` : `${f1(s / 60)} min`; };
+  const rb = shown.slice().reverse().map(r => {
+    const detail = r.status === "failed" ? r.reason : (r.warnings || "").split(" || ").filter(Boolean).join(" · ");
+    const dash = r.status === "failed";
+    return `<tr class="${dash ? "failed" : ""}"><td data-v="${esc(r.started_at || r.finished_at || "")}">${esc(fmtWhen(r.started_at || r.finished_at))}</td><td class="l">${trig(r)}</td><td class="l">${statusTag(r)}</td><td data-v="${r.started_at && r.finished_at ? (new Date(r.finished_at) - new Date(r.started_at)) / 1000 : ""}">${took(r)}</td><td class="l" data-v="${esc(r.data_from || "")}" data-v2="${esc(r.data_to || "")}">${dataRange(r)}</td>` +
+      `<td>${dash ? "–" : int(+r.rows_new || 0)}</td><td>${dash ? "–" : int(+r.rows_already_seen || 0)}</td><td>${dash ? "–" : int(+r.rows_skipped || 0)}</td><td>${dash ? "–" : int(+r.periods || 0)}</td><td>${dash ? "–" : int(+r.assets || 0)}</td><td>${dash ? "–" : int(+r.new_assets || 0)}</td>` +
+      `<td>${r.unmatched_share === "" || r.unmatched_share === undefined ? "–" : pct1(+r.unmatched_share)}</td><td class="wrap">${detail ? esc(detail) : "–"}</td></tr>`;
+  }).join("");
+  $("runs").innerHTML = rh + `<tbody>${rb}</tbody>`;
+  tableTools("runs");
+}
+
+// ---------- since the last run ----------
+function renderMonitor() {
+  const ok = runs.filter(r => r.status === "ok"), last = ok[ok.length - 1];
+  if (!last) return;
+  const flagged = popt("since_last_run", "only_flagged");
+  $("changes-note").textContent = `${flagged ? "Assets that reached watch or high in the latest successful run" : "Assets scored in the latest successful run, those that reached watch or high first"}. "Score now" is the asset's latest score and "Change" is how far it moved from its latest score before the run. "Highest in latest run" is the highest risk among the periods this run added or re-scored, and "Scored" is the time range of those periods (one score every ${meta.frequency_label}).${openHint("a row to open the asset")}`;
+  const lastWhen = last.finished_at ? fmtT(new Date(last.finished_at)) : "";
+  const up = changes.filter(c => c.band_of_highest === "high" || c.band_of_highest === "watch");
+  let s = `Last run ${lastWhen}: ${int(+last.rows_new || 0)} new logs${last.data_from ? ` from ${dataRange(last)}` : ""}, ${int(+last.periods || 0)} periods scored for ${changes.length} assets.`;
+  if (up.length) {
+    const hi = up.filter(c => c.band_of_highest === "high").map(c => c.asset_id), wa = up.filter(c => c.band_of_highest === "watch").map(c => c.asset_id);
+    if (hi.length) s += ` ${listJoin(hi.slice(0, 5))}${hi.length > 5 ? ` and ${hi.length - 5} others` : ""} reached high in the latest run.`;
+    if (wa.length) s += ` ${listJoin(wa.slice(0, 5))}${wa.length > 5 ? ` and ${wa.length - 5} others` : ""} reached watch.`;
+  } else if (changes.length) s += " No asset reached watch or high in the latest run.";
+  $("changes-lede").textContent = s;
+  const head = `<thead><tr><th>Asset</th>${th("Score now", "The asset's latest score.")}${th("Change", "How far the latest score moved from the asset's latest score before this run.")}${th("Highest in latest run", "The highest risk among the periods this run added or re-scored.")}${th("When", "When that highest risk was.")}${th(`Scored (every ${esc(meta.frequency_label)})`, `The time range of the periods this run scored for the asset. The model makes one score every ${meta.frequency_label}.`)}</tr></thead>`;
+  const body = (flagged ? up : changes).map(c => {
+    const hi = +c.highest_this_run, ch = c.change === "" ? null : +c.change;
+    const b = c.band_of_highest === "normal" ? null : c.band_of_highest;
+    const chTxt = ch === null ? "new" : Math.abs(ch) < 0.05 ? "0.0" : `${ch > 0 ? "▲ +" : "▼ −"}${f1(Math.abs(ch))}`;
+    const range = c.first_period ? (c.first_period === c.last_period ? fmtT(parseT(c.first_period)) : `${fmtT(parseT(c.first_period))} – ${fmtT(parseT(c.last_period))}`) : `${int(+c.periods_scored)} periods`;
+    return `<tr data-a="${esc(c.asset_id)}" data-k="${esc(c.highest_this_run_at)}"><td>${esc(c.asset_id)}${tag(b)}</td>
+      <td style="background:${C.risk(+c.score_now)}">${f1(+c.score_now)}</td>
+      <td data-v="${ch === null ? "" : ch}" style="color:${ch !== null && ch >= 0.05 ? C.red : C.muted};font-weight:600">${chTxt}</td>
+      <td style="background:${C.risk(hi)}">${f1(hi)}</td><td data-v="${esc(c.highest_this_run_at)}">${fmtT(parseT(c.highest_this_run_at))}</td><td data-v="${esc(c.first_period || "")}" data-v2="${esc(c.last_period || "")}">${range}</td></tr>`;
+  }).join("");
+  $("changes").innerHTML = body ? head + `<tbody class="${ASSET_TAB ? "click" : ""}">${body}</tbody>` : "";
+  $("changes").querySelectorAll("tbody tr").forEach(tr => tr.onclick = () => {
+    const a = tr.dataset.a; if (!byAsset.has(a)) return;
+    const k = byAsset.get(a).find(d => d.k === tr.dataset.k) ? tr.dataset.k : null;
+    openAsset(a, k);
+  });
+  tableTools("changes");
+}
+
+// ---------- heatmap ----------
+function heatAssets() {
+  const maxRows = popt("heatmap", "max_rows") || 40;
+  if (assets.length <= maxRows) return assets;
+  const keep = new Set(assets.slice(0, Math.max(3, Math.round(maxRows * 0.625))));
+  failures.forEach(f => { if (byAsset.has(f.asset) && f.day >= firstDay) keep.add(f.asset); });
+  keep.add(state.asset);
+  return assets.filter(a => keep.has(a));
+}
+function renderHeatmap() {
+  const rows = heatAssets();
+  let note = `${DAILY ? "Each cell is one asset-day." : "Each cell is an asset's highest risk that day."} Grey is normal, amber is watch (${WATCH}+), red is high (${HIGH}+). Outlined cells are days a failure was recorded. Blank cells are days with no logs. Hatched cells are provisional: more data for that day may still arrive.${openHint("a cell to open that asset and day")}`;
+  if (rows.length < assets.length) note += ` Showing the ${rows.length} highest-ranked assets (plus any with failures); the ranking lists all ${assets.length}.`;
+  $("heat-note").textContent = note;
+  const lw = 220, lg = d3.select("#heat-legend").html("").append("svg").attr("width", lw + 40).attr("height", 30);
+  const grad = lg.append("defs").append("linearGradient").attr("id", "lg");
+  d3.range(0, 1.01, 0.05).forEach(o => grad.append("stop").attr("offset", o).attr("stop-color", C.risk(o * HIGH)));
+  lg.append("rect").attr("x", 10).attr("y", 2).attr("width", lw).attr("height", 10).attr("fill", "url(#lg)").attr("stroke", C.line);
+  // Label watch only when it's far enough from high not to overlap.
+  const ticks = (HIGH - WATCH) / HIGH * lw >= 34 ? [0, WATCH, HIGH] : [0, HIGH];
+  ticks.forEach(v => lg.append("text").attr("x", 10 + v / HIGH * lw).attr("y", 25).attr("text-anchor", v === HIGH ? "end" : "middle").attr("fill", C.muted).text(v === HIGH ? (ticks.length === 2 ? `watch ${WATCH}, high ${HIGH}+` : `${v}+`) : v));
+
+  const host = $("heatmap"), W = Math.max(300, host.clientWidth);
+  const lab = W < 500 ? 70 : 100, top = 18, rh = 18;
+  const cw = (W - lab - 4) / days.length, H = top + rows.length * rh + 4;
+  const svg = d3.select(host).html("").append("svg").attr("width", W).attr("height", H);
+  const pat = svg.append("defs").append("pattern").attr("id", "hatch").attr("width", 5).attr("height", 5).attr("patternUnits", "userSpaceOnUse").attr("patternTransform", "rotate(45)");
+  pat.append("line").attr("x1", 0).attr("y1", 0).attr("x2", 0).attr("y2", 5).attr("stroke", C.fg).attr("stroke-width", 1.4).attr("opacity", 0.45);
+  const step = Math.ceil(46 / Math.max(cw, 1));
+  svg.append("g").selectAll("text").data(days.filter((d, i) => i % step === 0)).join("text")
+    .attr("x", d => lab + dayKeys.indexOf(dayKey(d)) * cw + cw / 2).attr("y", 12)
+    .attr("text-anchor", d => lab + dayKeys.indexOf(dayKey(d)) * cw + cw / 2 > W - 24 ? "end" : "middle").attr("fill", C.muted).style("font-size", "10px").text(d => fmtShort(d));
+  const g = svg.selectAll("g.r").data(rows).join("g").attr("class", "r").attr("transform", (a, i) => `translate(0,${top + i * rh})`);
+  g.append("text").attr("x", 0).attr("y", rh / 2 + 4).style("cursor", "pointer").style("font-weight", a => a === state.asset ? 700 : 400).text(a => a.length > 13 ? a.slice(0, 12) + "…" : a).on("click", (ev, a) => openAsset(a));
+  g.filter(a => a === state.asset).append("rect").attr("x", lab - 1).attr("y", 0).attr("width", days.length * cw + 2).attr("height", rh).attr("fill", "none").attr("stroke", C.fg).attr("stroke-width", 1.5).attr("rx", 2);
+  g.each(function(a) {
+    const gg = d3.select(this), dm = dayMax.get(a), fails = new Set((failBy.get(a) || []).map(f => f.day));
+    dayKeys.forEach((k, i) => {
+      const rec = dm.get(k), isFail = fails.has(k);
+      if (!rec && !isFail) return;
+      const x = lab + i * cw + 0.5, w = Math.max(1, cw - 1);
+      const cell = gg.append("g").style("cursor", rec ? "pointer" : "default");
+      cell.append("rect").attr("x", x).attr("y", 1).attr("width", w).attr("height", rh - 2).attr("rx", 1.5)
+        .attr("fill", rec ? C.risk(rec.v) : "none").attr("stroke", isFail ? C.fg : C.grid).attr("stroke-width", isFail ? 2 : 0.6);
+      if (rec && rec.prov) cell.append("rect").attr("x", x).attr("y", 1).attr("width", w).attr("height", rh - 2).attr("fill", "url(#hatch)").attr("pointer-events", "none");
+      cell.on("mousemove", ev => {
+        let h = `<b>${esc(a)}</b> · ${fmtDay(days[i])}<br>`;
+        h += rec ? `${DAILY ? "Risk" : "Highest risk"} <b>${f1(rec.v)}</b>${bandOf(rec.v) ? ` (${bandOf(rec.v)})` : ""}${rec.prov ? "<br>Provisional: more data may arrive" : ""}` : "No logs this day";
+        if (isFail) h += `<br><span style="color:${C.red}">Failure recorded</span>`;
+        showTip(ev, h);
+      }).on("mouseleave", hideTip).on("click", () => { if (rec) { hideTip(); openAsset(a, rec.k); } });
+    });
+  });
+}
+
+// ---------- ranking ----------
+function renderRanking() {
+  const hasF = failures.length > 0;
+  const cols = popt("ranking", "columns").filter(c => c !== "failures" || hasF);
+  const top = popt("ranking", "top"), list = top ? assets.slice(0, top) : assets;
+  const cell = v => `<td style="background:${C.risk(v)}">${f1(v)}</td>`;
+  const COL = {
+    mean: {h: th("Average risk", "The mean of the asset's scores in the dates shown. The bar is the same figure on a 0–100 scale."), c: s => `<td>${f1(s.mean)}<span class="bar" style="width:${Math.max(1, s.mean * 0.6)}px;background:${C.risk(s.mean)}"></span></td>`},
+    p90: {h: th("90th pct", "Nine in ten of the asset's scores were at or below this."), c: s => cell(s.p90)},
+    peak: {h: th("Peak", "The asset's highest score in the dates shown."), c: s => cell(s.peak)},
+    peak_time: {h: th(`Peak ${DAILY ? "day" : "time"}`, "When the highest score was."), c: s => `<td>${fmtT(s.peakT)}${s.nPeakTies > 1 ? ` (first of ${s.nPeakTies})` : ""}</td>`},
+    latest: {h: th("Latest", "The asset's most recent score. \"prov.\" means more data for that period may still arrive."), c: s => `<td>${f1(s.latest.v)}${s.latest.prov ? '<span class="tag prov">prov.</span>' : ""}</td>`},
+    at_watch: {h: th("At watch", `Periods with a score of ${WATCH} or more (high included).`), c: s => `<td>${int(s.nWatch)}</td>`},
+    at_high: {h: th("At high", `Periods with a score of ${HIGH} or more.`), c: s => `<td>${int(s.nHigh)}</td>`},
+    failures: {h: th("Failures before", "Failures recorded before the dates shown.") + th("Failures in period", "Failures recorded within the dates shown."), c: s => `<td>${s.failBefore}</td><td>${s.failIn}</td>`}
+  };
+  $("rank-note").textContent = `Assets ranked by ${RANK_LABEL}, highest first.${list.length < assets.length ? ` Showing the first ${list.length} of ${assets.length}.` : ""}${cols.includes("mean") ? " The bar shows average risk on a 0–100 scale." : ""} Coloured cells use the heatmap's colours.${cols.includes("failures") ? " Failure columns count failures before and during the period shown." : ""}${openHint("a row to open the asset")}`;
+  const head = `<thead><tr><th>Asset</th>${cols.map(c => COL[c].h).join("")}</tr></thead>`;
+  const body = list.map(a => {
+    const s = sum.get(a);
+    return `<tr data-a="${esc(a)}" class="${a === state.asset ? "sel" : ""}"><td>${esc(a)}${tag(bandOf(s.peak))}</td>${cols.map(c => COL[c].c(s)).join("")}</tr>`;
+  }).join("");
+  $("ranking").innerHTML = head + `<tbody class="${ASSET_TAB ? "click" : ""}">${body}</tbody>`;
+  $("ranking").querySelectorAll("tbody tr").forEach(tr => tr.onclick = () => openAsset(tr.dataset.a));
+  tableTools("ranking");
+}
+
+// ---------- risk by asset and system ----------
+function renderFleetSystems() {
+  const mode = popt("fleet_systems", "value");
+  const what = {peak: "highest", latest: "latest", mean: "average"}[mode];
+  $("fs-note").textContent = `Each cell is the ${what} risk of one system on one asset in the period shown, on a 0–100 scale. "Overall" is the asset's ${what} operational risk${mode === "latest" ? ', the same figure as "Score now"' : ""}, in the same colours as the other tables: grey is normal, amber is watch (${WATCH}+) and red is high (${HIGH}+). The bands apply to the overall score only, so the system columns are plain figures. Assets are ranked by ${RANK_LABEL}. A dash means the system has no score for that asset.${openHint("a row to open the asset")}`;
+  const pickV = v => !v.length ? null : mode === "peak" ? d3.max(v) : mode === "mean" ? d3.mean(v) : v[v.length - 1];
+  const td = (v, overall) => v === null || v === undefined ? "<td>–</td>" : overall ? `<td style="background:${C.risk(v)}">${f1(v)}</td>` : `<td>${f1(v)}</td>`;
+  const head = `<thead><tr><th>Asset</th>${th("Overall", `The asset's ${what} operational risk, in the same colours as the other tables.`)}${SYSTEMS.map(sy => th(esc(nice(sy)), `The ${what} risk of this system, 0–100. The alert bands don't apply to systems.`)).join("")}</tr></thead>`;
+  const body = assets.map(a => {
+    const rows = byAsset.get(a);
+    return `<tr data-a="${esc(a)}" class="${a === state.asset ? "sel" : ""}"><td>${esc(a)}</td>${td(pickV(rows.map(d => d.v)), true)}` +
+      SYSTEMS.map(sy => td(pickV(rows.map(d => d.sys[sy]).filter(x => x !== null)))).join("") + "</tr>";
+  }).join("");
+  $("fleet-systems").innerHTML = head + `<tbody class="${ASSET_TAB ? "click" : ""}">${body}</tbody>`;
+  $("fleet-systems").querySelectorAll("tbody tr").forEach(tr => tr.onclick = () => openAsset(tr.dataset.a));
+  tableTools("fleet-systems");
+}
+
+// ---------- asset detail ----------
+function segments(rows, step) {
+  const gap = 1.5 * (step || (DAILY ? 86400000 : FREQ_MS)), out = [];
+  let cur = [];
+  rows.forEach((d, i) => { if (i && d.t - rows[i - 1].t > gap) { out.push(cur); cur = []; } cur.push(d); });
+  if (cur.length) out.push(cur);
+  return out;
+}
+function xAxis(svg, x, H, M) {
+  svg.append("g").attr("class", "axis").attr("transform", `translate(0,${H - M.b})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((x.range()[1] - x.range()[0]) / 90))).tickSizeOuter(0));
+}
+// Resolutions offered: Day and finer, down to the model's own frequency.
+// Coarser than the model, each point is the highest risk in its time bucket.
+const RES = [
+  {label: "Day", noun: "day", ms: 86400000, floor: d3.timeDay},
+  {label: "6 hours", noun: "6-hour block", ms: 21600000, floor: d3.timeHour.every(6)},
+  {label: "Hour", noun: "hour", ms: 3600000, floor: d3.timeHour},
+  {label: "15 minutes", noun: "15-minute block", ms: 900000, floor: d3.timeMinute.every(15)},
+  {label: "5 minutes", noun: "5-minute block", ms: 300000, floor: d3.timeMinute.every(5)},
+  {label: "1 minute", noun: "minute", ms: 60000, floor: d3.timeMinute}
+].filter(r => r.ms > FREQ_MS);
+const FREQ_NAME = meta.frequency_label.charAt(0).toUpperCase() + meta.frequency_label.slice(1);
+RES.push({label: `${FREQ_NAME} (as scored)`, short: FREQ_NAME, noun: "period", ms: FREQ_MS, native: true});
+const FULL = [d3.timeDay.floor(tMin), d3.timeDay.offset(d3.timeDay.floor(tMax), 1)];
+// Auto: daily for the whole range; when zoomed, the finest resolution that
+// keeps about one bucket per 3 pixels.
+function pickRes(width) {
+  if (state.res !== "auto") return RES[+state.res];
+  if (!state.zoom) return RES[0];
+  const span = state.zoom[1] - state.zoom[0];
+  return RES.slice().reverse().find(r => span / r.ms <= width / 3) || RES[0];
+}
+function bucketRows(rows, res) {
+  if (res.native) return rows.map(d => ({...d, top: d, n: 1}));
+  return [...d3.group(rows, d => +res.floor(d.t))].map(([t, v]) => {
+    const top = v.reduce((x, y) => (y.v > x.v ? y : x)), sys = {};
+    SYSTEMS.forEach(s => { const vals = v.map(d => d.sys[s]).filter(x => x !== null); sys[s] = vals.length ? d3.max(vals) : null; });
+    return {t: new Date(t), v: top.v, k: top.k, top, prov: v.some(d => d.prov), sys, n: v.length};
+  }).sort((a, b) => a.t - b.t);
+}
+let clipN = 0;
+// A click redraws the charts, so the browser never sees a double-click.
+// Hold a single click briefly: a second click in time zooms out instead.
+let clickTimer = null;
+function clickOrDouble(single) {
+  if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; if (state.zoom) { state.zoom = null; hideTip(); renderAsset(); } return; }
+  clickTimer = setTimeout(() => { clickTimer = null; single(); }, 250);
+}
+document.addEventListener("keydown", ev => { if (ev.key === "Escape" && state.zoom) { state.zoom = null; renderAsset(); } });
+function clipTo(svg, x0, y0, w, h) {
+  const id = `clip${++clipN}`;
+  svg.append("clipPath").attr("id", id).append("rect").attr("x", x0).attr("y", y0).attr("width", Math.max(0, w)).attr("height", Math.max(0, h));
+  return `url(#${id})`;
+}
+// ---------- logs behind the score ----------
+// A chart of how many logs the asset had over time, in the same dates and
+// resolution as the charts above, and a table of the logs in a span of time
+// the reader chooses: the window behind the selected score by default.
+function renderLogs(a, sel, res, dom, selT, pick, pts) {
+  const all = logsBy.get(a) || [], mapped = !!LOGS.mapped;
+  const sysOf = li => { const s = LOGS.logs[li][1]; return s && SYSTEMS.includes(s) ? s : null; };
+  const end = +sel.t + FREQ_MS, start = WINDOW_MS ? end - WINDOW_MS : +sel.t;
+  const spans = {
+    window: {label: `the ${meta.window_label || "window"} behind the selected score`, has: d => d.t >= start && d.t < end},
+    period: {label: "the selected period only", has: d => d.k === sel.k},
+    view: {label: "all the dates in the chart", has: d => d.t >= dom[0] && d.t <= dom[1]}
+  };
+  if (!WINDOW_MS) delete spans.window;
+  if (!spans[state.logSpan]) state.logSpan = "period";
+  const sp = $("logs-span");
+  sp.innerHTML = Object.entries(spans).map(([v, o]) => `<option value="${v}"${v === state.logSpan ? " selected" : ""}>${esc(o.label)}</option>`).join("");
+  sp.onchange = () => { state.logSpan = sp.value; renderAsset(); };
+  $("logs-note").textContent = `Each bar is the number of ${a}'s logs in one ${res.native ? "scored period" : res.noun}${mapped ? ", coloured by the system each log counts toward; grey logs match no subsystem and don't affect the score" : ""}. The dark line marks the selected period${WINDOW_MS ? ` and the shaded band the ${meta.window_label} of logs behind its score` : ""}. The table lists those logs, most frequent first. The chart follows the resolution and zoom above.${LOGS.from ? ` Logs before ${fmtT(parseT(LOGS.from))} are not kept on this page.` : ""}`;
+
+  // chart: one stacked bar per time bucket
+  const host = $("logs-chart"), W = Math.max(280, host.clientWidth), H = 130, M = {l: 34, r: 12, t: 8, b: 22};
+  const vis = all.filter(d => d.t >= +dom[0] - res.ms && d.t <= dom[1]);
+  const groups = mapped ? SYSTEMS.concat(["__none"]) : ["__all"];
+  const floor = d => res.native ? +d.t : +res.floor(d.t);
+  const buckets = [...d3.rollup(vis, v => { const o = {total: 0}; groups.forEach(g => { o[g] = 0; }); v.forEach(d => { const g = mapped ? (sysOf(d.li) || "__none") : "__all"; o[g] += d.n; o.total += d.n; }); return o; }, floor)].map(([t, o]) => ({t: new Date(t), ...o})).sort((p, q) => p.t - q.t);
+  const x = d3.scaleTime().domain(dom).range([M.l, W - M.r]);
+  const y = d3.scaleLinear().domain([0, d3.max(buckets, b => b.total) || 1]).nice(3).range([H - M.b, M.t]);
+  const svg = d3.select(host).html("").append("svg").attr("width", W).attr("height", H);
+  const clip = clipTo(svg, M.l, 0, W - M.l - M.r, H - M.b + 1);
+  svg.append("g").attr("class", "axis").attr("transform", `translate(${M.l},0)`).call(d3.axisLeft(y).ticks(3).tickFormat(d3.format("d")).tickSize(-(W - M.l - M.r))).call(g => g.selectAll(".tick line").attr("stroke", C.grid)).call(g => g.select(".domain").remove());
+  xAxis(svg, x, H, M);
+  const plot = svg.append("g").attr("clip-path", clip);
+  if (WINDOW_MS) plot.append("rect").attr("x", x(start)).attr("width", Math.max(1, x(end) - x(start))).attr("y", M.t).attr("height", H - M.b - M.t).attr("fill", C.fg).attr("opacity", 0.07);
+  const bw = Math.max(1.5, x(+dom[0] + res.ms) - x(dom[0]) - (res.ms >= 3600000 ? 1 : 0.5));
+  const colour = g => g === "__none" ? C.muted : g === "__all" ? C.fg : C.sys[g];
+  buckets.forEach(b => { let base = 0; groups.forEach(g => { if (!b[g]) return; plot.append("rect").attr("x", x(b.t)).attr("width", bw).attr("y", y(base + b[g])).attr("height", y(base) - y(base + b[g])).attr("fill", colour(g)).attr("opacity", g === "__none" ? 0.45 : 0.9); base += b[g]; }); });
+  plot.append("line").attr("x1", x(selT)).attr("x2", x(selT)).attr("y1", M.t).attr("y2", H - M.b).attr("stroke", C.fg).attr("opacity", 0.6);
+  const near = px => buckets.length ? buckets[d3.bisector(b => +b.t + res.ms / 2).center(buckets, x.invert(px))] : null;
+  svg.append("rect").attr("x", M.l).attr("y", 0).attr("width", W - M.l - M.r).attr("height", H - M.b).attr("fill", "transparent").style("cursor", "pointer")
+    .on("mousemove", ev => {
+      const b = near(d3.pointer(ev, svg.node())[0]); if (!b) return;
+      let h = `<b>${esc(a)}</b> · ${res.native || res.noun !== "day" ? fmtT(b.t) : fmtDay(b.t)}<br><b>${int(b.total)}</b> log${b.total === 1 ? "" : "s"}`;
+      if (mapped) { h += "<table>"; groups.forEach(g => { if (b[g]) h += `<tr><td><span style="color:${colour(g)}">■</span> ${g === "__none" ? "no subsystem" : esc(nice(g))}</td><td>${int(b[g])}</td></tr>`; }); h += "</table>"; }
+      showTip(ev, h);
+    }).on("mouseleave", hideTip)
+    .on("click", ev => { const t = x.invert(d3.pointer(ev, svg.node())[0]); const d = pts.length ? pts[d3.bisector(p => +p.t + res.ms / 2).center(pts, t)] : null; clickOrDouble(() => pick(d)); });
+
+  // table: the logs in the chosen span, one row per kind of log
+  const inSpan = all.filter(spans[state.logSpan].has), by = new Map();
+  inSpan.forEach(d => { const o = by.get(d.li) || {li: d.li, n: 0, first: d, last: d}; o.n += d.n; if (d.t < o.first.t) o.first = d; if (d.t > o.last.t) o.last = d; by.set(d.li, o); });
+  const kinds = [...by.values()].sort((p, q) => q.n - p.n), total = d3.sum(kinds, o => o.n);
+  const limit = popt("asset_logs", "max_rows") || 300, list = kinds.slice(0, limit);
+  if (!placed.get("asset_logs").title) $("logs-title").textContent = `Logs behind the score at ${fmtT(sel.t)}`;
+  $("logs-count").textContent = total ? `${int(total)} log${total === 1 ? "" : "s"}, ${int(kinds.length)} kind${kinds.length === 1 ? "" : "s"}${kinds.length > list.length ? `; the ${list.length} most frequent are listed` : ""}.` : "No logs in this span.";
+  if (!list.length) { $("logs").innerHTML = ""; return; }
+  const head = `<thead><tr><th class="l">Log</th>${mapped ? `${th("System", "The system this log counts toward. A dash means the model maps it to no subsystem, so it doesn't affect the score.", "l")}<th class="l">Subsystem</th>` : ""}${th("Count", "How many times it was logged in the span.")}${th("Share", "Its share of the logs in the span.")}${th("First", "The first period it was logged in, within the span.")}${th("Last", "The last period it was logged in, within the span.")}</tr></thead>`;
+  const body = list.map(o => { const g = LOGS.logs[o.li], s = sysOf(o.li);
+    return `<tr><td class="wrap" style="min-width:${mapped ? 160 : 260}px">${esc(g[0])}</td>${mapped ? `<td class="l">${s ? `<span style="color:${C.sys[s]}">■</span> ${esc(nice(s))}` : "–"}</td><td class="l">${g[2] && s ? esc(nice(g[2])) : "–"}</td>` : ""}<td>${int(o.n)}</td><td>${pct1(o.n / total)}</td><td data-v="${esc(o.first.k)}">${fmtT(o.first.t)}</td><td data-v="${esc(o.last.k)}">${fmtT(o.last.t)}</td></tr>`; }).join("");
+  $("logs").innerHTML = head + `<tbody>${body}</tbody>`;
+  tableTools("logs");
+}
+function renderAsset() {
+  const a = state.asset, rows = byAsset.get(a), s = sum.get(a);
+  const sel = rows.find(d => d.k === state.k) || rows.find(d => d.k === s.peakK);
+  $("asset-title").textContent = `Asset detail: ${a}`;
+  const opt = $("asset-select");
+  opt.innerHTML = assets.map(x => `<option value="${esc(x)}"${x === a ? " selected" : ""}>${esc(x)} · avg ${f1(sum.get(x).mean)}</option>`).join("");
+  opt.onchange = () => select(opt.value);
+  // resolution and zoom controls
+  const hasT = on("asset_trend"), hasS = on("asset_systems"), hasD = on("asset_drivers"), hasL = on("asset_logs");
+  const host = hasT ? $("trend") : $("asset-controls"), W = Math.max(300, host.clientWidth), H = 230, M = {l: 34, r: 12, t: 10, b: 24};
+  const res = pickRes(W - M.l - M.r), dom = state.zoom || FULL;
+  const rs = $("res-select");
+  rs.innerHTML = `<option value="auto">Auto${state.res === "auto" ? `: ${(res.short || res.label).toLowerCase()}` : " (day, finer when zoomed)"}</option>` +
+    RES.map((r, i) => `<option value="${i}"${String(i) === String(state.res) ? " selected" : ""}>${esc(r.label)}</option>`).join("");
+  rs.value = String(state.res);
+  rs.disabled = RES.length < 2;
+  rs.onchange = () => { state.res = rs.value; renderAsset(); };
+  const zr = $("zoom-reset");
+  zr.disabled = !state.zoom;
+  zr.onclick = () => { state.zoom = null; renderAsset(); };
+  zr.classList.toggle("hidden", !hasT);
+  $("zoom-note").textContent = state.zoom ? `Showing ${fmtT(dom[0])} – ${fmtT(dom[1])}. Double-click or Esc to zoom out` : hasT ? "Drag across the chart to zoom in" : "";
+
+  const vis = rows.filter(d => d.t >= +dom[0] - res.ms && d.t <= dom[1]);
+  const pts = bucketRows(vis, res);
+  const selB = pts.find(b => b.top === sel || (!res.native && +b.t === +res.floor(sel.t))) || null;
+  const what = res.native ? "risk in every scored period" : `highest risk in each ${res.noun}`;
+  // A point stands for its whole period, so it is drawn at the period's
+  // middle: over the middle of the bar for the same period in the systems
+  // chart. The selection line and failure days follow the same rule.
+  const mid = d => +d.t + res.ms / 2;
+  const selT = selB ? mid(selB) : +sel.t + FREQ_MS / 2;
+  const failT = f => +f.t + 43200000;
+  const pick = d => { if (!d) return; state.k = d.k; renderCurrent(); };
+  if (hasT) {
+  $("trend-note").textContent = `${a}'s ${what}, on a 0–100 scale. Dashed lines mark watch (${WATCH}) and high (${HIGH}); red lines mark failures. Gaps mean no logs. Hollow points are provisional. Click a point to select ${res.native ? "it" : "the period behind it"}. Drag to zoom in; double-click, press Esc or use "Show all dates" to zoom out. Selected: ${fmtT(sel.t)} (${f1(sel.v)}).`;
+
+  // trend
+  const x = d3.scaleTime().domain(dom).range([M.l, W - M.r]);
+  const y = d3.scaleLinear().domain([0, 100]).range([H - M.b, M.t]);
+  const svg = d3.select(host).html("").append("svg").attr("width", W).attr("height", H);
+  const clip = clipTo(svg, M.l, 0, W - M.l - M.r, H - M.b + 1);
+  svg.append("g").attr("class", "axis").attr("transform", `translate(${M.l},0)`).call(d3.axisLeft(y).ticks(5).tickSize(-(W - M.l - M.r))).call(g => g.selectAll(".tick line").attr("stroke", C.grid)).call(g => g.select(".domain").remove());
+  xAxis(svg, x, H, M);
+  const plot = svg.append("g").attr("clip-path", clip);
+  [[WATCH, C.amber], [HIGH, C.red]].forEach(([v, c]) => plot.append("line").attr("x1", M.l).attr("x2", W - M.r).attr("y1", y(v)).attr("y2", y(v)).attr("stroke", c).attr("stroke-dasharray", "4 3"));
+  (failBy.get(a) || []).filter(f => f.t >= dom[0] && f.t <= dom[1]).forEach(f => {
+    plot.append("line").attr("x1", x(failT(f))).attr("x2", x(failT(f))).attr("y1", M.t).attr("y2", H - M.b).attr("stroke", C.red).attr("stroke-width", 1.5);
+    plot.append("text").attr("x", x(failT(f)) + 3).attr("y", M.t + 10).attr("fill", C.red).text(`failed ${fmtShort(f.t)}`);
+  });
+  plot.append("line").attr("x1", x(selT)).attr("x2", x(selT)).attr("y1", M.t).attr("y2", H - M.b).attr("stroke", C.fg).attr("opacity", 0.6);
+  const line = d3.line().x(d => x(mid(d))).y(d => y(d.v));
+  segments(pts, res.ms).forEach(seg => plot.append("path").attr("d", line(seg)).attr("fill", "none").attr("stroke", C.fg).attr("stroke-width", 1.5));
+  plot.selectAll("circle.p").data(pts).join("circle").attr("class", "p").attr("cx", d => x(mid(d))).attr("cy", d => y(d.v)).attr("r", d => d === selB ? 4.5 : pts.length > 400 ? 1.8 : 2.8)
+    .attr("fill", d => d.prov ? C.bg : C.risk(d.v)).attr("stroke", d => d.prov ? C.fg : C.muted).attr("stroke-width", d => d.prov ? 1.4 : 0.5);
+
+  const nearest = px => pts.length ? pts[d3.bisector(d => mid(d)).center(pts, x.invert(px))] : null;
+  const tipFor = (ev, d) => {
+    if (!d) return;
+    let h = `<b>${esc(a)}</b> · ${res.native ? fmtT(d.t) : `${res.noun === "day" ? fmtDay(d.t) : fmtT(d.t)}`}${d.prov ? " (provisional)" : ""}<br>`;
+    h += res.native ? `Overall <b>${f1(d.v)}</b>` : `Highest overall <b>${f1(d.v)}</b> at ${fmtT(d.top.t)}${d.n > 1 ? ` (${int(d.n)} periods)` : ""}`;
+    h += `${bandOf(d.v) ? ` (${bandOf(d.v)})` : ""}<table>`;
+    SYSTEMS.forEach(sy => { if (d.sys[sy] !== null) h += `<tr><td><span style="color:${C.sys[sy]}">■</span> ${esc(nice(sy))}</td><td>${f1(d.sys[sy])}</td></tr>`; });
+    showTip(ev, h + "</table>");
+  };
+  // drag to zoom; a click without dragging selects the nearest point
+  const brush = d3.brushX().extent([[M.l, M.t], [W - M.r, H - M.b]]).on("end", ev => {
+    if (!ev.sourceEvent) return;
+    if (ev.selection && ev.selection[1] - ev.selection[0] > 4) {
+      const z = ev.selection.map(x.invert);
+      if (z[1] - z[0] < 2 * FREQ_MS) z[1] = new Date(+z[0] + 2 * FREQ_MS);
+      state.zoom = z; hideTip(); renderAsset(); return;
+    }
+    const se = ev.sourceEvent, pt = se.changedTouches ? se.changedTouches[0] : se;
+    const d = nearest(d3.pointer(pt, svg.node())[0]);
+    clickOrDouble(() => pick(d));
+  });
+  svg.append("g").attr("class", "brush").call(brush)
+    .select(".overlay").on("mousemove.tip", ev => tipFor(ev, nearest(d3.pointer(ev, svg.node())[0]))).on("mouseleave.tip", hideTip);
+
+  }
+
+  // systems: one row per system, a bar per time bucket
+  if (hasS) {
+  const sh = $("systems"), SW = Math.max(260, sh.clientWidth), rowH = 60, SM = {l: 6, r: 44, t: 4, b: 22};
+  $("systems-note").textContent = `Each row is one system's risk on a 0–100 scale; each bar is its ${res.native ? "risk in one scored period" : `highest risk in a ${res.noun}`}. The number on the right is the selected period's value; the dark line marks the selected period and red lines mark failures. The charts share the resolution and zoom above.`;
+  const sx = d3.scaleTime().domain(dom).range([SM.l, SW - SM.r]);
+  const ssvg = d3.select(sh).html("").append("svg").attr("width", SW).attr("height", SYSTEMS.length * rowH + SM.b);
+  const sclip = clipTo(ssvg, SM.l, 0, SW - SM.l - SM.r, SYSTEMS.length * rowH);
+  const bw = Math.max(1.5, sx(+dom[0] + res.ms) - sx(dom[0]) - (res.ms >= 3600000 ? 1 : 0.5));
+  SYSTEMS.forEach((sy, i) => {
+    const g = ssvg.append("g").attr("transform", `translate(0,${i * rowH})`), yy = d3.scaleLinear().domain([0, 100]).range([rowH - 6, 16]);
+    g.append("text").attr("x", SM.l).attr("y", 11).attr("fill", C.sys[sy]).style("font-weight", 600).text(nice(sy));
+    g.append("line").attr("x1", SM.l).attr("x2", SW - SM.r).attr("y1", yy(0)).attr("y2", yy(0)).attr("stroke", C.grid);
+    const gp = g.append("g").attr("clip-path", sclip).attr("transform", null);
+    gp.selectAll("rect").data(pts.filter(d => d.sys[sy] !== null && d.sys[sy] > 0)).join("rect")
+      .attr("x", d => sx(d.t)).attr("width", bw).attr("y", d => yy(d.sys[sy])).attr("height", d => yy(0) - yy(d.sys[sy]))
+      .attr("fill", C.sys[sy]).attr("opacity", d => d.prov ? 0.45 : 0.9);
+    gp.append("line").attr("x1", sx(selT)).attr("x2", sx(selT)).attr("y1", 14).attr("y2", rowH - 4).attr("stroke", C.fg).attr("opacity", 0.6);
+    (failBy.get(a) || []).forEach(f => { if (f.t >= dom[0] && f.t <= dom[1]) gp.append("line").attr("x1", sx(failT(f))).attr("x2", sx(failT(f))).attr("y1", 14).attr("y2", rowH - 4).attr("stroke", C.red); });
+    g.append("text").attr("x", SW - 4).attr("y", yy(0) - 2).attr("text-anchor", "end").style("font-weight", 600).text(sel.sys[sy] === null ? "–" : f1(sel.sys[sy]));
+    g.append("rect").attr("x", SM.l).attr("y", 0).attr("width", SW - SM.l - SM.r).attr("height", rowH).attr("fill", "transparent").style("cursor", "pointer")
+      .on("mousemove", ev => {
+        const d = pts.length ? pts[d3.bisector(p => mid(p)).center(pts, sx.invert(d3.pointer(ev, ssvg.node())[0]))] : null;
+        if (d) showTip(ev, `<b>${esc(nice(sy))}</b> · ${res.noun === "day" ? fmtDay(d.t) : fmtT(d.t)}<br>${res.native ? "Risk" : "Highest risk"} <b>${d.sys[sy] === null ? "no logs" : f1(d.sys[sy])}</b>`);
+      }).on("mouseleave", hideTip)
+      .on("click", ev => { const d = pts.length ? pts[d3.bisector(p => mid(p)).center(pts, sx.invert(d3.pointer(ev, ssvg.node())[0]))] : null; clickOrDouble(() => pick(d)); });
+  });
+  ssvg.append("g").attr("class", "axis").attr("transform", `translate(0,${SYSTEMS.length * rowH})`).call(d3.axisBottom(sx).ticks(Math.max(2, Math.floor(SW / 110))).tickSizeOuter(0));
+
+  }
+
+  if (hasL) renderLogs(a, sel, res, dom, selT, pick, pts);
+
+  // drivers
+  if (!hasD) return;
+  if (!placed.get("asset_drivers").title) $("drivers-title").textContent = `What drove ${fmtT(sel.t)}`;
+  const subs = ((subIdx.get(a) || new Map()).get(sel.k) || []).map(r => ({sys: r.system, sub: r.subsystem, v: +r.risk}));
+  const present = new Set(subs.map(d => d.sys + "|" + d.sub));
+  meta.subsystems.forEach(([sy, sb]) => { if (!present.has(sy + "|" + sb)) subs.push({sys: sy, sub: sb, v: 0}); });
+  subs.sort((p, q) => q.v - p.v);
+  const dh = $("drivers"), DW = Math.max(260, dh.clientWidth), bh = 17, lab = Math.min(190, DW * 0.45);
+  const dx = d3.scaleLinear().domain([0, 100]).range([lab, DW - 40]);
+  const dsvg = d3.select(dh).html("").append("svg").attr("width", DW).attr("height", subs.length * bh + 6);
+  const gr = dsvg.selectAll("g").data(subs).join("g").attr("transform", (d, i) => `translate(0,${i * bh})`);
+  gr.append("text").attr("x", lab - 6).attr("y", bh / 2 + 4).attr("text-anchor", "end").text(d => { const t = nice(d.sub); return t.length > 26 ? t.slice(0, 25) + "…" : t; });
+  gr.append("rect").attr("x", lab).attr("y", 2).attr("height", bh - 4).attr("width", d => Math.max(0, dx(d.v) - lab)).attr("fill", d => C.sys[d.sys] || C.muted).attr("rx", 2);
+  gr.append("text").attr("x", d => dx(d.v) + 4).attr("y", bh / 2 + 4).attr("fill", C.muted).text(d => f1(d.v));
+  gr.on("mousemove", (ev, d) => showTip(ev, `<b>${esc(nice(d.sub))}</b> (${esc(nice(d.sys))})<br>Risk <b>${f1(d.v)}</b>`)).on("mouseleave", hideTip);
+}
+
+// ---------- model ----------
+function renderUnmapped() {
+  const u = (meta.model_checks || {}).unmapped_codes;
+  if (!u || !u.top || !u.top.length) return;
+  $("unmapped-note").textContent = `${pct1(u.unmapped_share)} of the training logs (${int(u.unmapped_rows)} of ${int(u.rows)}) have one of ${u.unmapped_code_count} codes that the model maps to no subsystem, so they add nothing to any score. If any of these matter, add them to the hierarchy and retrain.`;
+  $("unmapped").innerHTML = `<thead><tr><th>Code</th><th>Training logs</th><th>Share</th></tr></thead><tbody>` +
+    u.top.map(c => `<tr><td>${esc(c.code)}</td><td>${int(c.rows)}</td><td>${pct1(c.share)}</td></tr>`).join("") + "</tbody>";
+  tableTools("unmapped");
+}
+function renderBands() {
+  $("bands").innerHTML = `<thead><tr><th>Band</th><th>From</th><th class="l">How it was set</th></tr></thead><tbody>` +
+    bandRows.map(r => `<tr><td>${r.band === "high" ? "High" : r.band === "watch" ? "Watch" : esc(r.band)}</td><td>${f1(+r.cutoff)}</td><td class="wrap">${esc(r.basis)}</td></tr>`).join("") + "</tbody>";
+  tableTools("bands");
+}
+function renderWeights() {
+  $("weights-note").textContent = `Each bar is one subsystem's share of the overall score (system weight × subsystem weight), using the ${meta.weights_source === "supervised" ? "learned" : "expert"} weights the model scores with, grouped by system.${weights.some(w => +w.share === 0) ? " Subsystems at 0% don't affect the score." : ""}`;
+  const host = $("weights"), W = Math.max(260, host.clientWidth), bh = 17, lab = Math.min(190, W * 0.45);
+  const max = d3.max(weights, w => +w.share) || 1;
+  const x = d3.scaleLinear().domain([0, max]).range([lab, W - 46]);
+  const svg = d3.select(host).html("").append("svg").attr("width", W).attr("height", weights.length * bh + 6);
+  const g = svg.selectAll("g").data(weights).join("g").attr("transform", (d, i) => `translate(0,${i * bh})`);
+  g.append("text").attr("x", lab - 6).attr("y", bh / 2 + 4).attr("text-anchor", "end").text(d => { const t = nice(d.subsystem); return t.length > 26 ? t.slice(0, 25) + "…" : t; });
+  g.append("rect").attr("x", lab).attr("y", 2).attr("height", bh - 4).attr("width", d => Math.max(0, x(+d.share) - lab)).attr("fill", d => C.sys[d.system] || C.muted).attr("rx", 2);
+  g.append("text").attr("x", d => x(+d.share) + 4).attr("y", bh / 2 + 4).attr("fill", C.muted).text(d => pct1(+d.share));
+  g.on("mousemove", (ev, d) => showTip(ev, `<b>${esc(nice(d.subsystem))}</b> (${esc(nice(d.system))})<br>Share of score <b>${pct1(+d.share)}</b>`)).on("mouseleave", hideTip);
+}
+function renderGaps() {
+  $("gaps").innerHTML = (meta.known_gaps || []).map(g => `<li>${esc(g)}</li>`).join("") || "<li>None recorded.</li>";
+}
+function renderFooter() {
+  $("footer").textContent = `Data ${rangeText}. ${meta.journey} model, ${meta.weights_source === "supervised" ? "learned" : "expert"} weights, scored every ${meta.frequency_label}. Made ${meta.made_on}. All data is embedded in this file.`;
+}
+
+function renderCurrent() {
+  if (on("since_last_run")) renderMonitor();
+  if (on("heatmap")) renderHeatmap();
+  if (on("ranking")) renderRanking();
+  if (on("fleet_systems")) renderFleetSystems();
+  if (ASSET_TAB === current) renderAsset();
+  if (on("bands")) renderBands();
+  if (on("weights")) renderWeights();
+  if (on("unmapped_codes")) renderUnmapped();
+  if (on("known_gaps")) renderGaps();
+  if (on("alerts")) renderAlerts();
+  if (RUN_TAB === current) renderRuns();
+  if (current === SETTINGS) { renderRules(); renderLayoutEditor(); }
+}
+function renderAll() { readColours(); renderHeader(); renderAlert(); renderBadge(); renderFooter(); renderCurrent(); }
+readColours(); renderHeader(); renderAlert(); renderBadge(); renderFooter(); themeButton();
+showTab((location.hash || "").slice(1) || SPEC.default_tab, true);
+let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(renderAll, 150); });
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { themeButton(); renderAll(); });
+})();
+</script>
+</body>
+</html>

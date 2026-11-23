@@ -2,10 +2,13 @@
 
 Build this after Step 12 has finished, the results are downloaded and the "After Step 12" checks are done. It turns the run's outputs into one page the user can open in a browser and share: which assets need attention, when, and why.
 
-Build the first version exactly as described here, so every user gets the same dashboard. Change it only when the user asks.
+The SDK builds this page for you: `helpers.build_dashboard(...)` writes it in one call (see "Building it"). The same page is what the monitor (`deployment.md`) rebuilds after every run. This file describes that standard page, so you can explain it and check it, and says how to extend it by hand for the cases it doesn't cover.
+
+Build the first version with `build_dashboard`, so every user gets the same dashboard. Change it only when the user asks.
 
 ## Contents
 - Offering it
+- Building it
 - Inputs
 - Output file
 - Data blocks
@@ -30,9 +33,49 @@ If the user says yes, ask these questions in one round. Say what the default is 
 | A short name for the fleet, e.g. "Conveyor fleet" or "Class 450 trains" | Taken from `asset_context` |
 | Should all scored assets be included, or only some? | All |
 | Are the assets parts of larger machines, e.g. carriages of a train? If yes, how do we know which parent each belongs to? (see "Parent and child assets") | No parents |
-| Which alert bands should it use? | The watch and high levels already agreed after Step 12. If none were agreed, run "Checking alert bands against failures" (`validation.md`) now, propose the two levels and confirm them before building |
+| Which alert bands should it use? | The watch and high levels already agreed after Step 12. If none were agreed: for a supervised run, run "Checking alert bands against failures" (`validation.md`) now; for an unsupervised run, propose the 95th and 99th percentile of `training_scores.parquet` (the default the monitor uses). Confirm them before building |
 | Should any odd assets be left out? List assets with very few scored buckets (e.g. fewer than 5) or IDs that don't look like the rest (e.g. a test or placeholder ID) | Keep them |
 | Are there known gaps to list on the page? | The gaps found in the validation checks during this run |
+
+## Building it
+
+```python
+import json
+import pandas as pd
+from amygda_ops_risk_score import helpers
+
+art = "<risk score artifact_dir>"
+weights_file = "trained_weights.json" if weights_source == "supervised" else "model_config.json"
+w = json.load(open(f"{art}/{weights_file}"))
+
+helpers.build_dashboard(
+    pd.read_parquet(f"{art}/risk_scores.parquet"),
+    f"{art}/<fleet_name>_risk_dashboard.html",
+    fleet_name        = "<fleet name>",
+    bands             = {"watch": 35, "high": 45, "basis": "<one plain sentence on how they were chosen>"},
+    feature_frequency = "<feature_frequency from Step 9, e.g. '1D' or '5min'>",
+    weights           = {"system_weights": w["system_weights"], "subsystem_weights": w["subsystem_weights"]},
+    system_pairs      = json.load(open(f"{art}/accepted_hierarchy.json")),
+    failures          = failures_df,        # supervised: columns asset ID then failure date, dates parsed; else None
+    journey           = "fixed-log",        # or "free-text"
+    weights_source    = weights_source,     # "labelling" or "supervised"
+    known_gaps        = ["<sentences agreed with the user>"],
+)
+```
+
+- Parse the failure dates yourself (with the format from the failures file) before passing them; the first two columns are read as asset ID and failure date.
+- `days=N` limits the page to the most recent N days.
+- For the fleet app, don't call this yourself: `amygda-risk design --spec <file> --model <complete_model.zip> --open` builds the page from an app spec and the scores saved in the model zip (`app.md`, step 1). The first dashboard after Step 12 uses the fixed layout.
+- Then run "Check before handing it over" below.
+
+**What `build_dashboard` covers:** the header and tiles above four tabs: **Fleet** (heatmap and ranking), **Asset detail** (trend, risk by system, what drove the selected period), **Model** (alert bands, the weights the score uses, log codes the model doesn't use when the monitor found any, known gaps) and, with monitor runs, **Runs**. With runs it also adds "Since the last run" at the top of the Fleet tab, and a red banner above the tabs when the last run failed. The Runs tab lists every run, newest first: when it started, whether it was manual or scheduled, its status, how long it took, rows, periods, assets, the share of new logs with no match, and its warnings or failure reason. A link to `index.html#runs` (or `#asset`, `#model`) opens that tab.
+
+**What it doesn't cover yet** — build these by hand from the rest of this file, starting from the generated page and keeping its look:
+- parent and child assets ("Parent and child assets");
+- the supervised failure-check table, ranking-quality table and expert-vs-learned weights plot ("About the model");
+- the free-text list of logs behind the top subsystem ("Variants by journey").
+
+Only hand-build when one of these is needed or the user asks for a change. The data blocks below are those of the hand-built page; the generated page uses its own (`ds-scores`, `ds-subsys`, `ds-failures`, `ds-bands`, `ds-weights`, `ds-runs`, `ds-changes`, `ds-meta`).
 
 ## Inputs
 
@@ -119,12 +162,17 @@ Keep this order. Each section has an `id` so it can be linked to.
 4. **Asset detail (`asset`)**
    - The heading names the selected asset. A drop-down lists assets as `<asset> · avg <mean>`.
    - Default: the top-ranked asset, on its peak day. Picking another asset selects its peak day too.
+   - **Resolution and zoom**, shared by the two time charts below:
+     - They open at **Day**: each point or bar is the highest risk in that day.
+     - A resolution control offers Day, 6 hours, Hour, 15 minutes and so on, down to the model's own frequency and no finer. Each bucket shows the highest risk inside it. A daily model only has Day.
+     - Dragging across the trend chart zooms both charts. On "Auto", the resolution gets finer as the range shrinks (about one bucket per 3 pixels). Double-click, Esc or a "Show all dates" button zooms back out.
+     - Clicking a bucket selects the period behind its highest value, so "What drove …" always explains one real scored period.
    - **Operational risk over time**: a line chart from 0 to 100.
      - Dashed reference lines at watch and high, and a solid red line labelled "failed <date>" at each failure.
-     - Break the line over days with no logs; don't connect across them.
-     - Hovering shows the overall and per-system values. Clicking a day selects it.
-   - **Risk by system**: small multiples, one row per system on a 0–100 scale, sharing the time axis.
-     - Show the selected day's value at the right of each row. Mark the selected day and any failures with lines.
+     - Break the line over buckets with no logs; don't connect across them.
+     - Hovering shows the overall and per-system values. Clicking selects as above.
+   - **Risk by system**: small multiples, one row per system on a 0–100 scale, sharing the time axis. Draw each bucket as a bar, not a line: sparse periods drawn as lines become invisible dots.
+     - Show the selected period's value at the right of each row. Mark the selected period and any failures with lines.
    - **What drove the selected day**: horizontal bars of `calibrated_risk` for every subsystem on that day.
      - Sort highest first, colour by system, and show values.
      - Note: *"100 means activity at or above the subsystem's calibrated threshold."*
@@ -171,10 +219,10 @@ Keep this order. Each section has an `id` so it can be linked to.
 
 | Situation | Change |
 |---|---|
-| Unsupervised | Leave out the failure markers, the failure-check table, the ranking-quality table and the learned weights. Show the weights used as a single bar chart. Base the bands on the score distribution and say so in `basis`. Leave out the failure clause in the takeaway. |
+| Unsupervised | Leave out the failure markers, the failure-check table, the ranking-quality table and the learned weights. Show the weights used as a single bar chart. Base the bands on the training scores (95th and 99th percentile) unless others were agreed, and say so in `basis`. Leave out the failure clause in the takeaway. |
 | Supervised, scored with expert weights | Keep the weight comparison, but mark expert as the weights used. |
 | Free-text | In the drivers card, add a short list of the logs from `classified_logs.parquet` behind the top subsystem on the selected day, at most 10. |
-| Sub-daily model | Heatmap and ranking use each asset's highest value per day, and the notes say so. The trend and system charts plot every bucket. The drivers chart works on the selected bucket. |
+| Sub-daily model | Heatmap and ranking use each asset's highest value per day, and the notes say so. The trend and system charts open daily and offer finer resolutions down to the model's frequency (see "Resolution and zoom"). The drivers chart works on the selected period. |
 | More than 40 rows in the heatmap (assets, or parents when there are parents) | The heatmap shows the 25 highest-ranked rows, plus any row with a failure in the failure check. Say so in its note. The ranking table still lists every row. |
 
 ## Parent and child assets

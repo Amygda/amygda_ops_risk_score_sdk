@@ -206,3 +206,106 @@ def describe_bundle(bundle_path: str) -> Dict[str, Any]:
         settings = json.loads(zf.read(MANIFEST))
         files = {i.filename: i.file_size for i in zf.infolist() if not i.is_dir()}
     return {"settings": settings, "files": files, "bytes": os.path.getsize(bundle_path)}
+
+
+def unmapped_codes(model_zip: str, top: int = 10) -> Optional[Dict[str, Any]]:
+    """Log codes in a fixed-log model's training data that map to no subsystem.
+
+    Logs with these codes add nothing to any risk score, so check them before
+    deploying: a common code that clearly belongs to a subsystem (e.g. a motor
+    fault) points to a gap in the hierarchy, and retraining fixes it.
+
+    Read on your machine only. Returns ``None`` for free-text models (their
+    logs are matched by meaning when scored, so there is no code list) and
+    for zips without the training data.
+
+    Returns:
+        ``{"log_column", "rows", "unmapped_rows", "unmapped_share",
+        "unmapped_code_count", "top": [{"code", "rows", "share"}, ...]}``,
+        most frequent first.
+    """
+    import pandas as pd
+
+    mapping_file = "risk_score/logs_by_system_subsystem.json"
+    training_file = "risk_score/training_input.parquet"
+    with zipfile.ZipFile(model_zip) as zf:
+        names = set(zf.namelist())
+        if mapping_file not in names or training_file not in names:
+            return None
+        mapping = json.loads(zf.read(mapping_file))
+        train = pd.read_parquet(io.BytesIO(zf.read(training_file)))
+    log_cols = [c for c in train.columns if c not in ("asset_id", "date", "timestamp")]
+    if len(log_cols) != 1 or not len(train):
+        return None
+    mapped = {str(code) for codes in mapping.values() for code in codes}
+    codes = train[log_cols[0]].astype(str)
+    counts = codes[~codes.isin(mapped)].value_counts()
+    n, n_unmapped = len(codes), int(counts.sum())
+    return {
+        "log_column": log_cols[0],
+        "rows": n,
+        "unmapped_rows": n_unmapped,
+        "unmapped_share": round(n_unmapped / n, 4),
+        "unmapped_code_count": int(len(counts)),
+        "top": [
+            {"code": code, "rows": int(k), "share": round(k / n, 4)}
+            for code, k in counts.head(top).items()
+        ],
+    }
+
+
+def check_deployment(
+    client, api_key: str, deployment_id: str, model_zip: str, tolerance: float = 0.01
+) -> Dict[str, Any]:
+    """Check a deployment scores exactly like the model's own Step 12 run.
+
+    Scores the generation data saved in ``complete_model_<id>.zip`` with the
+    deployment (one ``client.score`` call, no history, like Step 12) and
+    compares every ``operational_risk`` with the zip's ``risk_scores.parquet``
+    on ``asset_id`` and ``period_start``. Nothing is changed or kept.
+
+    Returns:
+        ``{"match", "periods_step12", "periods_deployed", "periods_compared",
+        "missing", "extra", "max_abs_diff"}``. ``match`` is True when every
+        period is present in both and differs by at most ``tolerance``.
+    """
+    import pandas as pd
+
+    with zipfile.ZipFile(model_zip) as zf:
+        gen = pd.read_parquet(
+            io.BytesIO(zf.read("risk_score/generation_input.parquet"))
+        )
+        step12 = pd.read_parquet(io.BytesIO(zf.read("risk_score/risk_scores.parquet")))
+    dep = client.get_deployment(api_key, deployment_id)
+    logs = gen.copy()
+    # The saved generation data keeps the full time in `timestamp`; the
+    # original timestamp column may hold the day only.
+    if "timestamp" in gen.columns:
+        logs[dep["timestamp_column"]] = gen["timestamp"]
+    got = client.score(api_key, deployment_id, logs, date_format="infer").scores
+
+    key = ["asset_id", "period_start"]
+    a = step12[key + ["operational_risk"]].copy()
+    b = got[key + ["operational_risk"]].copy()
+    for df in (a, b):
+        df["asset_id"] = df["asset_id"].astype(str)
+        df["period_start"] = pd.to_datetime(df["period_start"])
+    m = a.merge(
+        b, on=key, how="outer", suffixes=("_step12", "_deployed"), indicator=True
+    )
+    both = m[m["_merge"] == "both"]
+    diff = (both["operational_risk_step12"] - both["operational_risk_deployed"]).abs()
+    max_diff = round(float(diff.max()), 6) if len(diff) else None
+    missing = int((m["_merge"] == "left_only").sum())
+    extra = int((m["_merge"] == "right_only").sum())
+    return {
+        "match": bool(
+            len(both) and not missing and not extra and max_diff <= tolerance
+        ),
+        "periods_step12": len(a),
+        "periods_deployed": len(b),
+        "periods_compared": len(both),
+        "missing": missing,
+        "extra": extra,
+        "max_abs_diff": max_diff,
+    }

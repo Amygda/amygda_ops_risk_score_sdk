@@ -1,26 +1,30 @@
 ---
 name: risk-score
 description: >
-  Guided agent intelligence for the Amygda Ops Risk Score SDK (v5.2.0).
+  Guided agent intelligence for the Amygda Ops Risk Score SDK (v5.3.0).
   This skill teaches an LLM agent how to walk any user — technical or
   non-technical — through the full end-to-end pipeline: asking the right
   upfront questions, narrating each step in plain language, showing helpers
   with interpretive guidance, flagging irreversible steps, and handling
   session recovery. Covers all four user journeys (fixed/free-text ×
-  supervised/unsupervised) and continuous scoring.
+  supervised/unsupervised), the results dashboard, deploying a model to
+  keep scoring new data with the amygda-risk monitor, and designing a fleet
+  monitoring app (layout, alerts, schedule) from the user's answers.
   Trigger on: "risk score", "amygda", "ops risk", "equipment risk",
-  "predictive maintenance", "operational risk score", "asset risk", "amygda sdk".
+  "predictive maintenance", "operational risk score", "asset risk", "amygda sdk",
+  "deploy model", "monitor", "score new data", "continuous scoring", "amygda-risk",
+  "fleet app", "monitoring app", "alerts", "schedule runs".
 license: MIT
-compatibility: "SDK v5.0.0 — requires server API >= 4.0.0; Python >= 3.10"
+compatibility: "SDK v5.3.0 — requires server API >= 4.1.0; Python >= 3.10"
 metadata:
-  version: "5.0.0"
+  version: "5.3.0"
   author: "Amygda"
 ---
 
 # Amygda Ops Risk Score — Agent Guide
 
 **Repo:** https://github.com/Amygda/amygda_ops_risk_score_sdk  
-**SDK version:** 5.0.0 | **API minimum:** 4.0.0 | **Python:** ≥ 3.10
+**SDK version:** 5.3.0 | **API minimum:** 4.1.0 | **Python:** ≥ 3.10
 
 > **Breaking in 5.0.0:** `configure_training` and the failure helpers renamed `prediction_horizon_days` → `prediction_horizon`, `exclusion_days_after` → `exclusion_after`, `block_size_days` → `block_size` (helpers also `window_after_days` → `window_after`). Windows take durations (`"14D"`, `"36h"`; a bare number = days). New `feature_frequency` builds features per time bucket (`"auto"` default, `"5min"` … `"1D"`). Never generate code with the old names — they raise `TypeError`.
 
@@ -33,6 +37,10 @@ You are acting as an expert guide for the Amygda Ops Risk Score pipeline. Your j
 **Execute each pipeline step yourself using your tools — do not hand code blocks to the user to run.** You run the SDK code; the user sees the result and your interpretation of it. If you do not have code execution tools available, give the minimal code block and ask the user to paste back the output, then continue from there.
 
 **Guide the user step by step in conversation — do not produce files for them to run.** Everything you need is in the `references/` files — load them as instructed below. Do not use the word "notebook" in any user-facing response.
+
+**Already have a trained model?** If the user brings a `complete_model_<id>.zip` and wants to deploy it, set up a monitor, or keep scoring new data with it, skip the pipeline and go straight to `references/deployment.md` ("Starting from an existing model zip"), then `references/app.md`.
+
+**Already have a monitor folder?** If the user wants the app, a different layout, alerts or a schedule for a monitor they already run, go straight to `references/app.md`.
 
 **Before Step 1, profile the data (Step 0), then ask every upfront question for the part you are about to run, including the ones with defaults.** A non-technical user won't know what to supply, and a default chosen silently is a decision taken away from them. If your question tool limits how many you can ask at once, ask in rounds.
 
@@ -50,6 +58,8 @@ Reference files (load on demand — each step below tells you which to load):
 - `references/agent-execution.md` — running steps from scripts: sessions, progress, secrets, API-only scores
 - `references/validation.md` — checks after Steps 3, 5, 7b, 8, 10 and 12
 - `references/dashboard.md` — the results dashboard offered after Step 12
+- `references/app.md` — the fleet app, the one way to keep scoring new data: the questions that decide what it shows, its alerts and schedule, and the steps to deploy, start it and hand over. Offered after the dashboard, or straight away when the user brings a complete model zip
+- `references/deployment.md` — the deployment half of the fleet app: deploying the model, the checks, and reading a run
 
 The pipeline has two phases:
 
@@ -611,7 +621,7 @@ Say: *"This step will score every log entry and produce the final per-asset risk
 | `accepted_hierarchy.json` | The final hierarchy used |
 | `model_config.json` | System and subsystem weights |
 
-**Re-scoring future data without retraining:** Import `complete_model.zip` in a new session via `session.import_model(zip_path)` (`risk_training_restored=True` in the result confirms thresholds were restored), then go straight to Step 11 — Steps 9–10 are skipped entirely.
+**Re-scoring future data without retraining:** deploy the model and use the monitor (`references/deployment.md`). Without deployments (the user doesn't want the scoring bundle kept on Amygda's servers, or the API is older than 4.1.0): import `complete_model.zip` in a new session via `session.import_model(zip_path)` (`risk_training_restored=True` in the result confirms thresholds were restored), then go straight to Step 11 — Steps 9–10 are skipped entirely.
 
 ---
 
@@ -657,7 +667,24 @@ Then proceed to the visualisations below. Helper arguments and outputs: `referen
 
 ### Finally — Offer a Results Dashboard
 
-Once the exploration above is done (and, for supervised runs, alert bands have been agreed), ask the user whether they want a dashboard of the results: one self-contained HTML page with a fleet heatmap, an asset ranking, a drill-down into each asset and a model summary. If they say yes, build it exactly as `references/dashboard.md` describes. The first version is fixed so every user gets the same layout; change it only when asked. If the assets belong to larger machines, such as carriages of a train, follow "Parent and child assets" in that file.
+Once the exploration above is done (and, for supervised runs, alert bands have been agreed), ask the user whether they want a dashboard of the results: one self-contained HTML page with a fleet heatmap, an asset ranking, a drill-down into each asset and a model summary. If they say yes, build it with `helpers.build_dashboard(...)` as `references/dashboard.md` describes ("Building it"). The first version is fixed so every user gets the same layout; change it only when asked. If the assets belong to larger machines, such as carriages of a train, or a supervised run needs the failure-check tables, extend it by hand as that file describes.
+
+---
+
+### Then — Offer to Keep Scoring New Data
+
+Once the dashboard is done (or declined), ask whether the user wants to keep watching the fleet as new data arrives: *"Would you like to keep watching this fleet as new data arrives? I can set up a small app on this machine: you choose what it shows, it scores new files on a schedule, and it raises alerts. It takes a few questions."* If they say yes, follow `references/app.md`, which uses `references/deployment.md` for the deployment itself. The app is the only setup offered: don't offer "scheduled scoring only", a script or a cron job as an alternative.
+
+- Ask the three rounds of questions in `references/app.md`. First what the app shows: the panels, one group at a time from `amygda-risk panels --menu` (never several groups in one sentence), and only then who it is for, which decides the layout. Then the name and how it looks. Then alerts and schedule. Propose a layout and write the answers into a spec. Never write app code, and never ask about ports, servers or other technical details.
+- Use the name the user gives the app everywhere: the page title, the folder, the deployment and the start-up entry. Don't make up another from the data.
+- Show the layout before deploying, with `amygda-risk design --spec <file> --model <zip> --open`.
+- Setting up scores nothing. Deploy, check, apply the layout, start the app and hand over; the user adds their data in the app. Run the monitor yourself only when the user asks you to load files.
+
+- Before deploying a fixed-log model, show the log codes it maps to no subsystem if they are more than 5% of the training logs (`helpers.unmapped_codes`), and ask whether any matter.
+- Check the deployment scores exactly like Step 12 (`helpers.check_deployment`) before handing over.
+- Ask before making the app start by itself (`amygda-risk service --install`), in plain words: *"Should the app start by itself whenever you log in to this computer?"* Keep system terms out of the question; show the exact entry only if the user asks how it works.
+- To take a monitor away, use `amygda-risk remove <folder>`: show what it lists, and add `--yes` only on a clear yes.
+- The API key stays in the environment or in a `.env` file the user made. Never write it into the monitor folder or the chat.
 
 ---
 
@@ -677,7 +704,7 @@ Once the exploration above is done (and, for supervised runs, alert bands have b
 | Training failure evaluation | No | Yes | No | Yes |
 | Post-generation failure section | No | Yes | No | Yes |
 
-**Continuous scoring (5th journey):** Import `complete_model.zip` → call `configure_generation` (Step 11) directly → `generate_risk_scores` (Step 12). Steps 9–10 are skipped entirely.
+**Deploy and monitor (5th journey):** after any of the four journeys, or from a complete model zip the user already has, deploy `complete_model.zip` and keep scoring new data in the fleet app (a layout the user chose, alerts, a schedule): `references/app.md`, with `references/deployment.md` for the deployment and checks. Fallback without deployments: import `complete_model.zip` in a new session → `configure_generation` (Step 11) → `generate_risk_scores` (Step 12), skipping Steps 9–10.
 
 ---
 
@@ -694,3 +721,5 @@ Once the exploration above is done (and, for supervised runs, alert bands have b
 - [ ] Step 0 profile done (`references/data-checks.md`); every upfront question asked
 - [ ] (Agent runs) `references/agent-execution.md` followed
 - [ ] The validation checks named at Steps 3, 5, 7b, 8, 10 and after 12 run (`references/validation.md`)
+- [ ] (Deploy and monitor) unused log codes shown and `check_deployment` matched; nothing scored during setup (`references/deployment.md`)
+- [ ] (Fleet app) panels chosen group by group, then laid out for who uses it; the user's name used throughout; layout previewed from the model zip; alert rules that can fire; starting at log-in asked in plain words; the app answers with its key (`references/app.md`)

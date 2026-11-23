@@ -245,10 +245,35 @@ class OpsRiskClient:
     def _key_header(api_key: str) -> Dict[str, str]:
         return {"X-API-Key": api_key}
 
+    def _waking(self, call, retry_on_read_timeout: bool = True):
+        """Run ``call()``. If the API is asleep or still starting (a timeout,
+        or 502/503/504), wait until it's ready and try once more.
+
+        The hosted API scales to zero, so the first call after a quiet spell
+        can time out while it starts (60-120 s).
+        """
+        import httpx
+
+        from amygda_ops_risk_score.exceptions import APIError
+
+        waking = (httpx.ConnectTimeout, httpx.PoolTimeout, httpx.RemoteProtocolError)
+        if retry_on_read_timeout:
+            waking = waking + (httpx.ReadTimeout, httpx.WriteTimeout)
+        try:
+            return call()
+        except APIError as exc:
+            if exc.status_code not in (502, 503, 504):
+                raise
+        except waking:
+            pass
+        self.wait_until_ready()
+        return call()
+
     def deployment_storage_policy(self) -> str:
-        """What deploying a model stores, and for how long. Show this to the
-        user before passing ``accept_storage=True`` to :meth:`deploy_model`."""
-        return self._http.get("/v1/deployments/policy")["policy"]
+        """What deploying a model stores on Amygda's servers, and for how long."""
+        return self._waking(lambda: self._http.get("/v1/deployments/policy"))[
+            "policy"
+        ]
 
     def deploy_model(
         self,
@@ -256,7 +281,7 @@ class OpsRiskClient:
         model: str,
         name: str,
         *,
-        accept_storage: bool,
+        accept_storage: Optional[bool] = None,
         timeout: float = 300.0,
     ) -> Dict[str, Any]:
         """
@@ -272,11 +297,9 @@ class OpsRiskClient:
             model: ``complete_model_<id>.zip`` from ``generate_risk_scores``,
                 or a bundle already built with ``helpers.build_scoring_bundle``.
             name: A name for the deployment, unique for your organisation.
-            accept_storage: Required, no default. ``True`` accepts that the
-                bundle is stored on Amygda's servers until you delete it or it
-                is unused for 90 days (:meth:`deployment_storage_policy`).
-                If you can't accept that, keep scoring through sessions
-                (a self-hosted scorer is coming soon).
+            accept_storage: No longer needed; accepted and ignored so older
+                code keeps working. The bundle is kept until you delete the
+                deployment or it is unused for 90 days (see the README).
             timeout: Seconds to wait for the upload and checks.
 
         Returns:
@@ -289,7 +312,7 @@ class OpsRiskClient:
             is_scoring_bundle,
         )
 
-        v.validate_deploy_model(model, name, accept_storage)
+        v.validate_deploy_model(model, name)
         bundle_path, tmp_dir = model, None
         if not is_scoring_bundle(model):
             import tempfile
@@ -299,14 +322,18 @@ class OpsRiskClient:
             build_scoring_bundle(model, bundle_path)
         try:
             v.validate_bundle_size(bundle_path)
-            with open(bundle_path, "rb") as fh:
-                return self._http.post(
-                    "/v1/deployments",
-                    headers=self._key_header(api_key),
-                    data={"name": name.strip(), "storage_accepted": "true"},
-                    files={"bundle": ("bundle.zip", fh, "application/zip")},
-                    timeout=timeout,
-                )
+
+            def upload():
+                with open(bundle_path, "rb") as fh:
+                    return self._http.post(
+                        "/v1/deployments",
+                        headers=self._key_header(api_key),
+                        data={"name": name.strip(), "storage_accepted": "true"},
+                        files={"bundle": ("bundle.zip", fh, "application/zip")},
+                        timeout=timeout,
+                    )
+
+            return self._waking(upload)
         finally:
             if tmp_dir:
                 import shutil
@@ -315,7 +342,9 @@ class OpsRiskClient:
 
     def list_deployments(self, api_key: str) -> List[Dict[str, Any]]:
         """List your organisation's deployments."""
-        resp = self._http.get("/v1/deployments", headers=self._key_header(api_key))
+        resp = self._waking(
+            lambda: self._http.get("/v1/deployments", headers=self._key_header(api_key))
+        )
         return resp["deployments"]
 
     def get_deployment(self, api_key: str, deployment_id: str) -> Dict[str, Any]:
@@ -323,8 +352,10 @@ class OpsRiskClient:
         from amygda_ops_risk_score import _validators as v
 
         v.validate_deployment_id(deployment_id)
-        return self._http.get(
-            f"/v1/deployments/{deployment_id}", headers=self._key_header(api_key)
+        return self._waking(
+            lambda: self._http.get(
+                f"/v1/deployments/{deployment_id}", headers=self._key_header(api_key)
+            )
         )
 
     def delete_deployment(self, api_key: str, deployment_id: str) -> Dict[str, Any]:
@@ -332,8 +363,10 @@ class OpsRiskClient:
         from amygda_ops_risk_score import _validators as v
 
         v.validate_deployment_id(deployment_id)
-        return self._http.delete(
-            f"/v1/deployments/{deployment_id}", headers=self._key_header(api_key)
+        return self._waking(
+            lambda: self._http.delete(
+                f"/v1/deployments/{deployment_id}", headers=self._key_header(api_key)
+            )
         )
 
     def score(
@@ -402,12 +435,19 @@ class OpsRiskClient:
             data["score_from"] = pd.Timestamp(score_from).isoformat()
         if date_format:
             data["date_format"] = date_format
-        resp = self._http.post_raw(
-            f"/v1/deployments/{deployment_id}/score",
-            headers=self._key_header(api_key),
-            data=data,
-            files={"file": ("logs.parquet", payload, "application/vnd.apache.parquet")},
-            timeout=timeout,
+        # A read timeout here can mean scoring is still running, so only retry
+        # when the API was clearly not up (by then get_deployment woke it).
+        resp = self._waking(
+            lambda: self._http.post_raw(
+                f"/v1/deployments/{deployment_id}/score",
+                headers=self._key_header(api_key),
+                data=data,
+                files={
+                    "file": ("logs.parquet", payload, "application/vnd.apache.parquet")
+                },
+                timeout=timeout,
+            ),
+            retry_on_read_timeout=False,
         )
         diagnostics = json.loads(resp.headers.get("X-Amygda-Diagnostics", "{}"))
         return DeploymentScores(
@@ -504,6 +544,7 @@ class OpsRiskClient:
                 if exc.status_code != 503:
                     raise
             except httpx.ConnectError as exc:
+                print(" failed.", flush=True)
                 raise ConnectionError(
                     f"Cannot connect to the API at {self._http._client.base_url}. "
                     "Check your network connection or verify the API URL."

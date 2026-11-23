@@ -11,8 +11,9 @@
 7. [client.open_session](#clientopen_session)
 8. [client.get_session](#clientget_session)
 9. [client.restart_session](#clientrestart_session)
-10. [SessionConfig](#sessionconfig)
-11. [Exception hierarchy](#exception-hierarchy)
+10. [Deployed models](#deployed-models) — `deploy_model`, `score`, `list_deployments`, `get_deployment`, `delete_deployment`
+11. [SessionConfig](#sessionconfig)
+12. [Exception hierarchy](#exception-hierarchy)
 
 ---
 
@@ -211,6 +212,66 @@ Delete the current session and open a fresh one in a single call.
 Use this when a step is locked (`StepAlreadyDoneError`) and earlier steps need to be re-run, or any time you need to replace an active session.
 
 > **Warning:** Deletes all session data — the database record and all stored files including generated zips. Download any outputs you need (`run_classification()`, `generate_risk_scores()`) **before** calling this. `LabellingHistory` and `RiskScoreHistory` records survive as permanent audit entries.
+
+---
+
+## Deployed models
+
+A deployed model scores new logs without a session (`references/deployment.md`). Usually the `amygda-risk` monitor calls these for you; use them directly for one-off scoring or to manage deployments.
+
+All of these wait for the API and try once more if it was asleep (the hosted API scales to zero and takes 60–120 s to start). A deployment keeps a small scoring bundle on Amygda's servers until it is deleted or unused for 90 days; `client.deployment_storage_policy()` returns the full wording if the user asks.
+
+### client.deploy_model
+
+```python
+def deploy_model(self, api_key: str, model: str, name: str, *, timeout: float = 300.0) -> dict
+```
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `api_key` | `str` | — | The user's API key. |
+| `model` | `str` | — | `complete_model_<id>.zip` from Step 12, or a bundle from `helpers.build_scoring_bundle`. The bundle is built locally; raw logs, failures and scores in the zip are never uploaded. |
+| `name` | `str` | — | Unique within the organisation, e.g. `"conveyors-v1"`. |
+
+`accept_storage` is no longer needed; older code that passes it still works.
+
+**Returns:** `deployment_id`, `name`, `asset_id_column`, `timestamp_column`, `log_column` (the columns new files need), `feature_frequency`, `rolling_window`, `lookback` (history to send before new logs), `created_at`, `storage_accepted_at`.
+
+**Errors:** `ValidationError` (bad file or name); `APIError` with `deployment_name_taken` (409), `deployment_limit` (429, 10 per organisation) or `payload_too_large` (413).
+
+### client.score
+
+```python
+def score(self, api_key: str, deployment_id: str, logs, score_from=None, date_format=None, timeout: float = 900.0) -> DeploymentScores
+```
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `logs` | path or `DataFrame` | — | CSV, XLSX or parquet path, or a DataFrame, in the training data's column layout. Only the three model columns are sent; nothing is stored. |
+| `score_from` | date-like | `None` | Start of the new data. Send `lookback` of earlier logs in front and set this; periods before the one holding `score_from` are dropped from the result. |
+| `date_format` | `str` | the model's | Override the timestamp format. |
+
+**Returns:** `DeploymentScores`, not a table. The scores are in `.scores` (a DataFrame: one row per asset and period, the same columns as `risk_scores.parquet`); `.diagnostics` has `rows_received`, `rows_in`, `rows_matched`, `unmatched_share`, `assets_scored`, `periods_scored`, `period_min`, `period_max`, `bundle_hash`, and from API 4.2.0 `rows_new`, `rows_new_matched` and `unmatched_share_new` (the same counts for the logs from `score_from` on, without the history sent before them).
+
+```python
+res = client.score(api_key, dep_id, "new_logs.csv")
+scores = res.scores          # the DataFrame
+res.diagnostics["unmatched_share"]
+```
+
+To check a new deployment against Step 12, use `helpers.check_deployment` rather than comparing by hand.
+
+Limits per call: 30 MB of logs as parquet; 5,000 rows for free-text models. A period the previous call cut short comes back again in full: replace the earlier row.
+
+### client.list_deployments / client.get_deployment / client.delete_deployment
+
+```python
+def list_deployments(self, api_key: str) -> list[dict]
+def get_deployment(self, api_key: str, deployment_id: str) -> dict
+def delete_deployment(self, api_key: str, deployment_id: str) -> dict
+```
+
+`list_deployments` and `get_deployment` add `score_calls`, `last_scored_at` and `idle_expiry_days` (90) to the fields above. `delete_deployment` removes the deployment and its stored bundle immediately; ask the user first, and remember any monitor using it stops working.
 
 ---
 

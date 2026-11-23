@@ -812,19 +812,9 @@ MAX_SCORE_UPLOAD_MB = 30
 SCORE_FILE_TYPES = (".csv", ".xlsx", ".xls", ".parquet")
 
 
-def validate_deploy_model(model: str, name: str, accept_storage) -> None:
+def validate_deploy_model(model: str, name: str) -> None:
     """Checks before uploading a model for deployment."""
     errors = []
-    if accept_storage is not True:
-        errors.append(
-            "accept_storage must be True. Deploying stores your model's scoring "
-            "bundle (system/subsystem names, weights, thresholds, and log codes or "
-            "keywords; no asset IDs, timestamps or log rows) on Amygda's servers "
-            "until you delete it or it is unused for 90 days. Read "
-            "client.deployment_storage_policy(), then pass accept_storage=True "
-            "only if you accept. Otherwise keep scoring through sessions "
-            "(a self-hosted scorer is coming soon)."
-        )
     if not isinstance(name, str) or not name.strip():
         errors.append("name is required, e.g. 'baggage-fleet-v1'.")
     elif len(name.strip()) > 128:

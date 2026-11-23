@@ -10,6 +10,7 @@ Load this file before calling any helper function. Functions are grouped by the 
 - [After Step 8 — Classification Helpers](#after-step-8-run_classification)
 - [After Step 10 — Training/Supervised Helpers](#after-step-10-train_risk_model)
 - [After Step 12 — Risk Score Analysis Helpers](#after-step-12-generate_risk_scores)
+- [Deploy and Dashboard Helpers](#deploy-and-dashboard-helpers)
 - [Parameter Naming Summary](#parameter-naming-summary)
 
 ---
@@ -559,6 +560,54 @@ Source: `all_predictions_exploded.parquet` (inside the labelling zip, also at `{
 **Description:** Returns a full risk breakdown for one asset on one date without needing to know system/subsystem names in advance.
 
 **Notes:** If the exact date is not available, the closest date is used and a warning is printed. Scores are the max over the day; for sub-daily models `date="YYYY-MM-DD HH:MM"` returns a single bucket. Raises `ValueError` if the `asset_id` is not found.
+
+---
+
+## Deploy and dashboard helpers
+
+These return data or write files; they don't plot.
+
+### helpers.build_scoring_bundle
+
+```python
+build_scoring_bundle(model_zip: str, dest_path: Optional[str] = None) -> str
+```
+
+Builds the scoring bundle that `deploy_model` would upload, from `complete_model_<id>.zip`, and returns its path. `deploy_model` and `amygda-risk init` build it for you; use this only to show what is uploaded.
+
+### helpers.describe_bundle
+
+```python
+describe_bundle(bundle_path: str) -> dict
+```
+
+Returns `{"settings": ..., "files": {name: bytes}, "bytes": total}`. Show the file list and sizes: settings, hierarchy, weights, thresholds, and the log-code map (fixed-log) or keyword index (free-text). There are no log rows, asset IDs or timestamps.
+
+### helpers.unmapped_codes
+
+```python
+unmapped_codes(model_zip: str, top: int = 10) -> Optional[dict]
+```
+
+Fixed-log only (`None` for free-text). Log codes in the model's training data that map to no subsystem, so they never affect a score: `{"log_column", "rows", "unmapped_rows", "unmapped_share", "unmapped_code_count", "top": [{"code", "rows", "share"}, ...]}`, most frequent first. Show `top` as a table before deploying when `unmapped_share` is above 0.05 (`deployment.md`). Read on the user's machine only.
+
+### helpers.check_deployment
+
+```python
+check_deployment(client, api_key: str, deployment_id: str, model_zip: str, tolerance: float = 0.01) -> dict
+```
+
+Scores the generation data saved in the complete model zip with the deployment (one call, no history, like Step 12) and compares every period with the zip's `risk_scores.parquet`. Returns `{"match", "periods_step12", "periods_deployed", "periods_compared", "missing", "extra", "max_abs_diff"}`. Expect `match: True` and `max_abs_diff` 0.0. Uses one score call.
+
+### helpers.build_dashboard
+
+```python
+build_dashboard(scores, output_path, *, fleet_name, bands, feature_frequency="1D", weights=None,
+                system_pairs=None, runs=None, failures=None, days=None, journey="fixed-log",
+                weights_source=None, known_gaps=None, model_checks=None) -> Path
+```
+
+Writes the standard results dashboard, one self-contained HTML page, from Step 12's `risk_scores.parquet` (or a monitor's scores). See `dashboard.md` → "Building it" for the call with each argument filled in, and for what it covers. `bands` is `{"watch": .., "high": .., "basis": "<one sentence>"}`; `failures` is a DataFrame whose first two columns are asset ID and failure date.
 
 ---
 

@@ -10,6 +10,7 @@ How to execute the SDK from an agent's tools (one shell command or script per st
 - When a call hangs
 - Showing results without a notebook
 - Scores come from the API only
+- Running the monitor (`amygda-risk`)
 
 ---
 
@@ -82,3 +83,17 @@ Plot helpers display through IPython and return `None`. Run from a script, they 
 Every score, feature, threshold and weight you show the user comes from the API's own outputs (`risk_scores.parquet`, `training_fe.parquet`, `training_scores.parquet`, `calibration_thresholds.json`, the weight files). Don't rebuild or recompute scores locally, for example to blend weights or change windows. The internal calculation isn't documented and can change between SDK versions, so a local recalculation can drift from the real model without anyone noticing.
 
 If the API can't produce what the user wants (a weight mix, a different window), say so, and note it as feedback for Amygda rather than working around it. Tables and charts built from the API's numbers are fine: that is presentation, not recalculation.
+
+## Running the monitor (`amygda-risk`)
+
+For the fleet app (`app.md`) and its deployment (`deployment.md`), use the `amygda-risk` command. It is installed with the SDK, in the same environment's `bin/` (or `Scripts\` on Windows).
+
+- **The key comes from the environment or the user's `.env`.** Each command reads `AMYGDA_API_KEY` (or the variable named by `--api-key-env` at `init`) from the environment, or else from a `.env` file in the monitor folder, the folder above it or the current folder. Never put the key on the command line or in a file you create. `monitor.json` stores only the variable's name.
+- **Setup scores nothing.** Run `amygda-risk run` only when the user asks you to load files. Otherwise they add data in the app.
+- **Read results from the run record, not just stdout.** After `amygda-risk run`, read the newest run record for the counts, `changes` and `warnings`, and report those: `Monitor("<folder>").runs()[-1]` works for both kinds of storage (with files it is also `runs/<run_id>/run.json`). `amygda-risk status <folder>` prints a JSON summary, including the last run's status and any `model_warnings`.
+- **Exit codes:** 0 when the run worked or there was nothing to do; 1 when it stopped. A failed run prints `Run FAILED: <reason>` on stderr and leaves a run record with `status: "failed"`; other errors print `Error: ...` (bad arguments, another run in progress). Show the line to the user as is.
+- **Waiting for the API.** Each command first prints `Waiting for API to be ready...` and waits while the hosted API starts (up to 15 minutes). That's normal after a quiet spell; tell the user rather than stopping the command.
+- **Manual or scheduled.** Runs you start, and **Run now** in the app, are recorded as `manual`. Only the app's own schedule records `scheduled`. Never write cron, launchd or Task Scheduler entries that run the monitor.
+- **Don't edit the folder by hand** apart from `monitor.json` settings the user asked to change (`bands`, `date_format`, `fleet_name`). Never delete `history/`, `scores/`, `state.json` or `monitor.db`; a re-run can't rebuild them. To take a whole monitor away, use `amygda-risk remove <folder>` after asking (`app.md`, "Removing a monitor"). Change the layout with `amygda-risk design`, not by editing `app.json`.
+- **The app doesn't return.** `amygda-risk app <folder>` serves until it is stopped, so never run it in the foreground of a step: use `amygda-risk service <folder> --install` (after asking), or start it in the background. Check it with `curl -s http://127.0.0.1:8050/api/state`.
+- **Runs are quick** (seconds for fixed-log; free-text classifies each log and can take minutes for large files). Long runs print nothing until they finish, so tell the user what is running.
