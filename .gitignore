@@ -19,7 +19,7 @@ artifacts/
 outputs/
 *.parquet
 *.zip
-!how_to/examples/sample_data/models/*.zip
+!how_to/examples/sample_data/*/models/*.zip
 
 # OS
 .DS_Store

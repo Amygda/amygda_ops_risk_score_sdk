@@ -96,7 +96,7 @@ session = client.open_session(
 
 # Step 1 — labelling
 result = session.configure_labelling_pipeline(
-    file_path="how_to/examples/sample_data/fixed_log_training.csv",
+    file_path="how_to/examples/sample_data/airport_baggage_conveyers/training.csv",
     log_column="event_code",
     asset_context="airport baggage sortation station",
     is_free_text=False,
@@ -128,13 +128,14 @@ how_to/
 │   ├── 02d_risk_score_free_text_supervised.ipynb
 │   ├── 03a_fleet_app_fixed_log.ipynb
 │   ├── 03b_fleet_app_free_text.ipynb
-│   └── sample_data/     # Two synthetic datasets, weekly batches and ready-made models (see how_to/how_to.md)
+│   └── sample_data/     # One folder per example fleet: airport_baggage_conveyers/ and rolling_stock_hvac/,
+│                        # each with its data, weekly batches, ready-made models and a README
 └── how_to.md            # Sample data guide
 ```
 
 **Start here:** Read the relevant guide notebook in `guides/` first, then run the matching example notebook from the `examples/` folder against the sample data. See `how_to.md` for a full description of the two datasets.
 
-You can start at any stage: if you haven't run the previous one, the notebooks use ready-made models trained on the sample data (`examples/sample_data/models/`).
+You can start at any stage: if you haven't run the previous one, the notebooks use ready-made models trained on the sample data (each example's `models/` folder).
 
 ## Pipeline overview
 
