@@ -251,7 +251,7 @@ def score(self, api_key: str, deployment_id: str, logs, score_from=None, date_fo
 | `score_from` | date-like | `None` | Start of the new data. Send `lookback` of earlier logs in front and set this; periods before the one holding `score_from` are dropped from the result. |
 | `date_format` | `str` | the model's | Override the timestamp format. |
 
-**Returns:** `DeploymentScores`, not a table. The scores are in `.scores` (a DataFrame: one row per asset and period, the same columns as `risk_scores.parquet`); `.diagnostics` has `rows_received`, `rows_in`, `rows_matched`, `unmatched_share`, `assets_scored`, `periods_scored`, `period_min`, `period_max`, `bundle_hash`, and from API 4.2.0 `rows_new`, `rows_new_matched` and `unmatched_share_new` (the same counts for the logs from `score_from` on, without the history sent before them).
+**Returns:** `DeploymentScores`, not a table. The scores are in `.scores` (a DataFrame: one row per asset and period, the same columns as `risk_scores.parquet`); `.diagnostics` has `rows_received`, `rows_in`, `rows_matched`, `unmatched_share`, `assets_scored`, `periods_scored`, `period_min`, `period_max`, `bundle_hash`, and from API 4.2.0 `rows_new`, `rows_new_matched` and `unmatched_share_new` (the same counts for the logs from `score_from` on, without the history sent before them). For a free-text model, `.log_map` (API 4.3.0 on) is a DataFrame of each distinct log sent with the `system` and `subsystem` it was matched to (empty when it matched none); it is `None` for fixed-log models, whose code map is in the model.
 
 ```python
 res = client.score(api_key, dep_id, "new_logs.csv")

@@ -18,6 +18,10 @@ class DeploymentScores:
 
     scores: Any  # pandas.DataFrame, one row per asset and period
     diagnostics: Dict[str, Any] = field(default_factory=dict)
+    # Free-text models: each distinct log sent, with the system and subsystem
+    # it was matched to (``log``, ``system``, ``subsystem``; empty when it
+    # matched none). None for fixed-log models and APIs before 4.3.0.
+    log_map: Any = None
 
     def __repr__(self) -> str:
         d = self.diagnostics
@@ -27,6 +31,25 @@ class DeploymentScores:
             f"{d.get('period_min')} to {d.get('period_max')}, "
             f"unmatched_share={d.get('unmatched_share')})"
         )
+
+
+def _read_log_map(payload: bytes):
+    """The free-text log map the API puts in the scores' parquet metadata, as
+    a DataFrame (``log``, ``system``, ``subsystem``), or None."""
+    import io
+    import json
+
+    import pandas as pd
+    import pyarrow.parquet as pq
+
+    try:
+        meta = pq.read_schema(io.BytesIO(payload)).metadata or {}
+    except Exception:  # noqa: BLE001 - the scores were read already
+        return None
+    raw = meta.get(b"amygda.log_map")
+    if not raw:
+        return None
+    return pd.DataFrame(json.loads(raw), columns=["log", "system", "subsystem"])
 
 
 def _read_logs_file(path: str):
@@ -401,7 +424,8 @@ class OpsRiskClient:
 
         Returns:
             :class:`DeploymentScores` with ``scores`` (one row per asset and
-            period) and ``diagnostics`` (rows received, unmatched share, ...).
+            period), ``diagnostics`` (rows received, unmatched share, ...) and,
+            for a free-text model, ``log_map`` (each log's system and subsystem).
         """
         import io
         import json
@@ -451,7 +475,9 @@ class OpsRiskClient:
         )
         diagnostics = json.loads(resp.headers.get("X-Amygda-Diagnostics", "{}"))
         return DeploymentScores(
-            scores=pd.read_parquet(io.BytesIO(resp.content)), diagnostics=diagnostics
+            scores=pd.read_parquet(io.BytesIO(resp.content)),
+            diagnostics=diagnostics,
+            log_map=_read_log_map(resp.content),
         )
 
     # ------------------------------------------------------------------ #

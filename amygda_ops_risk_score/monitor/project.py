@@ -21,6 +21,8 @@ LOCK = "monitor.lock"
 # for the dashboard's "Logs behind the score" panel. The raw-log history is
 # only kept as far back as scoring needs it; this is kept for longer.
 LOG_COUNTS = "log_counts.parquet"
+# Free-text models: each log's system and subsystem, as the API matched it.
+LOG_MAP = "log_map.parquet"
 LOG_DAYS = 180
 FORMAT_VERSION = 1
 INPUT_TYPES = (".csv", ".xlsx", ".xls", ".parquet")
@@ -577,12 +579,14 @@ class Monitor:
 
     def _score(self, logs: pd.DataFrame, start: Optional[pd.Timestamp]) -> tuple:
         """Score ``logs`` (history + new) from ``start``. Returns
-        ``(scores, diagnostics_list)``."""
+        ``(scores, diagnostics_list, log_map)``; ``log_map`` is each free-text
+        log's system and subsystem (``log``, ``system``, ``subsystem``), or
+        None for fixed-log models and older APIs."""
         client, key = self._client_and_key()
         ts = self.columns["ts"]
         dep_id = self.deployment["deployment_id"]
         first = start if start is not None else logs[ts].min()
-        parts, diags = [], []
+        parts, diags, maps = [], [], []
         for s, e in self._slices(logs, first):
             window = logs[(logs[ts] >= s - self.lookback) & (logs[ts] < e)]
             res = client.score(
@@ -594,11 +598,18 @@ class Monitor:
             )
             parts.append(res.scores)
             diags.append(res.diagnostics)
+            if getattr(res, "log_map", None) is not None:
+                maps.append(res.log_map)
         scores = pd.concat(parts, ignore_index=True) if parts else pd.DataFrame()
         if len(scores):
             scores["period_start"] = pd.to_datetime(scores["period_start"])
             scores = scores.drop_duplicates(["asset_id", "period_start"], keep="last")
-        return scores.reset_index(drop=True), diags
+        log_map = (
+            pd.concat(maps, ignore_index=True).drop_duplicates("log", keep="last")
+            if maps
+            else None
+        )
+        return scores.reset_index(drop=True), diags, log_map
 
     # ------------------------------------------------------------------ #
     # Run
@@ -867,7 +878,7 @@ class Monitor:
                 "Seed history with earlier logs to avoid this."
             )
 
-        scores, diags = self._score(window, start)
+        scores, diags, log_map = self._score(window, start)
         record["score_calls"] = len(diags)
         # Unmatched share over the new logs only. APIs before 4.2.0 report it
         # only for everything sent (new logs plus the history before them).
@@ -937,7 +948,10 @@ class Monitor:
                 ["asset_id", "period_start", "log"], as_index=False, sort=True
             )["n"].sum()
             oldest = counts["period_start"].max() - pd.Timedelta(days=LOG_DAYS)
-            _write_parquet(kept, counts[counts["period_start"] >= oldest])
+            counts = counts[counts["period_start"] >= oldest]
+            _write_parquet(kept, counts)
+            if log_map is not None:
+                self._keep_log_map(log_map, counts)
         except Exception as exc:  # noqa: BLE001 - the scores matter more
             warnings.append(f"The logs for the dashboard could not be kept: {exc}")
         _write_parquet(
@@ -1073,6 +1087,28 @@ class Monitor:
             .size()
             .rename(columns={"size": "n"})
         )
+
+    def _keep_log_map(self, new: pd.DataFrame, counts: pd.DataFrame) -> None:
+        """Add this run's free-text log map to the kept one (newer labels win),
+        keeping only logs the logs panel still has."""
+        path = self.path / "history" / LOG_MAP
+        merged = pd.concat(
+            [_read_table(path) if path.is_file() else None, new], ignore_index=True
+        )
+        merged = merged.drop_duplicates("log", keep="last")
+        merged = merged[merged["log"].isin(set(counts["log"].astype(str)))]
+        _write_parquet(path, merged.reset_index(drop=True))
+
+    def log_map(self) -> Optional[pd.DataFrame]:
+        """Each kept log's system and subsystem (``log``, ``system``,
+        ``subsystem``): the code map for a fixed-log model, or for a free-text
+        model what scoring matched (empty labels when it matched none). None
+        when neither is known."""
+        code_map = _bundle_code_map(self.path / BUNDLE)
+        if code_map is not None:
+            return code_map
+        path = self.path / "history" / LOG_MAP
+        return _read_table(path) if path.is_file() else None
 
     def log_counts(self) -> pd.DataFrame:
         """How many logs of each kind each asset had in each scored period:
@@ -1214,7 +1250,7 @@ class Monitor:
             scores,
             output or self.path / "dashboard" / "index.html",
             logs=self.log_counts() if wants_logs else None,
-            code_map=_bundle_code_map(self.path / BUNDLE),
+            code_map=self.log_map() if wants_logs else None,
             rolling_window=self.deployment.get("rolling_window"),
             fleet_name=self.config["fleet_name"],
             bands=self.config.get("bands")
@@ -1245,7 +1281,7 @@ class Monitor:
         )
         if not len(logs):
             raise MonitorError("No rows to score.")
-        scores, _ = self._score(logs.sort_values(self.columns["ts"]), None)
+        scores, _, _ = self._score(logs.sort_values(self.columns["ts"]), None)
         out = Path(output_dir) if output_dir else self.path / "oneoff" / _run_id()
         out.mkdir(parents=True, exist_ok=True)
         scores["provisional"] = False
@@ -1457,14 +1493,17 @@ def preview_from_model(
             raw = pd.read_parquet(
                 io.BytesIO(zf.read("risk_score/generation_input.parquet"))
             )
-            if "labels/deduplicated_predictions.parquet" in zf.namelist() and (
-                not model_config.get("is_free_text", True)
-            ):
-                preds = pd.read_parquet(
-                    io.BytesIO(zf.read("labels/deduplicated_predictions.parquet"))
-                )
+            # Each log's system and subsystem: the code map for a fixed-log
+            # model, what generation matched for a free-text one.
+            labelled = (
+                "risk_score/classified_logs.parquet"
+                if model_config.get("is_free_text", True)
+                else "labels/deduplicated_predictions.parquet"
+            )
+            if labelled in zf.namelist():
+                preds = pd.read_parquet(io.BytesIO(zf.read(labelled)))
                 keep = [model_config["log_column"], "system_name", "subsystem_name"]
-                code_map = _code_map(preds[keep])
+                code_map = _code_map(preds[keep].fillna(""))
         if "timestamp" in raw and pd.api.types.is_datetime64_any_dtype(
             raw["timestamp"]
         ):

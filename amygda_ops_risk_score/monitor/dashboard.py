@@ -219,9 +219,11 @@ def build_dashboard(
             kind each asset had in each scored period (``asset_id``,
             ``period_start``, ``log``, ``n``; ``Monitor.log_counts()``). The
             log text is written into the page.
-        code_map: A fixed-log model's codes with their ``system`` and
-            ``subsystem`` (column ``log``), to say what each log counts
-            toward.
+        code_map: Each log's ``system`` and ``subsystem`` (column ``log``),
+            to say what it counts toward: a fixed-log model's code map, or for
+            a free-text model what scoring matched (``Monitor.log_map()``).
+            Empty labels mean the log matched no subsystem; a log left out
+            is shown without labels.
         rolling_window: The model's rolling window, e.g. "7D": the logs
             behind one score are those of this long before it.
     """

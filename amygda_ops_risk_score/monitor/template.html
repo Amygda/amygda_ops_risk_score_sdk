@@ -1123,7 +1123,7 @@ function renderLogs(a, sel, res, dom, selT, pick, pts) {
   const sp = $("logs-span");
   sp.innerHTML = Object.entries(spans).map(([v, o]) => `<option value="${v}"${v === state.logSpan ? " selected" : ""}>${esc(o.label)}</option>`).join("");
   sp.onchange = () => { state.logSpan = sp.value; renderAsset(); };
-  $("logs-note").textContent = `Each bar is the number of ${a}'s logs in one ${res.native ? "scored period" : res.noun}${mapped ? ", coloured by the system each log counts toward; grey logs match no subsystem and don't affect the score" : ""}. The dark line marks the selected period${WINDOW_MS ? ` and the shaded band the ${meta.window_label} of logs behind its score` : ""}. The table lists those logs, most frequent first. The chart follows the resolution and zoom above.${LOGS.from ? ` Logs before ${fmtT(parseT(LOGS.from))} are not kept on this page.` : ""}`;
+  $("logs-note").textContent = `Each bar is the number of ${a}'s logs in one ${res.native ? "scored period" : res.noun}${mapped ? ", coloured by the system each log counts toward; grey logs match no subsystem and don't affect the score" : ""}. The dark line marks the selected period${WINDOW_MS ? ` and the shaded band the ${meta.window_label} of logs behind its score` : ""}. The table lists those logs, most recent first. The chart follows the resolution and zoom above.${LOGS.from ? ` Logs before ${fmtT(parseT(LOGS.from))} are not kept on this page.` : ""}`;
 
   // chart: one stacked bar per time bucket
   const host = $("logs-chart"), W = Math.max(280, host.clientWidth), H = 130, M = {l: 34, r: 12, t: 8, b: 22};
@@ -1156,14 +1156,14 @@ function renderLogs(a, sel, res, dom, selT, pick, pts) {
   // table: the logs in the chosen span, one row per kind of log
   const inSpan = all.filter(spans[state.logSpan].has), by = new Map();
   inSpan.forEach(d => { const o = by.get(d.li) || {li: d.li, n: 0, first: d, last: d}; o.n += d.n; if (d.t < o.first.t) o.first = d; if (d.t > o.last.t) o.last = d; by.set(d.li, o); });
-  const kinds = [...by.values()].sort((p, q) => q.n - p.n), total = d3.sum(kinds, o => o.n);
+  const kinds = [...by.values()].sort((p, q) => q.last.t - p.last.t || q.n - p.n), total = d3.sum(kinds, o => o.n);
   const limit = popt("asset_logs", "max_rows") || 300, list = kinds.slice(0, limit);
   if (!placed.get("asset_logs").title) $("logs-title").textContent = `Logs behind the score at ${fmtT(sel.t)}`;
-  $("logs-count").textContent = total ? `${int(total)} log${total === 1 ? "" : "s"}, ${int(kinds.length)} kind${kinds.length === 1 ? "" : "s"}${kinds.length > list.length ? `; the ${list.length} most frequent are listed` : ""}.` : "No logs in this span.";
+  $("logs-count").textContent = total ? `${int(total)} log${total === 1 ? "" : "s"}, ${int(kinds.length)} kind${kinds.length === 1 ? "" : "s"}${kinds.length > list.length ? `; the ${list.length} most recent are listed` : ""}.` : "No logs in this span.";
   if (!list.length) { $("logs").innerHTML = ""; return; }
-  const head = `<thead><tr><th class="l">Log</th>${mapped ? `${th("System", "The system this log counts toward. A dash means the model maps it to no subsystem, so it doesn't affect the score.", "l")}<th class="l">Subsystem</th>` : ""}${th("Count", "How many times it was logged in the span.")}${th("Share", "Its share of the logs in the span.")}${th("First", "The first period it was logged in, within the span.")}${th("Last", "The last period it was logged in, within the span.")}</tr></thead>`;
+  const head = `<thead><tr><th class="l">Log</th>${mapped ? `${th("System", "The system this log counts toward. A dash means the model maps it to no subsystem, so it doesn't affect the score. Blank means it isn't known: the log was scored before its system was kept.", "l")}<th class="l">Subsystem</th>` : ""}${th("Count", "How many times it was logged in the span.")}${th("Share", "Its share of the logs in the span.")}${th("First", "The first period it was logged in, within the span.")}${th("Last", "The last period it was logged in, within the span.")}</tr></thead>`;
   const body = list.map(o => { const g = LOGS.logs[o.li], s = sysOf(o.li);
-    return `<tr><td class="wrap" style="min-width:${mapped ? 160 : 260}px">${esc(g[0])}</td>${mapped ? `<td class="l">${s ? `<span style="color:${C.sys[s]}">■</span> ${esc(nice(s))}` : "–"}</td><td class="l">${g[2] && s ? esc(nice(g[2])) : "–"}</td>` : ""}<td>${int(o.n)}</td><td>${pct1(o.n / total)}</td><td data-v="${esc(o.first.k)}">${fmtT(o.first.t)}</td><td data-v="${esc(o.last.k)}">${fmtT(o.last.t)}</td></tr>`; }).join("");
+    return `<tr><td class="wrap" style="min-width:${mapped ? 160 : 260}px">${esc(g[0])}</td>${mapped ? (g.length < 2 ? `<td class="l"></td><td class="l"></td>` : `<td class="l">${s ? `<span style="color:${C.sys[s]}">■</span> ${esc(nice(s))}` : "–"}</td><td class="l">${g[2] && s ? esc(nice(g[2])) : "–"}</td>`) : ""}<td>${int(o.n)}</td><td>${pct1(o.n / total)}</td><td data-v="${esc(o.first.k)}">${fmtT(o.first.t)}</td><td data-v="${esc(o.last.k)}">${fmtT(o.last.t)}</td></tr>`; }).join("");
   $("logs").innerHTML = head + `<tbody>${body}</tbody>`;
   tableTools("logs");
 }

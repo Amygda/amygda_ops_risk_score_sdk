@@ -1,7 +1,7 @@
 ---
 name: risk-score
 description: >
-  Guided agent intelligence for the Amygda Ops Risk Score SDK (v5.4.1).
+  Guided agent intelligence for the Amygda Ops Risk Score SDK (v5.5.0).
   This skill teaches an LLM agent how to walk any user — technical or
   non-technical — through the full end-to-end pipeline: asking the right
   upfront questions, narrating each step in plain language, showing helpers
@@ -15,16 +15,16 @@ description: >
   "deploy model", "monitor", "score new data", "continuous scoring", "amygda-risk",
   "fleet app", "monitoring app", "alerts", "schedule runs".
 license: MIT
-compatibility: "SDK v5.4.1 — requires server API >= 4.1.0; Python >= 3.10"
+compatibility: "SDK v5.5.0 — requires server API >= 4.1.0; Python >= 3.10"
 metadata:
-  version: "5.4.1"
+  version: "5.5.0"
   author: "Amygda"
 ---
 
 # Amygda Ops Risk Score — Agent Guide
 
 **Repo:** https://github.com/Amygda/amygda_ops_risk_score_sdk  
-**SDK version:** 5.4.1 | **API minimum:** 4.1.0 | **Python:** ≥ 3.10
+**SDK version:** 5.5.0 | **API minimum:** 4.1.0 | **Python:** ≥ 3.10
 
 > **Breaking in 5.0.0:** `configure_training` and the failure helpers renamed `prediction_horizon_days` → `prediction_horizon`, `exclusion_days_after` → `exclusion_after`, `block_size_days` → `block_size` (helpers also `window_after_days` → `window_after`). Windows take durations (`"14D"`, `"36h"`; a bare number = days). New `feature_frequency` builds features per time bucket (`"auto"` default, `"5min"` … `"1D"`). Never generate code with the old names — they raise `TypeError`.
 
