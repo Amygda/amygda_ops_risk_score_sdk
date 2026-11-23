@@ -96,7 +96,7 @@ session = client.open_session(
 
 # Step 1 — labelling
 result = session.configure_labelling_pipeline(
-    file_path="how_to/examples/sample_data/airport_baggage_conveyers/training.csv",
+    file_path="how_to/examples/sample_data/airport_baggage_conveyors/training.csv",
     log_column="event_code",
     asset_context="airport baggage sortation station",
     is_free_text=False,
@@ -128,7 +128,7 @@ how_to/
 │   ├── 02d_risk_score_free_text_supervised.ipynb
 │   ├── 03a_fleet_app_fixed_log.ipynb
 │   ├── 03b_fleet_app_free_text.ipynb
-│   └── sample_data/     # One folder per example fleet: airport_baggage_conveyers/ and rolling_stock_hvac/,
+│   └── sample_data/     # One folder per example fleet: airport_baggage_conveyors/ and rolling_stock_hvac/,
 │                        # each with its data, weekly batches, ready-made models and a README
 └── how_to.md            # Sample data guide
 ```

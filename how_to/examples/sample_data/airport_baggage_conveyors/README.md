@@ -1,4 +1,4 @@
-# Airport baggage conveyers (fixed-log)
+# Airport baggage conveyors (fixed-log)
 
 Fault event logs from 12 baggage sortation stations at a busy international airport. Each row is one fault event, recorded against a station on a given date. The data is made up for these examples.
 

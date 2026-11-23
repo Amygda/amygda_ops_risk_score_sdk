@@ -16,7 +16,7 @@ how_to/
 │   ├── 03a_fleet_app_fixed_log.ipynb
 │   ├── 03b_fleet_app_free_text.ipynb
 │   └── sample_data/             # one folder per example fleet
-│       ├── airport_baggage_conveyers/   # fixed-log: 12 baggage sortation stations
+│       ├── airport_baggage_conveyors/   # fixed-log: 12 baggage sortation stations
 │       │   ├── README.md                # the data, its files and which notebooks use it
 │       │   ├── training.csv
 │       │   ├── generation.csv
@@ -44,7 +44,7 @@ Each folder in `sample_data/` is one example fleet with everything for it: the h
 
 | Example | Log type | Assets | Log column | Used by |
 |---|---|---|---|---|
-| [`airport_baggage_conveyers/`](examples/sample_data/airport_baggage_conveyers/README.md) | Fixed-log: short fault codes | `ASS-001` to `ASS-012`, 12 baggage sortation stations at an airport | `event_code` | `01a`, `02a`, `02b`, `03a`, `guides/01`, `guides/02` |
+| [`airport_baggage_conveyors/`](examples/sample_data/airport_baggage_conveyors/README.md) | Fixed-log: short fault codes | `ASS-001` to `ASS-012`, 12 baggage sortation stations at an airport | `event_code` | `01a`, `02a`, `02b`, `03a`, `guides/01`, `guides/02` |
 | [`rolling_stock_hvac/`](examples/sample_data/rolling_stock_hvac/README.md) | Free-text: technicians' notes | `HVAC-01` to `HVAC-08`, 8 air-conditioning units on passenger trains | `maintenance_log` | `01b`, `02c`, `02d`, `03b` |
 
 Both use `asset_id` for the asset and `date` (date and time, `YYYY-MM-DD HH:MM:SS`) for the time. The failures files have `asset_id` and `failure_date`. Training covers Jan–Dec 2023 and new data Jan–Mar 2024.
@@ -57,7 +57,7 @@ Both use `asset_id` for the asset and `date` (date and time, `YYYY-MM-DD HH:MM:S
 
 Each example's `batches/` folder holds its `generation.csv` split into 13 weekly files, `week_01.csv` to `week_13.csv`, in the same columns. They stand in for the files a site would export each week, so you can add them to the fleet app one at a time.
 
-| | `airport_baggage_conveyers` | `rolling_stock_hvac` |
+| | `airport_baggage_conveyors` | `rolling_stock_hvac` |
 |---|---|---|
 | Rows per week | ~220–470 | ~55–137 |
 | Assets in every week | all 12 | all 8 |
