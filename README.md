@@ -128,8 +128,9 @@ how_to/
 │   ├── 02d_risk_score_free_text_supervised.ipynb
 │   ├── 03a_fleet_app_fixed_log.ipynb
 │   ├── 03b_fleet_app_free_text.ipynb
-│   └── sample_data/     # One folder per example fleet: airport_baggage_conveyors/ and rolling_stock_hvac/,
-│                        # each with its data, weekly batches, ready-made models and a README
+│   └── sample_data/     # One folder per example fleet: airport_baggage_conveyors/, rolling_stock_hvac/,
+│                        # aircraft_mro_hangar/ and aircraft_fault_messages/, each with its data,
+│                        # weekly batches, ready-made models and a README
 └── how_to.md            # Sample data guide
 ```
 

@@ -1,0 +1,167 @@
+asset_id,maintenance_log,date
+AC-06,"Corrosion found aft cargo floor beam STA 440, beyond SRM limits, engineering disposition requested",2024-01-22 06:31:00
+AC-08,IFE screen seat 14F blank,2024-01-22 07:54:37
+AC-09,"Seat 14F recline inoperative, placarded",2024-01-22 09:15:46
+AC-08,"Auxiliary power unit starter motor replaced IAW AMM 49-42-00, start test good",2024-01-22 09:16:24
+AC-09,"Galley aft oven not heating, crew report",2024-01-22 09:27:36
+AC-10,"Main wheel 1 tire changed, cut found in tread",2024-01-22 10:58:18
+AC-06,"Overhead bin latch broken row 8, replaced",2024-01-22 12:20:25
+AC-10,Battery 1 charge limiter fault on power up,2024-01-22 12:51:58
+AC-08,"Engine 2 start valve replaced IAW AMM 80-11-00, start test good",2024-01-22 13:31:21
+AC-09,"Bird strike reported on approach, inspection required",2024-01-22 14:15:58
+AC-02,"Engine 1 bleed temperature fluctuating, bleed air cooler suspected",2024-01-22 16:15:23
+AC-10,"Brake 1 wear pin near limit, monitor every daily check",2024-01-22 17:50:47
+AC-09,"Dent found on fuselage lower skin after ground handling, assessed",2024-01-22 19:10:26
+AC-02,"Auxiliary power unit starter motor replaced IAW AMM 49-42-00, start test good",2024-01-22 19:50:38
+AC-06,"Sealant missing on fuselage lap joint STA 1510, re-applied",2024-01-22 21:08:51
+AC-06,"Cabin carpet worn in fwd aisle, replacement scheduled",2024-01-22 21:43:24
+AC-09,"BLEED 2 FAULT ECAM ON TAKEOFF, bleed 1 isolated by crew",2024-01-22 21:49:46
+AC-07,"A-check input, work package opened",2024-01-22 22:00:00
+AC-02,"Cabin temp fwd zone not reaching selected temp, crew report too warm",2024-01-22 23:17:17
+AC-11,"Cabin temp mid zone not reaching selected temp, crew report too warm",2024-01-23 00:58:29
+AC-07,"Emergency equipment check carried out, all serviceable",2024-01-23 02:18:00
+AC-07,"Overhead bin latch broken row 19, replaced",2024-01-23 03:07:00
+AC-09,"Seat 16D recline actuator replaced, ops check good",2024-01-23 03:44:53
+AC-05,"Repeat defect: auxiliary power unit auto shutdown again, ground power used",2024-01-23 04:04:10
+AC-07,"Crack found on cargo door frame STA 1540, repair raised to engineering",2024-01-23 04:51:00
+AC-07,"Emergency light battery expired, replaced",2024-01-23 05:15:00
+AC-08,Repeat defect: brake 1 temperature high again on turnaround,2024-01-23 05:57:28
+AC-02,Repeat defect: brake 1 temperature high again on turnaround,2024-01-23 06:47:31
+AC-07,"A-check completed, aircraft released to service",2024-01-23 07:00:00
+AC-08,"ENGINE 1 oil consumption above trend, 4 quarts added",2024-01-23 07:11:06
+AC-07,"Seat 10C recline inoperative, placarded",2024-01-23 08:03:05
+AC-04,"Shock strut left serviced with nitrogen and fluid, extension normal",2024-01-23 08:20:14
+AC-04,"Auxiliary power unit oil quantity low message, replenished 5 quarts",2024-01-23 10:09:39
+AC-04,"Galley power dropped out briefly, crew report",2024-01-23 10:52:25
+AC-06,"Engine 2 fan blade leading edge erosion, blended IAW manual",2024-01-23 11:55:36
+AC-02,"Seat 21B recline actuator replaced, ops check good",2024-01-23 12:18:29
+AC-01,"Seat 30C recline actuator replaced, ops check good",2024-01-23 13:55:26
+AC-12,"Anti-skid fault message on landing roll, brake 3 channel",2024-01-23 14:07:07
+AC-03,"Battery 1 replaced, capacity test good",2024-01-23 16:33:36
+AC-01,"Seat 21C recline inoperative, placarded",2024-01-23 16:53:25
+AC-11,"BLEED 2 FAULT ECAM ON TAKEOFF, bleed 1 isolated by crew",2024-01-23 17:36:03
+AC-03,"Engine 2 start valve replaced IAW AMM 80-11-00, start test good",2024-01-23 18:13:59
+AC-09,Reading light row 2 replaced,2024-01-23 18:29:56
+AC-09,Pack 2 flow control valve slow to open on BITE test,2024-01-23 19:08:05
+AC-08,Fuel quantity indication fluctuating on wing tank left,2024-01-23 20:30:03
+AC-09,"Cabin zone temp sensor aft replaced, system test satisfactory",2024-01-23 21:11:12
+AC-06,"Paint damage and minor corrosion on wing left leading edge, treated",2024-01-23 22:52:55
+AC-03,"Auxiliary power unit compartment fire seal damaged, replacement raised",2024-01-24 02:00:07
+AC-10,"Dent found on fuselage lower skin after ground handling, assessed",2024-01-24 02:12:43
+AC-06,"Hydraulic pipe chafing found at wheel well right, clamp replaced",2024-01-24 05:35:49
+AC-06,"Sealant missing on fuselage lap joint STA 1080, re-applied",2024-01-24 07:56:48
+AC-03,"Bleed duct right wing V-clamp replaced, leak check satisfactory",2024-01-24 08:53:56
+AC-06,"Bonding strap broken on gear door right, replaced",2024-01-24 09:51:30
+AC-04,"Galley fwd oven not heating, crew report",2024-01-24 10:13:46
+AC-04,"Engine 2 start valve replaced IAW AMM 80-11-00, start test good",2024-01-24 13:50:58
+AC-04,IFE screen seat 9C blank,2024-01-24 14:02:37
+AC-10,"Repeat defect: engine 2 vibration high again, fan balance to be checked",2024-01-24 14:11:32
+AC-06,"Paint damage and minor corrosion on wing left leading edge, treated",2024-01-24 14:38:48
+AC-04,Battery 2 charge limiter fault on power up,2024-01-24 14:59:07
+AC-07,"Hydraulic reservoir replenished and system bled, quantity normal",2024-01-24 15:26:22
+AC-04,"Brake 4 wear pin near limit, monitor every daily check",2024-01-24 15:49:12
+AC-06,"Hydraulic accumulator pre-charge low, recharged to limits",2024-01-24 17:40:51
+AC-06,"Crack found on cargo door frame STA 890, repair raised to engineering",2024-01-24 19:10:18
+AC-09,"Nose wheel steering feedback sensor replaced, taxi test good",2024-01-24 20:11:38
+AC-01,Reading light row 7 replaced,2024-01-24 20:47:53
+AC-06,"Cabin carpet worn in mid aisle, replacement scheduled",2024-01-24 21:18:26
+AC-07,"Bleed 1 pressure regulating valve replaced IAW AMM 36-11-00, leak check good",2024-01-24 21:32:44
+AC-08,"Bird strike reported on approach, inspection required",2024-01-24 22:11:30
+AC-11,"Engine 2 start valve replaced IAW AMM 80-11-00, start test good",2024-01-24 22:23:49
+AC-04,"Engine driven pump 1 replaced IAW AMM 29-11-00, leak and ops check good",2024-01-25 00:36:01
+AC-04,"Anti-skid fault message on landing roll, brake 3 channel",2024-01-25 02:16:33
+AC-01,"Engine 2 fan trim balance carried out, vibration now normal",2024-01-25 04:32:13
+AC-06,"Hydraulic accumulator pre-charge low, recharged to limits",2024-01-25 06:22:25
+AC-04,"Cabin air fan 2 noisy in operation, vibration felt at floor panel",2024-01-25 07:11:56
+AC-05,"Bird strike reported on approach, inspection required",2024-01-25 07:33:53
+AC-07,"Repeat defect: green system reservoir low again, leak suspected",2024-01-25 08:52:35
+AC-01,"Bird strike reported on approach, inspection required",2024-01-25 08:54:23
+AC-09,"Repeat defect: pack 1 overheat third time this week, troubleshooting in progress",2024-01-25 09:30:43
+AC-04,"Seat 30F recline inoperative, placarded",2024-01-25 10:23:32
+AC-04,"Brake 2 wear pin near limit, monitor every daily check",2024-01-25 11:39:09
+AC-03,"Pack bay inspection: heat exchanger fins partially blocked, cleaning required",2024-01-25 11:51:36
+AC-03,"BLEED 2 PRESSURE HIGH caution in climb, cleared after thrust reduction",2024-01-25 11:54:36
+AC-12,Fuel quantity indication fluctuating on wing tank right,2024-01-25 12:11:21
+AC-07,"Cabin temp aft zone not reaching selected temp, crew report too warm",2024-01-25 12:39:58
+AC-01,"Bleed air cooler 1 inspected, no damage, temperature sensor replaced",2024-01-25 14:18:49
+AC-05,"ENGINE 1 VIBRATION high N1 in cruise, value 2.0 units",2024-01-25 16:11:32
+AC-07,"Bleed 1 pressure regulating valve replaced IAW AMM 36-11-00, leak check good",2024-01-25 17:01:39
+AC-03,"Fuel tank entry: sealant deterioration found at rib 21, re-sealed",2024-01-25 18:00:35
+AC-08,"Pylon bleed duct insulation damaged at engine 2, repair raised",2024-01-25 18:09:45
+AC-09,"Auxiliary power unit compartment fire seal damaged, replacement raised",2024-01-25 18:11:56
+AC-04,"Pack 1 flow control valve replaced IAW AMM 21-51-00, ops check good",2024-01-25 18:12:53
+AC-04,"ENGINE 2 EGT margin reducing, trend alert raised by engineering",2024-01-25 18:58:06
+AC-03,"Lavatory aft flush inoperative, lav locked",2024-01-25 20:26:33
+AC-10,"Galley mid oven not heating, crew report",2024-01-25 21:11:07
+AC-10,"Anti-skid valve 1 replaced, BITE test passed",2024-01-25 21:29:20
+AC-05,"Tire 4 pressure low on walk around, inflated, slow leak suspected",2024-01-25 21:52:37
+AC-07,"BRAKE 4 HOT after landing, temp above normal, cooled on stand",2024-01-25 22:49:11
+AC-04,"Lavatory mid flush control unit replaced, lav returned to service",2024-01-26 00:13:16
+AC-07,"Engine driven pump 2 replaced IAW AMM 29-11-00, leak and ops check good",2024-01-26 01:47:08
+AC-03,"Seat 8B recline inoperative, placarded",2024-01-26 03:39:47
+AC-10,"Hydraulic reservoir replenished and system bled, quantity normal",2024-01-26 06:39:50
+AC-04,"Seat 9B recline actuator replaced, ops check good",2024-01-26 06:52:01
+AC-06,"Sealant missing on fuselage lap joint STA 650, re-applied",2024-01-26 08:41:23
+AC-06,"Emergency light battery expired, replaced",2024-01-26 09:07:36
+AC-01,"Galley mid oven not heating, crew report",2024-01-26 09:57:29
+AC-06,"Gear door hinge wear beyond limits right side, part ordered",2024-01-26 12:05:23
+AC-06,"Overhead bin latch broken row 13, replaced",2024-01-26 14:09:32
+AC-07,"Transformer rectifier 1 fault message, transferred to other TR",2024-01-26 14:13:20
+AC-04,"PACK 1 OUTLET TEMP HIGH caution on climb, pack switched off by crew",2024-01-26 14:22:04
+AC-08,"HP valve 2 slow to close on BITE, intermittent fault",2024-01-26 14:33:19
+AC-09,Reading light row 8 inoperative,2024-01-26 16:04:47
+AC-06,"Overhead bin latch broken row 18, replaced",2024-01-26 17:01:39
+AC-07,"Auxiliary power unit oil quantity low message, replenished 5 quarts",2024-01-26 17:51:04
+AC-11,"Fuel quantity probe left wing replaced, gauging test good",2024-01-26 17:59:50
+AC-06,"Sealant missing on fuselage lap joint STA 1590, re-applied",2024-01-26 18:23:54
+AC-06,"Cabin carpet worn in fwd aisle, replacement scheduled",2024-01-26 19:26:59
+AC-10,"Engine 1 start valve replaced IAW AMM 80-11-00, start test good",2024-01-26 19:41:48
+AC-09,"Pack 1 heat exchanger cleaned, outlet temps now within limits",2024-01-26 20:04:34
+AC-05,Reading light row 24 inoperative,2024-01-26 20:39:42
+AC-06,"Wiring loom chafe found behind galley at STA 550, repaired",2024-01-26 22:11:41
+AC-06,"Loose fasteners found on wing right trailing edge panel, replaced",2024-01-26 23:59:03
+AC-02,"BRAKE 4 HOT after landing, temp above normal, cooled on stand",2024-01-27 02:17:35
+AC-10,"Cabin zone temp sensor mid replaced, system test satisfactory",2024-01-27 03:54:29
+AC-02,"Pack bay inspection: heat exchanger fins partially blocked, cleaning required",2024-01-27 04:00:19
+AC-09,"Auxiliary power unit starter motor replaced IAW AMM 49-42-00, start test good",2024-01-27 05:55:10
+AC-06,"Gear door hinge wear beyond limits right side, part ordered",2024-01-27 05:55:40
+AC-07,"Repeat defect: green system reservoir low again, leak suspected",2024-01-27 06:05:12
+AC-04,"Cabin carpet worn in fwd aisle, replacement scheduled",2024-01-27 06:19:37
+AC-06,"Overhead bin latch broken row 20, replaced",2024-01-27 06:44:22
+AC-09,"Fuel panel seal replaced wing right, no further leak",2024-01-27 06:56:33
+AC-08,"HP valve 2 slow to close on BITE, intermittent fault",2024-01-27 07:00:21
+AC-03,"Cabin temp aft zone not reaching selected temp, crew report too warm",2024-01-27 09:21:17
+AC-02,"Repeat defect: auxiliary power unit auto shutdown again, ground power used",2024-01-27 10:54:38
+AC-05,"Repeat defect: green system reservoir low again, leak suspected",2024-01-27 13:10:05
+AC-02,"Engine 2 start valve replaced IAW AMM 80-11-00, start test good",2024-01-27 13:26:48
+AC-04,"Engine 1 oil filter replaced, chip detector clean",2024-01-27 15:20:50
+AC-09,Reading light row 28 replaced,2024-01-27 16:27:16
+AC-07,"Hydraulic pressure line union at gear bay right re-torqued, no further leak",2024-01-27 17:15:35
+AC-04,"Transformer rectifier 1 replaced, electrical ops check satisfactory",2024-01-27 18:37:23
+AC-09,"Seat 28F recline actuator replaced, ops check good",2024-01-27 19:24:51
+AC-09,"Cabin carpet worn in aft aisle, replacement scheduled",2024-01-27 20:08:31
+AC-08,"Brake 4 replaced IAW AMM 32-42-00, wear within limits after change",2024-01-27 22:04:19
+AC-01,"Anti-skid valve 1 replaced, BITE test passed",2024-01-27 22:38:54
+AC-11,"Anti-skid valve 4 replaced, BITE test passed",2024-01-27 23:42:27
+AC-10,"Shock strut right serviced with nitrogen and fluid, extension normal",2024-01-28 00:07:03
+AC-06,"Wiring loom chafe found behind galley at STA 790, repaired",2024-01-28 00:12:46
+AC-07,"Hydraulic accumulator pre-charge low, recharged to limits",2024-01-28 02:14:41
+AC-04,"Repeat defect: engine 2 vibration high again, fan balance to be checked",2024-01-28 04:23:22
+AC-06,"Sealant missing on fuselage lap joint STA 650, re-applied",2024-01-28 04:38:11
+AC-06,"Sealant missing on fuselage lap joint STA 1420, re-applied",2024-01-28 04:58:56
+AC-10,Repeat defect: brake 2 temperature high again on turnaround,2024-01-28 05:05:52
+AC-09,"Galley aft oven not heating, crew report",2024-01-28 05:13:26
+AC-07,"Hydraulic fluid seepage at main gear bay right, wiped and monitored",2024-01-28 06:25:47
+AC-09,Pack 2 flow control valve slow to open on BITE test,2024-01-28 09:04:09
+AC-06,"Cabin carpet worn in fwd aisle, replacement scheduled",2024-01-28 09:53:50
+AC-06,"Overhead bin latch broken row 21, replaced",2024-01-28 10:43:53
+AC-09,"Auxiliary power unit oil filter replaced, chip detector clean",2024-01-28 11:34:36
+AC-02,Pack 2 flow control valve slow to open on BITE test,2024-01-28 11:51:13
+AC-08,"Lavatory fwd flush inoperative, lav locked",2024-01-28 15:42:39
+AC-01,"Galley mid oven replaced, test good",2024-01-28 16:30:34
+AC-10,"Repeat defect: bleed 2 pressure regulating valve sticking, third report",2024-01-28 16:47:46
+AC-07,"Galley fwd oven replaced, test good",2024-01-28 17:54:19
+AC-06,"Sealant missing on fuselage lap joint STA 1350, re-applied",2024-01-28 18:16:01
+AC-02,"Galley aft oven replaced, test good",2024-01-28 18:18:35
+AC-06,"Engine 2 fan blade leading edge erosion, blended IAW manual",2024-01-28 18:48:20
+AC-07,"Repeat defect: pack 2 overheat third time this week, troubleshooting in progress",2024-01-28 19:06:39

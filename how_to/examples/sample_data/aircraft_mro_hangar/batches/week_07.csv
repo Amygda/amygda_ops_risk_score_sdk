@@ -1,0 +1,102 @@
+asset_id,maintenance_log,date
+AC-09,"Engine 1 bleed temperature fluctuating, bleed air cooler suspected",2024-02-14 12:44:14
+AC-11,"Dent found on fuselage lower skin after ground handling, assessed",2024-02-14 14:12:35
+AC-11,"Lavatory fwd flush inoperative, lav locked",2024-02-14 14:47:02
+AC-11,"Repeat defect: pack 1 overheat third time this week, troubleshooting in progress",2024-02-14 15:07:55
+AC-09,"Seat 4D recline actuator replaced, ops check good",2024-02-14 15:15:57
+AC-10,"Lavatory aft flush control unit replaced, lav returned to service",2024-02-14 15:46:13
+AC-09,Repeat defect: brake 2 temperature high again on turnaround,2024-02-14 18:16:43
+AC-02,"Engine 2 fan trim balance carried out, vibration now normal",2024-02-14 20:59:15
+AC-09,"Auxiliary power unit oil filter replaced, chip detector clean",2024-02-14 22:13:08
+AC-09,"Fuel leak from wing left lower surface panel, within limits, monitored",2024-02-14 23:49:41
+AC-09,"Deferred IAW MEL 36-xx, bleed 1 inop, ops restriction applied",2024-02-15 01:15:14
+AC-09,Fuel quantity indication fluctuating on wing tank left,2024-02-15 07:24:38
+AC-02,"Nose wheel steering jerky during taxi, crew report",2024-02-15 07:46:59
+AC-05,"Brake 4 replaced IAW AMM 32-42-00, wear within limits after change",2024-02-15 07:53:37
+AC-12,"Bleed leak warning wing left on taxi in, cleared after 2 min",2024-02-15 08:26:42
+AC-03,IFE screen seat 26C blank,2024-02-15 08:41:58
+AC-08,"Anti-skid fault message on landing roll, brake 4 channel",2024-02-15 08:55:38
+AC-11,"Cabin zone temp sensor aft replaced, system test satisfactory",2024-02-15 09:24:05
+AC-04,"Transformer rectifier 2 replaced, electrical ops check satisfactory",2024-02-15 09:57:41
+AC-03,"Engine 1 oil filter replaced, chip detector clean",2024-02-15 13:21:10
+AC-09,"Lavatory aft flush inoperative, lav locked",2024-02-15 14:14:50
+AC-09,"BLEED 1 PRESSURE HIGH caution in climb, cleared after thrust reduction",2024-02-15 14:47:37
+AC-11,Cabin air fan 2 filter replaced at scheduled interval,2024-02-15 16:26:59
+AC-09,"Dent found on fuselage lower skin after ground handling, assessed",2024-02-15 17:25:32
+AC-09,"Fuel quantity probe left wing replaced, gauging test good",2024-02-15 18:29:36
+AC-10,"Lavatory fwd flush inoperative, lav locked",2024-02-15 19:22:29
+AC-08,"PACK 1 OUTLET TEMP HIGH caution on climb, pack switched off by crew",2024-02-15 19:42:52
+AC-07,"PACK 2 OUTLET TEMP HIGH caution on climb, pack switched off by crew",2024-02-15 22:26:10
+AC-11,"Auxiliary power unit compartment fire seal damaged, replacement raised",2024-02-15 22:50:05
+AC-09,FUEL LEFT TANK PUMP 1 LOW PRESSURE caution on taxi out,2024-02-16 00:09:52
+AC-03,"Auxiliary power unit fuel control unit replaced, ground run satisfactory",2024-02-16 02:44:44
+AC-07,"Engine 2 thrust reverser blocker door seal damaged, replaced",2024-02-16 04:47:41
+AC-05,"Transformer rectifier 1 replaced, electrical ops check satisfactory",2024-02-16 06:08:44
+AC-09,"Nose wheel steering jerky during taxi, crew report",2024-02-16 08:21:09
+AC-10,"Main wheel 3 tire changed, cut found in tread",2024-02-16 10:05:35
+AC-05,"Engine 2 fan trim balance carried out, vibration now normal",2024-02-16 11:29:14
+AC-09,Fuel quantity indication fluctuating on wing tank left,2024-02-16 11:53:12
+AC-09,"Cabin carpet worn in fwd aisle, replacement scheduled",2024-02-16 11:55:09
+AC-09,"Lavatory aft flush control unit replaced, lav returned to service",2024-02-16 12:39:18
+AC-03,"Galley fwd oven replaced, test good",2024-02-16 15:13:45
+AC-03,"Dent found on fuselage lower skin after ground handling, assessed",2024-02-16 15:49:11
+AC-12,"Avionics ventilation fault message on ground, cleared on reset",2024-02-16 16:06:27
+AC-09,"Anti-skid fault message on landing roll, brake 4 channel",2024-02-16 16:29:15
+AC-11,"Brake 4 wear pin near limit, monitor every daily check",2024-02-16 17:38:56
+AC-07,"BLEED 2 FAULT ECAM ON TAKEOFF, bleed 1 isolated by crew",2024-02-16 17:57:31
+AC-04,IFE screen seat 7F blank,2024-02-16 20:07:32
+AC-09,"Lavatory mid flush inoperative, lav locked",2024-02-16 21:12:09
+AC-07,"Blue system reservoir quantity low, replenished 4 litres",2024-02-16 21:16:10
+AC-12,"Dent found on fuselage lower skin after ground handling, assessed",2024-02-16 22:24:18
+AC-08,"Fuel panel seal replaced wing right, no further leak",2024-02-16 23:08:45
+AC-09,FUEL LEFT TANK PUMP 1 LOW PRESSURE caution on taxi out,2024-02-17 00:59:46
+AC-03,"Seat 1C recline inoperative, placarded",2024-02-17 01:36:37
+AC-02,Cabin air fan 2 filter replaced at scheduled interval,2024-02-17 02:28:41
+AC-09,"Fuel quantity probe right wing replaced, gauging test good",2024-02-17 02:56:30
+AC-09,"Galley fwd oven not heating, crew report",2024-02-17 04:20:02
+AC-09,"Nose wheel steering feedback sensor replaced, taxi test good",2024-02-17 04:39:37
+AC-05,"Main wheel 4 tire changed, cut found in tread",2024-02-17 06:04:44
+AC-09,"Wing tank pump 1 replaced IAW AMM 28-21-00, leak check good",2024-02-17 07:07:31
+AC-12,"Cabin air fan 1 noisy in operation, vibration felt at floor panel",2024-02-17 07:22:10
+AC-05,"Auxiliary power unit oil quantity low message, replenished 2 quarts",2024-02-17 08:28:46
+AC-09,"Fuel imbalance caution in cruise, crossfeed used",2024-02-17 08:42:04
+AC-09,FUEL LEFT TANK PUMP 2 LOW PRESSURE caution on taxi out,2024-02-17 09:21:59
+AC-01,"Brake 4 wear pin near limit, monitor every daily check",2024-02-17 10:37:48
+AC-04,"Pack bay inspection: heat exchanger fins partially blocked, cleaning required",2024-02-17 11:59:18
+AC-09,"Seat 4C recline actuator replaced, ops check good",2024-02-17 12:14:16
+AC-01,"Fuel leak from wing right lower surface panel, within limits, monitored",2024-02-17 12:45:00
+AC-07,Pack 1 flow control valve slow to open on BITE test,2024-02-17 13:17:09
+AC-02,"Dent found on fuselage lower skin after ground handling, assessed",2024-02-17 13:44:16
+AC-09,"Galley aft oven replaced, test good",2024-02-17 14:05:54
+AC-07,Drive generator 1 oil temperature high indication during climb,2024-02-17 15:45:30
+AC-09,"Bird strike inspection carried out, no damage found",2024-02-17 18:03:03
+AC-05,"Seat 29D recline actuator replaced, ops check good",2024-02-17 19:14:33
+AC-04,Reading light row 7 replaced,2024-02-17 19:35:40
+AC-03,"Pack 2 flow control valve replaced IAW AMM 21-51-00, ops check good",2024-02-17 19:46:19
+AC-09,"Fuel quantity probe left wing replaced, gauging test good",2024-02-17 20:39:47
+AC-07,Fuel quantity indication fluctuating on wing tank left,2024-02-17 21:31:15
+AC-11,"Galley aft oven not heating, crew report",2024-02-18 03:34:18
+AC-04,"PACK 2 OUTLET TEMP HIGH caution on climb, pack switched off by crew",2024-02-18 05:21:02
+AC-09,"Fuel imbalance caution in cruise, crossfeed used",2024-02-18 06:53:55
+AC-09,"Bleed 2 pressure regulating valve replaced IAW AMM 36-11-00, leak check good",2024-02-18 10:20:07
+AC-11,"Auxiliary power unit oil filter replaced, chip detector clean",2024-02-18 11:33:57
+AC-11,"Blue system reservoir quantity low, replenished 2 litres",2024-02-18 12:12:06
+AC-09,"Fuel imbalance caution in cruise, crossfeed used",2024-02-18 13:42:42
+AC-09,Reading light row 26 replaced,2024-02-18 14:23:57
+AC-03,"Fuel quantity probe left wing replaced, gauging test good",2024-02-18 14:48:36
+AC-09,Fuel smell reported in cabin aft zone after refuel,2024-02-18 16:04:27
+AC-02,"BRAKE 2 HOT after landing, temp above normal, cooled on stand",2024-02-18 16:23:57
+AC-12,"Cabin zone temp sensor fwd replaced, system test satisfactory",2024-02-18 16:42:34
+AC-01,"Drive generator 2 disconnected and replaced IAW AMM 24-21-00, ground run good",2024-02-18 16:44:04
+AC-09,"Engine driven pump 1 replaced IAW AMM 29-11-00, leak and ops check good",2024-02-18 16:55:25
+AC-11,"Anti-skid valve 3 replaced, BITE test passed",2024-02-18 18:05:36
+AC-11,"Bonding strap broken on gear door right, replaced",2024-02-18 19:22:03
+AC-08,"Blue system reservoir quantity low, replenished 3 litres",2024-02-18 19:41:17
+AC-09,Fuel smell reported in cabin aft zone after refuel,2024-02-18 19:49:19
+AC-06,Reading light row 3 replaced,2024-02-18 21:18:37
+AC-02,"Power transfer unit running unexpectedly after engine start, noise reported by ground crew",2024-02-18 21:57:20
+AC-09,FUEL LEFT TANK PUMP 1 LOW PRESSURE caution on taxi out,2024-02-18 22:42:35
+AC-09,"Fuel imbalance caution in cruise, crossfeed used",2024-02-18 23:15:29
+AC-04,"ENGINE 2 oil consumption above trend, 3 quarts added",2024-02-18 23:19:22
+AC-09,"Fuel imbalance caution in cruise, crossfeed used",2024-02-18 23:20:44
+AC-02,"Cabin carpet worn in fwd aisle, replacement scheduled",2024-02-18 23:43:10

@@ -1,0 +1,132 @@
+asset_id,maintenance_log,date
+AC-05,"Repeat defect: auxiliary power unit auto shutdown again, ground power used",2024-01-01 00:10:23
+AC-10,"Anti-skid fault message on landing roll, brake 1 channel",2024-01-01 01:59:06
+AC-04,"Pylon bleed duct insulation damaged at engine 1, repair raised",2024-01-01 02:18:39
+AC-04,"Fuel tank entry: sealant deterioration found at rib 1, re-sealed",2024-01-01 05:20:49
+AC-06,"Wing tank pump 1 replaced IAW AMM 28-21-00, leak check good",2024-01-01 06:15:30
+AC-07,"Cabin zone temp sensor fwd replaced, system test satisfactory",2024-01-01 09:07:53
+AC-02,ENGINE 2 oil filter clog message on taxi in,2024-01-01 11:07:11
+AC-09,"Lavatory fwd flush control unit replaced, lav returned to service",2024-01-01 15:23:17
+AC-03,"Engine 1 oil filter replaced, chip detector clean",2024-01-01 15:26:20
+AC-04,"Seat 9C recline actuator replaced, ops check good",2024-01-01 16:17:05
+AC-10,"Seat 4F recline inoperative, placarded",2024-01-01 16:21:49
+AC-11,"Galley aft oven not heating, crew report",2024-01-01 16:56:37
+AC-04,"Cabin carpet worn in aft aisle, replacement scheduled",2024-01-01 17:57:40
+AC-08,"Galley mid oven not heating, crew report",2024-01-01 20:44:26
+AC-08,"Lavatory aft flush inoperative, lav locked",2024-01-01 21:37:02
+AC-02,"Transformer rectifier 1 replaced, electrical ops check satisfactory",2024-01-01 22:56:44
+AC-05,"Engine 1 start valve replaced IAW AMM 80-11-00, start test good",2024-01-02 00:11:57
+AC-10,"Bonding strap broken on gear door left, replaced",2024-01-02 04:38:42
+AC-08,"Galley fwd oven replaced, test good",2024-01-02 05:15:59
+AC-05,Reading light row 4 inoperative,2024-01-02 09:15:23
+AC-09,"Repeat defect: auxiliary power unit auto shutdown again, ground power used",2024-01-02 09:26:16
+AC-12,"Nose wheel steering feedback sensor replaced, taxi test good",2024-01-02 10:58:19
+AC-07,"Galley power dropped out briefly, crew report",2024-01-02 19:58:57
+AC-04,Main gear right shock strut extension low on walk around,2024-01-02 20:15:43
+AC-10,"Engine 1 thrust reverser blocker door seal damaged, replaced",2024-01-02 21:27:53
+AC-01,"A-check input, work package opened",2024-01-02 22:00:00
+AC-01,"Emergency light battery expired, replaced",2024-01-02 22:42:00
+AC-04,Fuel smell reported in cabin aft zone after refuel,2024-01-02 23:19:27
+AC-01,"Cabin carpet worn in fwd aisle, replacement scheduled",2024-01-03 00:03:00
+AC-01,"Overhead bin latch broken row 18, replaced",2024-01-03 01:30:00
+AC-05,"Repeat defect: pack 2 overheat third time this week, troubleshooting in progress",2024-01-03 02:05:04
+AC-01,"Emergency equipment check carried out, all serviceable",2024-01-03 02:29:00
+AC-01,"Overhead bin latch broken row 29, replaced",2024-01-03 02:34:00
+AC-01,"Emergency equipment check carried out, all serviceable",2024-01-03 04:42:00
+AC-01,"Emergency equipment check carried out, all serviceable",2024-01-03 05:03:00
+AC-01,"Torque link bushing play found nose gear, replacement raised",2024-01-03 05:35:00
+AC-01,"A-check completed, aircraft released to service",2024-01-03 07:00:00
+AC-12,"Lavatory aft flush inoperative, lav locked",2024-01-03 08:26:08
+AC-06,"Lavatory aft flush inoperative, lav locked",2024-01-03 09:44:18
+AC-04,"Hydraulic pressure line union at gear bay right re-torqued, no further leak",2024-01-03 10:50:15
+AC-10,Repeat defect: brake 3 temperature high again on turnaround,2024-01-03 11:07:39
+AC-04,"Seat 7A recline inoperative, placarded",2024-01-03 11:49:26
+AC-04,"Fuel leak from wing right lower surface panel, within limits, monitored",2024-01-03 14:28:46
+AC-06,"Auxiliary power unit exhaust temp high during main engine start, 10 deg over limit",2024-01-03 15:36:46
+AC-03,"Dent found on fuselage lower skin after ground handling, assessed",2024-01-03 16:10:31
+AC-04,IFE screen seat 8D blank,2024-01-03 17:06:19
+AC-10,"Deferred IAW MEL 49-xx, auxiliary power unit inop, ground power and air required",2024-01-03 17:16:33
+AC-04,"ENGINE 1 start valve slow to close, start time long",2024-01-03 18:14:29
+AC-01,Fuel smell reported in cabin aft zone after refuel,2024-01-03 18:44:06
+AC-01,"Galley fwd oven not heating, crew report",2024-01-03 21:41:56
+AC-09,"Wing tank pump 2 replaced IAW AMM 28-21-00, leak check good",2024-01-03 22:46:00
+AC-10,Battery 1 charge limiter fault on power up,2024-01-04 02:30:55
+AC-05,"Brake 3 replaced IAW AMM 32-42-00, wear within limits after change",2024-01-04 03:12:26
+AC-10,"Tire 4 pressure low on walk around, inflated, slow leak suspected",2024-01-04 09:24:09
+AC-07,"Anti-skid fault message on landing roll, brake 2 channel",2024-01-04 09:53:32
+AC-02,"Nose wheel steering jerky during taxi, crew report",2024-01-04 10:41:04
+AC-10,"Bleed leak warning wing right on taxi in, cleared after 2 min",2024-01-04 12:40:19
+AC-05,"Cabin air fan 2 noisy in operation, vibration felt at floor panel",2024-01-04 12:48:03
+AC-10,"Auxiliary power unit fuel control unit replaced, ground run satisfactory",2024-01-04 12:54:30
+AC-04,"Auxiliary power unit oil quantity low message, replenished 4 quarts",2024-01-04 14:29:50
+AC-01,"Lavatory mid flush control unit replaced, lav returned to service",2024-01-04 14:44:48
+AC-09,"PACK 1 FAULT ECAM IN CRUISE, RESET IAW QRH, FAULT CLEARED",2024-01-04 15:21:54
+AC-01,"Nose wheel steering jerky during taxi, crew report",2024-01-04 15:41:32
+AC-04,"Lavatory fwd flush control unit replaced, lav returned to service",2024-01-04 18:30:00
+AC-09,"Bird strike inspection carried out, no damage found",2024-01-04 18:35:17
+AC-07,"Main wheel 4 tire changed, cut found in tread",2024-01-04 19:11:07
+AC-04,"Fuel leak from wing right lower surface panel, within limits, monitored",2024-01-05 01:54:37
+AC-11,"Pylon bleed duct insulation damaged at engine 2, repair raised",2024-01-05 02:17:34
+AC-07,"Case drain filter engine pump 1 replaced, no contamination found",2024-01-05 03:00:44
+AC-12,"Case drain filter engine pump 1 replaced, no contamination found",2024-01-05 03:26:30
+AC-09,"Repeat defect: pack 2 overheat third time this week, troubleshooting in progress",2024-01-05 09:26:37
+AC-01,"Cabin temp mid zone not reaching selected temp, crew report too warm",2024-01-05 12:28:29
+AC-11,"Dent at STA 1560 assessed within SRM limits, recorded in dent chart",2024-01-05 14:20:25
+AC-01,"Fuel tank entry: sealant deterioration found at rib 13, re-sealed",2024-01-05 14:27:35
+AC-08,"Nose wheel steering jerky during taxi, crew report",2024-01-05 15:48:48
+AC-04,"Wiring loom chafe found behind galley at STA 520, repaired",2024-01-05 16:33:41
+AC-01,"Lavatory mid flush inoperative, lav locked",2024-01-05 17:21:14
+AC-09,"Hydraulic fluid seepage at main gear bay left, wiped and monitored",2024-01-05 19:51:35
+AC-12,"Auxiliary power unit starter motor replaced IAW AMM 49-42-00, start test good",2024-01-05 20:05:38
+AC-02,"A-check input, work package opened",2024-01-05 22:00:00
+AC-04,"Avionics ventilation fault message on ground, cleared on reset",2024-01-05 22:50:06
+AC-10,"Dent found on fuselage lower skin after ground handling, assessed",2024-01-05 23:42:13
+AC-02,"Main gear right downlock spring corrosion found, replaced",2024-01-06 00:40:00
+AC-02,"Torque link bushing play found nose gear, replacement raised",2024-01-06 00:45:00
+AC-02,Repeat defect: brake 2 temperature high again on turnaround,2024-01-06 01:11:18
+AC-04,Pack 1 flow control valve slow to open on BITE test,2024-01-06 02:33:53
+AC-02,"Overhead bin latch broken row 24, replaced",2024-01-06 03:12:00
+AC-02,"Scheduled tire pressure check carried out, all within limits",2024-01-06 03:35:00
+AC-04,ENGINE 1 oil filter clog message on taxi in,2024-01-06 03:36:20
+AC-01,Reading light row 15 replaced,2024-01-06 03:58:24
+AC-10,"ENGINE 1 oil consumption above trend, 5 quarts added",2024-01-06 04:03:58
+AC-02,"Scheduled tire pressure check carried out, all within limits",2024-01-06 04:18:00
+AC-04,ENGINE 1 oil filter clog message on taxi in,2024-01-06 06:08:17
+AC-02,"A-check completed, aircraft released to service",2024-01-06 07:00:00
+AC-09,"Auxiliary power unit fails to start on first attempt, started on second",2024-01-06 07:13:41
+AC-10,"Main wheel 2 tire changed, cut found in tread",2024-01-06 07:39:32
+AC-05,"Repeat defect: engine 2 vibration high again, fan balance to be checked",2024-01-06 11:25:09
+AC-08,Pack 2 flow control valve slow to open on BITE test,2024-01-06 11:32:39
+AC-10,Reading light row 15 replaced,2024-01-06 11:43:22
+AC-03,"ENGINE 1 VIBRATION high N1 in cruise, value 3.0 units",2024-01-06 12:05:26
+AC-02,"Auxiliary power unit compartment fire seal damaged, replacement raised",2024-01-06 12:15:37
+AC-06,"Deferred IAW MEL 21-xx, pack 1 inop, rectification within 3 days",2024-01-06 13:35:55
+AC-01,"ENGINE 2 start valve slow to close, start time long",2024-01-06 14:12:09
+AC-11,"BRAKE 2 HOT after landing, temp above normal, cooled on stand",2024-01-06 15:31:20
+AC-09,"Lavatory mid flush control unit replaced, lav returned to service",2024-01-06 16:55:01
+AC-03,Fuel smell reported in cabin aft zone after refuel,2024-01-06 18:24:21
+AC-09,"Pack bay inspection: heat exchanger fins partially blocked, cleaning required",2024-01-06 18:44:21
+AC-08,"Bird strike inspection carried out, no damage found",2024-01-06 21:55:27
+AC-01,"Repeat defect: bleed 1 pressure regulating valve sticking, third report",2024-01-06 23:10:25
+AC-09,IFE screen seat 22D blank,2024-01-06 23:24:18
+AC-09,"Seat 30F recline inoperative, placarded",2024-01-07 00:56:34
+AC-01,"Engine 1 oil filter replaced, chip detector clean",2024-01-07 02:17:14
+AC-09,"Avionics ventilation fault message on ground, cleared on reset",2024-01-07 05:18:17
+AC-08,"Repeat defect: auxiliary power unit auto shutdown again, ground power used",2024-01-07 07:01:26
+AC-09,IFE screen seat 23A blank,2024-01-07 09:31:53
+AC-04,"Hydraulic engine driven pump 1 pressure fluctuating, 1968 psi observed",2024-01-07 10:19:24
+AC-10,"Fuel quantity probe right wing replaced, gauging test good",2024-01-07 10:56:49
+AC-05,Cabin air fan 2 filter replaced at scheduled interval,2024-01-07 11:21:35
+AC-10,Pack 1 flow control valve slow to open on BITE test,2024-01-07 11:42:42
+AC-06,Battery 1 charge limiter fault on power up,2024-01-07 12:04:03
+AC-09,"AUXILIARY POWER UNIT AUTO SHUTDOWN on stand, restart successful",2024-01-07 12:10:26
+AC-11,"Fuel leak from wing right lower surface panel, within limits, monitored",2024-01-07 12:18:42
+AC-08,"Auxiliary power unit fails to start on first attempt, started on second",2024-01-07 13:43:17
+AC-04,"Tire 4 pressure low on walk around, inflated, slow leak suspected",2024-01-07 14:16:09
+AC-09,"Tire 3 pressure low on walk around, inflated, slow leak suspected",2024-01-07 16:08:01
+AC-09,"Drive generator 1 disconnected and replaced IAW AMM 24-21-00, ground run good",2024-01-07 17:39:31
+AC-11,"Main wheel 1 tire changed, cut found in tread",2024-01-07 18:00:29
+AC-12,"ENGINE 1 start valve slow to close, start time long",2024-01-07 18:51:38
+AC-09,Reading light row 24 replaced,2024-01-07 19:11:35
+AC-03,Battery 2 charge limiter fault on power up,2024-01-07 20:41:44
+AC-09,"Pack 2 flow control valve replaced IAW AMM 21-51-00, ops check good",2024-01-07 22:14:18

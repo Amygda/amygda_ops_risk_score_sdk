@@ -25,7 +25,11 @@ how_to/
 │       │   └── models/                  # ready-made models, so you can start at any stage
 │       │       ├── labelling_model.zip
 │       │       └── complete_model.zip
-│       └── rolling_stock_hvac/          # free-text: 8 train air-conditioning units
+│       ├── rolling_stock_hvac/          # free-text: 8 train air-conditioning units
+│       │   └── (the same files)
+│       ├── aircraft_mro_hangar/         # free-text: 12 aircraft an MRO looks after
+│       │   └── (the same files)
+│       └── aircraft_fault_messages/     # fixed-log: onboard fault messages from 20 aircraft
 │           └── (the same files)
 └── how_to.md
 ```
@@ -46,8 +50,12 @@ Each folder in `sample_data/` is one example fleet with everything for it: the h
 |---|---|---|---|---|
 | [`airport_baggage_conveyors/`](examples/sample_data/airport_baggage_conveyors/README.md) | Fixed-log: short fault codes | `ASS-001` to `ASS-012`, 12 baggage sortation stations at an airport | `event_code` | `01a`, `02a`, `02b`, `03a`, `guides/01`, `guides/02` |
 | [`rolling_stock_hvac/`](examples/sample_data/rolling_stock_hvac/README.md) | Free-text: technicians' notes | `HVAC-01` to `HVAC-08`, 8 air-conditioning units on passenger trains | `maintenance_log` | `01b`, `02c`, `02d`, `03b` |
+| [`aircraft_mro_hangar/`](examples/sample_data/aircraft_mro_hangar/README.md) | Free-text: maintenance notes | `AC-01` to `AC-12`, 12 narrow-body aircraft that an MRO looks after | `maintenance_log` | `01b`, `02c`, `02d`, `03b`, with the settings in its README |
+| [`aircraft_fault_messages/`](examples/sample_data/aircraft_fault_messages/README.md) | Fixed-log: onboard fault messages | `AC-101` to `AC-120`, 20 narrow-body aircraft in an airline fleet | `event_code` | `01a`, `02a`, `02b`, `03a`, with the settings in its README |
 
-Both use `asset_id` for the asset and `date` (date and time, `YYYY-MM-DD HH:MM:SS`) for the time. The failures files have `asset_id` and `failure_date`. Training covers Jan–Dec 2023 and new data Jan–Mar 2024.
+The notebooks are written for the first two examples. To run one on an aviation example, change its file paths and labelling settings as that example's README shows.
+
+All four use `asset_id` for the asset and `date` (date and time, `YYYY-MM-DD HH:MM:SS`) for the time. The failures files have `asset_id` and `failure_date`. Training covers Jan–Dec 2023 and new data Jan–Mar 2024.
 
 ---
 
@@ -57,10 +65,10 @@ Both use `asset_id` for the asset and `date` (date and time, `YYYY-MM-DD HH:MM:S
 
 Each example's `batches/` folder holds its `generation.csv` split into 13 weekly files, `week_01.csv` to `week_13.csv`, in the same columns. They stand in for the files a site would export each week, so you can add them to the fleet app one at a time.
 
-| | `airport_baggage_conveyors` | `rolling_stock_hvac` |
-|---|---|---|
-| Rows per week | ~220–470 | ~55–137 |
-| Assets in every week | all 12 | all 8 |
+| | `airport_baggage_conveyors` | `rolling_stock_hvac` | `aircraft_mro_hangar` | `aircraft_fault_messages` |
+|---|---|---|---|---|
+| Rows per week | ~220–470 | ~55–137 | ~100–250 | ~240–530 |
+| Assets in every week | all 12 | all 8 | all 12 | all 20 |
 
 - Weeks start on Mondays (1 Jan 2024 is a Monday).
 - Week 6 ends at noon on Wednesday 14 February and week 7 starts there, so one batch ends part-way through a day. For a daily or 12-hourly model, that period is provisional until week 7 arrives.
@@ -76,6 +84,8 @@ Trained on the sample data, so each stage can be tried without running the ones 
 | File | What it is | Used by (when you haven't made your own) |
 |---|---|---|
 | `labelling_model.zip` | Labelling model (Steps 1–8) | `02a`, `02b`, `guides/02_risk_score_guide.ipynb` (airport baggage); `02c`, `02d` (HVAC) |
-| `complete_model.zip` | Complete model (Steps 1–12), unsupervised, as `02b` / `02c` make it: 7-day `sum` window, scored every 2 hours (airport baggage) or 12 hours (HVAC) | `03a` (airport baggage), `03b` (HVAC) |
+| `complete_model.zip` | Complete model (Steps 1–12), unsupervised, as `02b` / `02c` make it: 7-day `sum` window, scored every 2 hours (airport baggage), 12 hours (HVAC and MRO hangar) or 8 hours (aircraft fault messages) | `03a` (airport baggage), `03b` (HVAC) |
+
+The aviation examples' models were made the same way, with the labelling settings in their READMEs.
 
 The labelling step uses an LLM, so a hierarchy you build yourself will have different system and subsystem names from these.
