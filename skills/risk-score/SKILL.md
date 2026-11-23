@@ -1,7 +1,7 @@
 ---
 name: risk-score
 description: >
-  Guided agent intelligence for the Amygda Ops Risk Score SDK (v5.4.0).
+  Guided agent intelligence for the Amygda Ops Risk Score SDK (v5.4.1).
   This skill teaches an LLM agent how to walk any user — technical or
   non-technical — through the full end-to-end pipeline: asking the right
   upfront questions, narrating each step in plain language, showing helpers
@@ -15,16 +15,16 @@ description: >
   "deploy model", "monitor", "score new data", "continuous scoring", "amygda-risk",
   "fleet app", "monitoring app", "alerts", "schedule runs".
 license: MIT
-compatibility: "SDK v5.4.0 — requires server API >= 4.1.0; Python >= 3.10"
+compatibility: "SDK v5.4.1 — requires server API >= 4.1.0; Python >= 3.10"
 metadata:
-  version: "5.4.0"
+  version: "5.4.1"
   author: "Amygda"
 ---
 
 # Amygda Ops Risk Score — Agent Guide
 
 **Repo:** https://github.com/Amygda/amygda_ops_risk_score_sdk  
-**SDK version:** 5.4.0 | **API minimum:** 4.1.0 | **Python:** ≥ 3.10
+**SDK version:** 5.4.1 | **API minimum:** 4.1.0 | **Python:** ≥ 3.10
 
 > **Breaking in 5.0.0:** `configure_training` and the failure helpers renamed `prediction_horizon_days` → `prediction_horizon`, `exclusion_days_after` → `exclusion_after`, `block_size_days` → `block_size` (helpers also `window_after_days` → `window_after`). Windows take durations (`"14D"`, `"36h"`; a bare number = days). New `feature_frequency` builds features per time bucket (`"auto"` default, `"5min"` … `"1D"`). Never generate code with the old names — they raise `TypeError`.
 
@@ -94,26 +94,26 @@ Before anything else, ask two questions. If your question tool offers choices, u
 
 **1. Their data or the sample data?**
 
-*"Would you like to use your own maintenance logs, or try it first on sample data? The sample data is two made-up fleets: baggage conveyor stations that log short fault codes, and train air-conditioning units with technicians' written notes."*
+*"Would you like to use your own maintenance logs, or try it first on sample data? There are four made-up example fleets: **airport baggage conveyors**, which log short fault codes; **rolling stock HVAC**, the air-conditioning units on passenger trains, with technicians' written notes; **aircraft MRO hangar**, maintenance notes on aircraft a repair shop looks after; and **aircraft fault messages**, the fault messages an airline's aircraft report."*
 
 - **Own data:** ask for the file in the questions of the part they choose.
-- **Sample data:** run `amygda-risk-skill examples` in their folder. If `amygda_how_to/` already exists, use it rather than downloading again. Then ask which fleet: **conveyor stations (fixed-log)** or **air-conditioning units (free-text)**. Read `amygda_how_to/how_to.md` for the columns, date format and files of the one they pick. Say once that the data is made up, so the systems, names and scores are examples only.
+- **Sample data:** run `amygda-risk-skill examples` in their folder. If `amygda_how_to/` already exists, use it rather than downloading again. Then ask which example, by the same names as its folder so the two match: **airport baggage conveyors** (`airport_baggage_conveyors/`, fixed-log), **rolling stock HVAC** (`rolling_stock_hvac/`, free-text), **aircraft MRO hangar** (`aircraft_mro_hangar/`, free-text) or **aircraft fault messages** (`aircraft_fault_messages/`, fixed-log). Use these names whenever you talk about the example, not "fixed-log" or "free-text" on their own. Read the example's `README.md` for its columns, date format, files and failures. When its "Notebook settings" give labelling settings (asset context, number of systems), offer those as the defaults in the Step 1 questions. Say once that the data is made up, so the systems, names and scores are examples only.
 
 **2. Which part do they want to try?** Offer these three, in plain words:
 
-| Option | What happens | Needs (own data) | Uses (sample data, in `amygda_how_to/examples/sample_data/`) |
+| Option | What happens | Needs (own data) | Uses (sample data, in `amygda_how_to/examples/sample_data/<example>/`) |
 |---|---|---|---|
-| **A. From the start** | Build the equipment hierarchy and label the logs (Steps 0–8), then risk scores (Steps 9–12), then the fleet app | A log file | `<fleet>_training.csv` (and `<fleet>_generation.csv` and `<fleet>_failures.csv` for Part 2) |
-| **B. Risk scores from a labelling model** | Skip labelling: import the labelling model and go from the Part 2 questions to Step 12, then the fleet app | A labelling model zip from Step 8, plus the log files | `models/<fleet>_labelling_model.zip`, `<fleet>_training.csv`, `<fleet>_generation.csv`; `<fleet>_failures.csv` if they choose supervised |
-| **C. Straight to the fleet app** | Skip both pipelines: deploy a finished model as the fleet app and feed it new data | A complete model zip from Step 12 | `models/<fleet>_complete_model.zip`; the weekly files in `batches/<fleet>/` to add in the app |
+| **A. From the start** | Build the equipment hierarchy and label the logs (Steps 0–8), then risk scores (Steps 9–12), then the fleet app | A log file | `training.csv` (and `generation.csv` and `failures.csv` for Part 2) |
+| **B. Risk scores from a labelling model** | Skip labelling: import the labelling model and go from the Part 2 questions to Step 12, then the fleet app | A labelling model zip from Step 8, plus the log files | `models/labelling_model.zip`, `training.csv`, `generation.csv`; `failures.csv` if they choose supervised |
+| **C. Straight to the fleet app** | Skip both pipelines: deploy a finished model as the fleet app and feed it new data | A complete model zip from Step 12 | `models/complete_model.zip`; the weekly files in `batches/` to add in the app |
 
-Here `<fleet>` is `fixed_log` or `free_text`.
+Here `<example>` is `airport_baggage_conveyors`, `rolling_stock_hvac`, `aircraft_mro_hangar` or `aircraft_fault_messages`.
 
 How to run each one:
 
 - **A:** carry on with the Deployment Modes and Part 1 below, then Part 2 as normal.
 - **B:** choose the deployment mode, then go to Part 2 ("Pipeline Hand-off"): open a session, `session.import_model(<labelling zip>)`, and ask the Part 2 questions. For sample data, profile the training file as Step 0 describes before those questions. Supervised or unsupervised is still the user's choice: both sample fleets have a failures file.
-- **C:** go straight to the fleet app: `references/deployment.md` → "Starting from an existing model zip", then `references/app.md`. The app's questions include a preview of the page from the model (`amygda-risk design --model`), so there is no separate dashboard step. Deploying needs the API, so ask the deployment mode (below) before that step. For sample data, when the app is running, tell the user they can add the weekly files from `batches/<fleet>/` one at a time in the app to see runs and alerts build up.
+- **C:** go straight to the fleet app: `references/deployment.md` → "Starting from an existing model zip", then `references/app.md`. The app's questions include a preview of the page from the model (`amygda-risk design --model`), so there is no separate dashboard step. Deploying needs the API, so ask the deployment mode (below) before that step. For sample data, when the app is running, tell the user they can add the weekly files from the example's `batches/` folder one at a time in the app to see runs and alerts build up.
 
 For B and C with sample data, the ready-made models were made on the sample data. Say that their systems and subsystems come from one labelling run, so a run of A would give different names.
 
