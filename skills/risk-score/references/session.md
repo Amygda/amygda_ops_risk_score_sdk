@@ -390,7 +390,7 @@ On the first call the server builds the Qdrant vector database and runs a binary
 | Field | Type | Present when | Description |
 |-------|------|--------------|-------------|
 | `auth_id` | str | Always | Session identifier |
-| `optimal_threshold` | float | Always | Server-recommended threshold — highest value that maximises asset coverage |
+| `optimal_threshold` | float | Always | Server-recommended threshold — highest value, up to 0.7, that maximises asset coverage |
 | `assets_covered` | int | Always | Distinct assets with at least one classified log at `threshold` |
 | `total_assets` | int | Always | Total distinct assets in the dataset |
 | `logs_classified` | int | Always | Unique log descriptions classified out of total unique descriptions |

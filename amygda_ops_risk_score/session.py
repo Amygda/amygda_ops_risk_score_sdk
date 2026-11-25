@@ -752,14 +752,14 @@ class Session:
 
         **First call vs subsequent calls:**
         On the **first call** the server builds the Qdrant vector database, fetches
-        the full match pool once, and runs a binary search to find the highest threshold
+        the full match pool once, and searches for the highest threshold, up to 0.7,
         that maximises asset coverage (``optimal_threshold``).  Subsequent calls reuse
         the cached pool and complete instantly — no repeated Qdrant queries.
 
         **Reading the response:**
 
-        - ``optimal_threshold`` — server-recommended threshold; highest value that still
-          covers the maximum number of assets.  Always returned, regardless of what you
+        - ``optimal_threshold`` — server-recommended threshold; highest value, up to 0.7,
+          that still covers the maximum number of assets.  Always returned, regardless of what you
           pass as ``threshold``.
         - ``assets_covered`` / ``total_assets`` — how many distinct assets have at least
           one classified log at the evaluated threshold.

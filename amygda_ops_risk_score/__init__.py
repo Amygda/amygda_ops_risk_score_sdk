@@ -1,6 +1,6 @@
 """amygda_ops_risk_score — Python client for the Ops Risk API."""
 
-__version__ = "5.5.0"
+__version__ = "5.5.1"
 
 from amygda_ops_risk_score.client import DeploymentScores, OpsRiskClient
 from amygda_ops_risk_score.config import SessionConfig
